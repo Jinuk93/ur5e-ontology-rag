@@ -860,23 +860,23 @@ LIMIT $top_n;
 ## 9. 근거 검증 규칙 (Evidence Verification Policy)
 
 ### 9.1 규칙 개요: Graph vs Vector “상호대조”
-- Graph(Neo4j): 도메인 논리(원인/조치 후보의 뼈대) 제공
-- Vector(ChromaDB): 공식 문서 근거(grounding) 제공
-- Verifier: 둘을 대조해 PASS / ABSTAIN / FAIL 결정
+- **Graph(Neo4j)**: 도메인 논리(원인/조치 후보의 뼈대) 제공
+- **Vector(ChromaDB)**: 공식 문서 근거(grounding) 제공
+- **Verifier**: 둘을 대조해 **PASS / ABSTAIN / FAIL** 결정
 
 ```mermaid
-graph TD
-  Q[User Query] --> N[Normalize & Extract]
-  N --> L[Entity Linking<br/>(Ontology-first)]
-  L --> G[Graph Reasoning<br/>(paths, candidates)]
-  G --> X[Query Expansion Terms]
-  X --> V[Vector Retrieval<br/>(top-k chunks)]
-  V --> A[Evidence Alignment]
+flowchart TD
+  Q["User Query"] --> N["Normalize & Extract"]
+  N --> L["Entity Linking\n(Ontology-first)"]
+  L --> G["Graph Reasoning\n(paths, candidates)"]
+  G --> X["Query Expansion Terms"]
+  X --> V["Vector Retrieval\n(top-k chunks)"]
+  V --> A["Evidence Alignment"]
   G --> A
-  A --> Z[Verifier (Evidence Gate)]
-  Z -->|PASS| OUT1[Answer + Actions + Citations]
-  Z -->|ABSTAIN| OUT2[No Actions + Follow-up Qs + Inspection]
-  Z -->|FAIL| OUT3[Error + Trace Logged]
+  A --> Z["Verifier (Evidence Gate)"]
+  Z -->|PASS| OUT1["Answer + Actions + Citations"]
+  Z -->|ABSTAIN| OUT2["No Actions + Follow-up Qs + Inspection"]
+  Z -->|FAIL| OUT3["Error + Trace Logged"]
 ```
 
 ### 9.2 원인 추정(Cause) 등급화 정책 (3단계)
