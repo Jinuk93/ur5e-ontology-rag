@@ -1,5 +1,4 @@
 # UR5e Ontology RAG 시스템 - 기술 설계서
-
 ---
 
 ## 📋 목차
@@ -315,6 +314,7 @@ Ontology-first 운영을 위해 **Entity Linking/정규화 룰(lexicon/rules)** 
 - **DB 볼륨 분리**: Chroma/Neo4j/Audit 로그는 마운트 볼륨으로 운영한다.
 
 ### 5.2 주요 디렉토리 트리 (권장)
+
 ```plaintext
 ur5e-ontology-rag/
 ├── README.md
@@ -410,18 +410,18 @@ ur5e-ontology-rag/
 └── tests/
     ├── unit/
     └── integration/
-```
-## 5.3 핵심 파일 설명 (Ontology-first 관점)
 
-### configs/ontology_rules.yaml
+### 5.3 핵심 파일 설명 (Ontology-first 관점)
+
+#### `configs/ontology_rules.yaml`
 - 에러코드/부품명/약어/표기 변형을 정규화하고, 링킹 우선순위를 정의한다.
-- 예: C-153 / C153 / C 153 같은 표기 통일, 한/영 혼용 표기 정규화, 룰 적용 순서(Regex > Lexicon > Embedding 등)
+- 예: `C-153` / `C153` / `C 153` 같은 표기 통일, 한/영 혼용 표기 정규화, 룰 적용 순서(Regex > Lexicon > Embedding 등)
 
-### data/processed/ontology/lexicon.yaml
+#### `data/processed/ontology/lexicon.yaml`
 - 동의어/별칭/한영 변환 등 링킹 사전을 운영 데이터로 관리한다.
 - 예: `protective stop` ↔ `보호정지`, `brake` ↔ `브레이크`, 현장 약어/별칭(슬랭)까지 수용
 
-### apps/api/src/core/linker.py
+#### `apps/api/src/core/linker.py`
 - 후보 엔티티를 최종 `node_id`로 고정하는 엔진(프로젝트 핵심).
 - 출력 예: `{type: "ErrorCode", text: "C153", node_id: "ERR_C153", confidence: 0.94, matched_by: "regex"}`
 
@@ -471,7 +471,6 @@ ur5e-ontology-rag/
 - 역할: RAG 품질 + Ontology 품질을 함께 측정
 
 ---
-
 ## 7. API Contract: 인터페이스 명세
 
 API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)**이며,  
@@ -526,12 +525,9 @@ API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)
     "debug": false
   }
 }
-```
-
 ---
-
 ### 7.3.2 Response Schema (PASS 예시)
-```json
+
 {
   "trace_id": "b3a1f9a6-2c10-4a3e-9b24-6a6c4a1c0c0a",
   "verifier_status": "PASS",
@@ -575,12 +571,8 @@ API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)
   ],
   "ontology_debug": null
 }
-```
-
----
 
 ### 7.3.3 Response Schema (ABSTAIN 예시)
-```json
 {
   "trace_id": "f1c2d3e4-aaaa-bbbb-cccc-1234567890ab",
   "verifier_status": "ABSTAIN",
@@ -600,14 +592,9 @@ API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)
   "graph_path_summary": [],
   "ontology_debug": null
 }
-```
-
----
 
 ### 7.4 GET /api/v1/evidence/{trace_id} — 근거/경로 상세 조회
-
 #### 7.4.1 Response Schema (예시)
-```json
 {
   "trace_id": "b3a1f9a6-2c10-4a3e-9b24-6a6c4a1c0c0a",
   "evidence": [
@@ -649,9 +636,6 @@ API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)
     "decision_reason": "Action citation satisfied"
   }
 }
-```
-
----
 
 ### 7.5 GET /api/v1/preview?doc_id=...&page=... — PDF 페이지 미리보기
 
@@ -659,10 +643,7 @@ API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)
 - 입력: doc_id, page
 - 출력: 이미지 또는 바이너리(PNG/JPEG 등)
 
----
-
 ### 7.6 GET /api/v1/health — 상태 점검
-
 #### 7.6.1 점검 대상(권장)
 - API 서버 프로세스
 - Neo4j 연결
@@ -670,8 +651,7 @@ API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)
 - PDF Repository 경로 접근
 - (선택) Embedding/LLM 서비스 연결
 
-#### 7.6.2 Response Schema (예시)
-```json
+### 7.6.2 Response Schema (예시)
 {
   "status": "ok",
   "deps": {
@@ -681,7 +661,6 @@ API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)
     "llm": "degraded"
   }
 }
-```
 
 ---
 
@@ -737,7 +716,7 @@ graph LR
   K -- FIXED_BY --> A[Action]
   K -- REFERS_TO --> D[DocumentRef]
   A -- REFERS_TO --> D
-```
+
 ## 8.3 (권장) `ontology.json` 구조 규칙 (운영 관점)
 
 ### 8.3.1 최소 스키마(예시)
@@ -772,20 +751,18 @@ graph LR
     }
   ]
 }
-```
 
-### 8.3.2 룰(중요)
-- from / to는 **(label, key, value)**로 지정하여 Loader가 유일 매칭(Unique Match) 가능하게 한다.
-- DocumentRef는 가능하면 doc_id + page + section 기반으로 docref_id를 생성한다(재현성↑).
-- chunk_id는 그래프에 “고정”하지 않고, 필요 시에만 optional로 둔다(청킹 변경에 취약).
+8.3.2 룰(중요)
+from / to는 **(label, key, value)**로 지정하여 Loader가 유일 매칭(Unique Match) 가능하게 한다.
 
----
+DocumentRef는 가능하면 doc_id + page + section 기반으로 docref_id를 생성한다(재현성↑).
 
-## 8.4 Neo4j 무결성(Constraints) & 검색 인덱스(Indexes)
+chunk_id는 그래프에 “고정”하지 않고, 필요 시에만 optional로 둔다(청킹 변경에 취약).
+
+8.4 Neo4j 무결성(Constraints) & 검색 인덱스(Indexes)
 목표: (1) 중복 적재 방지, (2) 링킹/검색 성능 확보
 
-### 8.4.1 유일 제약(Neo4j 5.x 문법)
-```cypher
+8.4.1 유일 제약(Neo4j 5.x 문법)
 // 1) Uniqueness Constraints (중복 적재 방지)
 CREATE CONSTRAINT component_id_unique IF NOT EXISTS
 FOR (n:Component) REQUIRE n.component_id IS UNIQUE;
@@ -804,10 +781,7 @@ FOR (n:Action) REQUIRE n.action_id IS UNIQUE;
 
 CREATE CONSTRAINT docref_id_unique IF NOT EXISTS
 FOR (n:DocumentRef) REQUIRE n.docref_id IS UNIQUE;
-```
-
-### 8.4.2 성능 인덱스 + Fulltext(링킹/검색 속도)
-```cypher
+8.4.2 성능 인덱스 + Fulltext(링킹/검색 속도)
 // 2) Property Index (정확 매칭/필터링)
 CREATE INDEX component_name_idx IF NOT EXISTS FOR (n:Component) ON (n.name);
 CREATE INDEX symptom_name_idx IF NOT EXISTS FOR (n:Symptom) ON (n.name);
@@ -815,18 +789,13 @@ CREATE INDEX symptom_name_idx IF NOT EXISTS FOR (n:Symptom) ON (n.name);
 // 3) Fulltext Index (name/synonyms 텍스트 링킹용)
 CREATE FULLTEXT INDEX entity_search_index IF NOT EXISTS
 FOR (n:Component|Symptom|Cause|Action) ON EACH [n.name, n.synonyms];
-```
+8.4.3 운영 팁(주의)
+synonyms는 list여도 Fulltext 인덱싱이 가능하지만, 타입을 항상 문자열/문자열 리스트로 통일해야 한다.
 
-### 8.4.3 운영 팁(주의)
-- synonyms는 list여도 Fulltext 인덱싱이 가능하지만, 타입을 항상 문자열/문자열 리스트로 통일해야 한다.
-- ErrorCode는 fulltext보다 정규식/룰 기반 링크(예: C-?\d+)가 더 안정적이다.
+ErrorCode는 fulltext보다 정규식/룰 기반 링크(예: C-?\d+)가 더 안정적이다.
 
----
-
-## 8.5 (권장) 그래프 경로 탐색 패턴(Cypher)
-
-### 8.5.1 ErrorCode → Cause → Action (기본)
-```cypher
+8.5 (권장) 그래프 경로 탐색 패턴(Cypher)
+8.5.1 ErrorCode → Cause → Action (기본)
 MATCH (e:ErrorCode {code: $code})-[:MAY_CAUSE]->(c:Cause)-[:FIXED_BY]->(a:Action)
 OPTIONAL MATCH (c)-[:REFERS_TO]->(cd:DocumentRef)
 OPTIONAL MATCH (a)-[:REFERS_TO]->(ad:DocumentRef)
@@ -834,10 +803,7 @@ RETURN e, c, a,
        collect(DISTINCT cd) AS cause_docs,
        collect(DISTINCT ad) AS action_docs
 LIMIT $top_n;
-```
-
-### 8.5.2 Symptom/Component 기반 확장(핵심: Query Expansion)
-```cypher
+8.5.2 Symptom/Component 기반 확장(핵심: Query Expansion)
 MATCH (comp:Component {component_id: $component_id})-[:HAS_SYMPTOM]->(s:Symptom)
 MATCH (s)-[:MAY_CAUSE]->(c:Cause)
 RETURN
@@ -846,25 +812,21 @@ RETURN
   s.synonyms AS symptom_synonyms,
   c.synonyms AS cause_synonyms
 LIMIT $top_n;
-```
+8.6 Verifier “스키마 관점” 요약(8장 수준)
+Cause 출력 허용(요약): graph_path 존재 OR retrieval_score 임계치 충족
 
----
+Action 출력 허용(요약): REFERS_TO 문서 힌트 + 실제 문서 citation(doc_id/page/chunk) 정합 확보 시만
 
-## 8.6 Verifier “스키마 관점” 요약(8장 수준)
-- Cause 출력 허용(요약): graph_path 존재 OR retrieval_score 임계치 충족
-- Action 출력 허용(요약): REFERS_TO 문서 힌트 + 실제 문서 citation(doc_id/page/chunk) 정합 확보 시만
-- 상세 정책/플로우(AND Gate)는 9장에서 정의
+상세 정책/플로우(AND Gate)는 9장에서 정의
 
----
+9. 근거 검증 규칙 (Evidence Verification Policy)
+9.1 규칙 개요: Graph vs Vector “상호대조”
+Graph(Neo4j): 도메인 논리(원인/조치 후보의 뼈대) 제공
 
-## 9. 근거 검증 규칙 (Evidence Verification Policy)
+Vector(ChromaDB): 공식 문서 근거(grounding) 제공
 
-### 9.1 규칙 개요: Graph vs Vector “상호대조”
-- Graph(Neo4j): 도메인 논리(원인/조치 후보의 뼈대) 제공
-- Vector(ChromaDB): 공식 문서 근거(grounding) 제공
-- Verifier: 둘을 대조해 PASS / ABSTAIN / FAIL 결정
+Verifier: 둘을 대조해 PASS / ABSTAIN / FAIL 결정
 
-```mermaid
 graph TD
   Q[User Query] --> N[Normalize & Extract]
   N --> L[Entity Linking<br/>(Ontology-first)]
@@ -877,33 +839,21 @@ graph TD
   Z -->|PASS| OUT1[Answer + Actions + Citations]
   Z -->|ABSTAIN| OUT2[No Actions + Follow-up Qs + Inspection]
   Z -->|FAIL| OUT3[Error + Trace Logged]
-```
+9.2 원인 추정(Cause) 등급화 정책 (3단계)
+등급(Label)	판단 기준(Criteria)	운영 원칙(Policy)
+GRAPH_SUPPORTED	지식 그래프 내 유효 경로 존재 (권장: 3 hops 이내)	전문가 논리 기반 “유력 후보”로 제시(단정 금지)
+DOC_SUPPORTED	ChromaDB 검색 결과 score >= threshold (예: 0.70) + 인용 가능	공식 매뉴얼 근거 기반 “근거 있는 후보”로 제시
+HYPOTHESIS	엔티티는 감지되었으나 그래프/문서 근거 모두 부족	“점검 후보”로만 사용, Action 추천 금지
+안전 수칙(Safety Rule): HYPOTHESIS 등급 원인은 Inspection 후보로만 활용하며, 이를 근거로 수리 조치(Action) 추천은 금지한다.
 
-### 9.2 원인 추정(Cause) 등급화 정책 (3단계)
-
-| 등급(Label) | 판단 기준(Criteria) | 운영 원칙(Policy) |
-|---|---|---|
-| GRAPH_SUPPORTED | 지식 그래프 내 유효 경로 존재 (권장: 3 hops 이내) | 전문가 논리 기반 “유력 후보”로 제시(단정 금지) |
-| DOC_SUPPORTED | ChromaDB 검색 결과 score >= threshold (예: 0.70) + 인용 가능 | 공식 매뉴얼 근거 기반 “근거 있는 후보”로 제시 |
-| HYPOTHESIS | 엔티티는 감지되었으나 그래프/문서 근거 모두 부족 | “점검 후보”로만 사용, Action 추천 금지 |
-
-- 안전 수칙(Safety Rule): HYPOTHESIS 등급 원인은 Inspection 후보로만 활용하며, 이를 근거로 수리 조치(Action) 추천은 금지한다.
-
----
-
-## 9.3 수리 조치(Action) 검증: Safety Gate (AND Logic)
+9.3 수리 조치(Action) 검증: Safety Gate (AND Logic)
 조치(Action)는 사고/품질 리스크로 직결되므로 3단계 AND Gate를 통과해야만 출력한다.
 
-| 단계 | 검증 항목 | 세부 규칙(Rule) | 도입 이유 |
-|---|---|---|---|
-| Step 1 | 구조 검증 | 검증된 Cause와 FIXED_BY로 연결된 Action만 후보로 인정 | “원인-해결책” 논리 정합성 확보 |
-| Step 2 | 위치 검증 | doc_id 일치 + page 오차 ±1 허용 AND Graph의 DocumentRef와 Retrieval 메타데이터 대조 | PDF 파싱/레이아웃 오차 흡수 |
-| Step 3 | 내용 검증 | Action 키워드/동의어가 chunk 텍스트에 실제 존재(정규화 적용) | 유사도 검색 “엉뚱한 페이지” 최종 차단 |
-
----
-
-## 9.4 Action Validation Flow (Verifier) — 플로우차트
-```mermaid
+단계	검증 항목	세부 규칙(Rule)	도입 이유
+Step 1	구조 검증	검증된 Cause와 FIXED_BY로 연결된 Action만 후보로 인정	“원인-해결책” 논리 정합성 확보
+Step 2	위치 검증	doc_id 일치 + page 오차 ±1 허용 AND Graph의 DocumentRef와 Retrieval 메타데이터 대조	PDF 파싱/레이아웃 오차 흡수
+Step 3	내용 검증	Action 키워드/동의어가 chunk 텍스트에 실제 존재(정규화 적용)	유사도 검색 “엉뚱한 페이지” 최종 차단
+9.4 Action Validation Flow (Verifier) — 플로우차트
 flowchart TB
   S([Action 후보 분석 시작]) --> T1{STEP 1<br/>구조 검증}
   T1 -- 불일치 --> AB1([ABSTAIN<br/>조치 제안 거부])
@@ -915,38 +865,40 @@ flowchart TB
   T3 -- 키워드 미포함 --> AB1
 
   T3 -- 텍스트 검증 완료 --> P([PASS<br/>최종 답변 승인])
-```
+9.4.1 구현 체크리스트(실수 방지)
+Step 1에서 “검증된 Cause” 정의를 고정: 최소 GRAPH_SUPPORTED 또는 DOC_SUPPORTED
 
-### 9.4.1 구현 체크리스트(실수 방지)
-- Step 1에서 “검증된 Cause” 정의를 고정: 최소 GRAPH_SUPPORTED 또는 DOC_SUPPORTED
-- Step 2에서 page tolerance를 쓰더라도, 최종 인용은 chunk_manifest 기준으로 확정
-- Step 3에서 lexicon.yaml 기반 정규화(한영/약어/표기 흔들림) 적용 후 포함 여부 검사
+Step 2에서 page tolerance를 쓰더라도, 최종 인용은 chunk_manifest 기준으로 확정
 
----
+Step 3에서 lexicon.yaml 기반 정규화(한영/약어/표기 흔들림) 적용 후 포함 여부 검사
 
-## 9.5 최종 Verifier Status 정책
-- PASS  
-  - 근거 충분 → 답변(원인/점검/조치) 출력 허용
-  - 원인은 등급(GRAPH_SUPPORTED / DOC_SUPPORTED) 병기 권장
+9.5 최종 Verifier Status 정책
+PASS
+근거 충분 → 답변(원인/점검/조치) 출력 허용
 
-- ABSTAIN  
-  - 근거 부족 → 조치(Action) 출력 금지  
-  - 대신 출력:
-    - followup_questions
-    - inspection_steps
-    - 가능한 원인 후보(단정 금지, 등급 표시)
+원인은 등급(GRAPH_SUPPORTED / DOC_SUPPORTED) 병기 권장
 
-- FAIL  
-  - 인프라 오류(Neo4j/Chroma 타임아웃 등)
-  - 오류 응답 + trace_id 기반 audit 로그 기록
+ABSTAIN
+근거 부족 → 조치(Action) 출력 금지
 
----
+대신 출력:
 
-## 9.6 (권장) Verifier 출력 데이터 모델(요약)
-- Cause는 등급/근거/경로를 항상 포함
-- Action은 citation이 있을 때만 포함
+followup_questions
 
-```json
+inspection_steps
+
+가능한 원인 후보(단정 금지, 등급 표시)
+
+FAIL
+인프라 오류(Neo4j/Chroma 타임아웃 등)
+
+오류 응답 + trace_id 기반 audit 로그 기록
+
+9.6 (권장) Verifier 출력 데이터 모델(요약)
+Cause는 등급/근거/경로를 항상 포함
+
+Action은 citation이 있을 때만 포함
+
 {
   "verifier_status": "PASS",
   "causes": [
@@ -964,7 +916,6 @@ flowchart TB
     }
   ]
 }
-```
 
 ---
 
@@ -983,6 +934,7 @@ flowchart TB
 ### 10.1.3 Verifier 안전성
 - 근거 없는 Action이 0으로 통제되는가?
 - Evidence Gate가 안전 정책을 강제하는지 검증
+
 - 핵심 KPI: Action Safety Leak Rate = 0
 
 ## 10.2 평가 지표 (Metrics)
@@ -1025,7 +977,6 @@ flowchart TB
 - 정의(고정): 근거 없는 Action이 출력된 비율 (목표: 0)
 - 왜 중요?: 제조/정비 도메인에서 가장 설득력 있는 안전 지표
 
----
 
 # 11. 예외처리 및 보안정책
 
