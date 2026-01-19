@@ -312,3 +312,355 @@ Ontology-first 운영을 위해 **Entity Linking/정규화 룰(lexicon/rules)** 
 - **온톨로지 운영 가능성**: 동의어/정규화/링킹 룰을 파일로 관리하여 지속 개선 가능해야 한다.
 - **추적 가능성**: 모든 요청 결과는 `trace_id`로 재현 가능한 형태로 저장/조회된다.
 - **DB 볼륨 분리**: Chroma/Neo4j/Audit 로그는 마운트 볼륨으로 운영한다.
+
+### 5.2 주요 디렉토리 트리 (권장)
+
+```plaintext
+ur5e-ontology-rag/
+├── README.md
+├── docker-compose.yaml
+├── .env.example                  # 환경변수 샘플(키/DB/경로)
+├── .gitignore
+├── Makefile                      # up/down/ingest/test 등 단축 명령
+│
+├── configs/
+│   ├── settings.yaml             # chunk size, overlap, top-k, threshold 등
+│   ├── ontology_rules.yaml       # (권장) 엔티티 정규화/링킹 룰(정규식/우선순위)
+│   └── logging.yaml              # (선택) 로깅 포맷/레벨/핸들러
+│
+├── prompts/
+│   ├── entity_extractor.md        # (선택) 엔티티 후보 추출 프롬프트
+│   └── answer_formatter.md        # (선택) 답변 포맷 고정 프롬프트
+│
+├── data/
+│   ├── raw/
+│   │   └── pdf/                   # 원본 PDF 저장소
+│   │       ├── service_manual.pdf
+│   │       ├── error_codes_directory.pdf
+│   │       └── user_manual.pdf
+│   └── processed/
+│       ├── metadata/              # 근거 추적 메타데이터
+│       │   ├── sources.yaml
+│       │   └── chunk_manifest.jsonl
+│       └── ontology/              # 온톨로지 원천 + 사전
+│           ├── ontology.json
+│           └── lexicon.yaml        # (권장) synonyms/alias/표기변형 사전
+│
+├── stores/                        # 영속 볼륨 마운트(운영 데이터)
+│   ├── chroma/                    # ChromaDB persisted index
+│   ├── neo4j/                     # Neo4j data volume
+│   └── audit/                     # trace 기반 로그 저장
+│       └── audit_trail.jsonl
+│
+├── pipelines/                     # Offline Batch 파이프라인
+│   ├── ingest_documents.py        # PDF 파싱/청킹/임베딩/업서트
+│   ├── generate_metadata.py       # sources.yaml, chunk_manifest 생성
+│   ├── ingest_ontology.py         # ontology.json -> Neo4j 적재
+│   └── neo4j_schema.cypher        # 제약조건/인덱스(fulltext 포함) 정의
+│
+├── apps/
+│   └── api/                       # Online Runtime (FastAPI)
+│       ├── Dockerfile
+│       ├── requirements.txt
+│       └── src/
+│           ├── main.py
+│           ├── routes/
+│           │   ├── query.py
+│           │   ├── evidence.py
+│           │   ├── preview.py
+│           │   └── health.py
+│           ├── models/            # Pydantic 스키마
+│           │   ├── request.py
+│           │   ├── response.py
+│           │   └── evidence.py
+│           ├── core/              # 핵심 파이프라인 로직
+│           │   ├── orchestrator.py
+│           │   ├── extractor.py
+│           │   ├── linker.py      # ★ 핵심: 엔티티 링킹(자연어 → ontology node_id)
+│           │   ├── reasoner.py
+│           │   ├── retriever.py
+│           │   ├── verifier.py
+│           │   └── formatter.py
+│           ├── services/          # 외부 서비스/DB 클라이언트
+│           │   ├── openai_client.py
+│           │   ├── chroma_client.py
+│           │   ├── neo4j_client.py
+│           │   └── audit_logger.py
+│           └── utils/
+│               ├── ids.py
+│               ├── time.py
+│               └── io.py
+│
+├── ui/                            # Streamlit Frontend
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── src/
+│       ├── app.py
+│       ├── api_client.py
+│       └── components/
+│           ├── evidence_view.py
+│           ├── pdf_render.py
+│           └── graph_viz.py
+│
+├── eval/
+│   ├── testsuite_template.jsonl
+│   ├── run_eval.py
+│   └── metrics.md
+│
+└── tests/
+    ├── unit/
+    └── integration/
+
+### 5.3 핵심 파일 설명 (Ontology-first 관점)
+
+#### `configs/ontology_rules.yaml`
+- 에러코드/부품명/약어/표기 변형을 정규화하고, 링킹 우선순위를 정의한다.
+- 예: `C-153` / `C153` / `C 153` 같은 표기 통일, 한/영 혼용 표기 정규화, 룰 적용 순서(Regex > Lexicon > Embedding 등)
+
+#### `data/processed/ontology/lexicon.yaml`
+- 동의어/별칭/한영 변환 등 링킹 사전을 운영 데이터로 관리한다.
+- 예: `protective stop` ↔ `보호정지`, `brake` ↔ `브레이크`, 현장 약어/별칭(슬랭)까지 수용
+
+#### `apps/api/src/core/linker.py`
+- 후보 엔티티를 최종 `node_id`로 고정하는 엔진(프로젝트 핵심).
+- 출력 예: `{type: "ErrorCode", text: "C153", node_id: "ERR_C153", confidence: 0.94, matched_by: "regex"}`
+
+---
+
+## 6. 구성요소별 기술 스택 및 역할
+
+온톨로지가 추론의 뼈대를 만들고, RAG는 문서 근거로 증명하는 보조 역할을 수행한다.  
+즉, **“그래프로 방향 잡고, 문서로 증명한다.”**
+
+### 6.1 구성요소별 역할 요약
+- **Ontology Layer(핵심)**: 자연어 → 온톨로지 노드/관계로 정규화(링킹) + 그래프 경로로 후보 생성
+- **Semantic Search(RAG)**: 공식 문서에서 근거 chunk를 검색하여 답변을 grounding
+- **Verifier(Evidence Gate)**: 근거 유무에 따라 출력 제어(`PASS`/`ABSTAIN`/`FAIL`)
+- **Trace/Audit**: `trace_id` 단위로 입력→링킹→추론→검색→검증→출력 전 과정을 기록/재현
+
+### 6.2 기술 스택 매핑 (권장)
+
+#### Frontend (UI): Streamlit
+- 역할: 질문 입력, 답변 표시, 근거 PDF 미리보기, 그래프 경로 시각화
+
+#### Backend (API): FastAPI (ASGI)
+- 역할: 인증/입력검증/로깅/레이트리밋, Core Logic 호출, `evidence/preview` 제공
+
+#### Core Logic (Pipeline): Python 3.10+ (프로젝트 표준 버전으로 통일 권장)
+- 역할: Orchestrator 중심으로 모듈(`Extractor/Linker/Reasoner/Retriever/Verifier`) 조합
+
+#### Ontology Layer (핵심): Neo4j + Cypher + (Lexicon/Rules 파일)
+- 구성: `ontology.json` + `lexicon.yaml` + `ontology_rules.yaml`
+- 역할: 엔티티 링킹 + 그래프 경로 기반 후보 생성 + query expansion
+
+#### Vector DB (Semantic Search): ChromaDB (Persisted)
+- 역할: 문서 chunk 임베딩 저장, top-k 검색, 근거 메타데이터(`doc_id/page/chunk`) 반환
+
+#### External AI: Embedding / LLM (선택)
+- Embedding: OpenAI Embedding API 또는 로컬 임베딩(선택)
+- LLM: OpenAI/Claude 등(선택)
+- 역할: (1) 엔티티 후보 추출 보조, (2) 최종 문장화/요약(사실 생성 금지)
+
+#### Data Processing: PDF Parser (예: PyMuPDF/fitz)
+- 역할: PDF 텍스트/레이아웃/페이지 정보 추출(근거 추적 기반 마련)
+
+#### Infra: Docker / Docker Compose
+- 역할: Neo4j/Chroma/API/UI 컨테이너화, 단일 명령으로 재현 가능
+
+#### Evaluation: RAGAS / Pytest (선택)
+- 역할: RAG 품질 + Ontology 품질을 함께 측정
+
+---
+## 7. API Contract: 인터페이스 명세
+
+API는 UI(현장 엔지니어)와 Core Logic 사이의 **단일 계약(Contract)**이며,  
+`trace_id` 기반의 **추적 가능성**과 Verifier(Evidence Gate) 정책을 **강제**한다.
+
+---
+
+### 7.1 공통 정책
+
+#### 7.1.1 Trace 정책
+- 모든 요청은 서버에서 `trace_id`를 발급한다(UUID 권장).
+- 모든 응답은 `trace_id`를 반드시 포함한다.
+- `/evidence/{trace_id}`는 “해당 trace의 근거/경로/디버그”를 재현 가능하게 제공한다.
+
+#### 7.1.2 Verifier Status 정책
+- `PASS`: 근거 충분 → 답변(원인/점검/조치) 출력 허용
+- `ABSTAIN`: 근거 부족/정보 부족/범위 밖 → **조치(Action) 출력 금지**, 추가 질문/점검 중심으로 제한 출력
+- `FAIL`: 시스템 오류(DB/타임아웃 등) → 오류 응답 + `trace_id` 노출(추적/재현용)
+
+#### 7.1.3 Action Safety (핵심 고정 규칙)
+- **Action(조치)은 문서 citation(`doc_id/page/chunk_id`)이 없으면 절대 출력하지 않는다.**
+- 그래프 경로(`FIXED_BY`)가 존재해도 **문서 근거가 없으면 Action은 비운다.**
+
+#### 7.1.4 Debug 정책(권장)
+- 기본: `options.debug=false` → `ontology_debug=null` 또는 요약만 제공
+- 디버그: `options.debug=true` → 링킹 결과/그래프 경로 후보/확장 키워드 등 상세 제공
+- 운영/보안/성능을 위해 **상세 디버그는 옵션으로만** 제공한다.
+
+---
+
+### 7.2 엔드포인트 목록 (권장 최소 셋)
+
+- `POST /api/v1/query`
+- `GET /api/v1/evidence/{trace_id}`
+- `GET /api/v1/preview?doc_id=...&page=...`
+- `GET /api/v1/health`
+
+---
+
+### 7.3 POST /api/v1/query — 질의응답
+
+#### 7.3.1 Request Schema (예시)
+```json
+{
+  "user_query": "UR5e에서 C153 에러 발생 시 조치 방법?",
+  "session_id": "sess-01",
+  "filters": {
+    "doc_ids": ["UR_ErrorCodes_PolyScope_vY", "UR_ServiceManual_eSeries_vX"]
+  },
+  "options": {
+    "top_k": 5,
+    "debug": false
+  }
+}
+---
+### 7.3.2 Response Schema (PASS 예시)
+
+{
+  "trace_id": "b3a1f9a6-2c10-4a3e-9b24-6a6c4a1c0c0a",
+  "verifier_status": "PASS",
+  "answer": "요약 답변(문장화)",
+  "structured_data": {
+    "symptom": ["..."],
+    "component": ["..."],
+    "causes": [
+      {
+        "title": "가능 원인 1",
+        "confidence": 0.72,
+        "evidence_refs": [
+          {"doc_id": "UR_ErrorCodes_PolyScope_vY", "page": 12, "chunk_id": "c-001"}
+        ],
+        "graph_path_refs": ["p-01"]
+      }
+    ],
+    "inspection_steps": ["..."],
+    "actions": [
+      {
+        "title": "권장 조치 1",
+        "requirement": "citation_required",
+        "evidence_refs": [
+          {"doc_id": "UR_ServiceManual_eSeries_vX", "page": 45, "chunk_id": "c-101"}
+        ]
+      }
+    ]
+  },
+  "evidence_summary": {
+    "citations": [
+      {"doc_id": "UR_ErrorCodes_PolyScope_vY", "page": 12},
+      {"doc_id": "UR_ServiceManual_eSeries_vX", "page": 45}
+    ]
+  },
+  "graph_path_summary": [
+    {
+      "path_id": "p-01",
+      "nodes": ["Symptom:보호정지", "Cause:브레이크 이상", "Action:점검/교체"],
+      "rels": ["MAY_CAUSE", "FIXED_BY"]
+    }
+  ],
+  "ontology_debug": null
+}
+
+### 7.3.3 Response Schema (ABSTAIN 예시)
+{
+  "trace_id": "f1c2d3e4-aaaa-bbbb-cccc-1234567890ab",
+  "verifier_status": "ABSTAIN",
+  "answer": "현재 제공 가능한 문서 근거가 부족하여 조치(Action)는 제안하지 않습니다. 아래 추가 정보가 필요합니다.",
+  "structured_data": {
+    "followup_questions": [
+      "에러코드가 정확히 C153이 맞나요? (표기: C-153/C153)",
+      "발생 당시 증상은 보호정지/브레이크 저항 중 어떤 형태인가요?"
+    ],
+    "inspection_steps": [
+      "안전 상태 확인 후 로그 화면에서 에러코드/타임스탬프 확인",
+      "관련 부품(브레이크/조인트) 상태 점검(현장 체크리스트)"
+    ],
+    "actions": []
+  },
+  "evidence_summary": {"citations": []},
+  "graph_path_summary": [],
+  "ontology_debug": null
+}
+
+### 7.4 GET /api/v1/evidence/{trace_id} — 근거/경로 상세 조회
+#### 7.4.1 Response Schema (예시)
+{
+  "trace_id": "b3a1f9a6-2c10-4a3e-9b24-6a6c4a1c0c0a",
+  "evidence": [
+    {
+      "doc_id": "UR_ErrorCodes_PolyScope_vY",
+      "page": 12,
+      "chunk_id": "c-001",
+      "score": 0.89,
+      "snippet": "..."
+    }
+  ],
+  "graph_paths": [
+    {
+      "path_id": "p-01",
+      "nodes": [
+        {"type": "Symptom", "node_id": "SYM_PROTECT_STOP", "name": "보호정지"},
+        {"type": "Cause", "node_id": "CAUSE_BRAKE_FAULT", "name": "브레이크 이상"},
+        {"type": "Action", "node_id": "ACT_INSPECT_BRAKE", "name": "브레이크 점검"}
+      ],
+      "rels": [
+        {"type": "MAY_CAUSE"},
+        {"type": "FIXED_BY"}
+      ]
+    }
+  ],
+  "ontology_debug": {
+    "extracted_entities": ["C153", "조치"],
+    "linked_entities": [
+      {"entity": "C153", "type": "ErrorCode", "node_id": "ERR_C153", "confidence": 0.94, "matched_by": "regex"}
+    ],
+    "expansion_terms": ["brake", "protective stop", "joint"]
+  },
+  "retrieval_debug": {
+    "top_k": 5,
+    "query_used": "..."
+  },
+  "audit_summary": {
+    "verifier_status": "PASS",
+    "decision_reason": "Action citation satisfied"
+  }
+}
+
+### 7.5 GET /api/v1/preview?doc_id=...&page=... — PDF 페이지 미리보기
+
+- 목적: UI에서 근거 페이지를 즉시 렌더링하기 위한 엔드포인트
+- 입력: doc_id, page
+- 출력: 이미지 또는 바이너리(PNG/JPEG 등)
+
+### 7.6 GET /api/v1/health — 상태 점검
+#### 7.6.1 점검 대상(권장)
+- API 서버 프로세스
+- Neo4j 연결
+- ChromaDB 접근/쿼리
+- PDF Repository 경로 접근
+- (선택) Embedding/LLM 서비스 연결
+
+### 7.6.2 Response Schema (예시)
+{
+  "status": "ok",
+  "deps": {
+    "neo4j": "ok",
+    "chroma": "ok",
+    "pdf_repo": "ok",
+    "llm": "degraded"
+  }
+}
+
+---
+
