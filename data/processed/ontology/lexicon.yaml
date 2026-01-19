@@ -1,0 +1,37 @@
+# 동의어 및 별칭 사전
+
+synonyms:
+  UR5e:
+    - "UR-5e"
+    - "UR5-e"
+    - "유니버설로봇 5e"
+    
+  TeachPendant:
+    - "teach pendant"
+    - "teaching pendant"
+    - "TP"
+    - "티치펜던트"
+    
+  EmergencyStop:
+    - "e-stop"
+    - "emergency stop"
+    - "E-Stop"
+    - "비상정지"
+    
+  SafetyMode:
+    - "safety mode"
+    - "세이프티 모드"
+    - "안전 모드"
+
+# 표기 변형
+variants:
+  case_variations: true
+  hyphen_variations: true
+  spacing_variations: true
+
+# 언어별 매핑
+language_mappings:
+  ko:
+    UR5e: ["유니버설로봇 5e", "UR5e"]
+    TeachPendant: ["티치펜던트", "교시 펜던트"]
+    EmergencyStop: ["비상정지", "긴급정지"]

@@ -1,0 +1,37 @@
+# 엔티티 정규화 및 링킹 룰
+
+normalization_rules:
+  # 정규식 기반 정규화
+  patterns:
+    - pattern: "UR-?5e?"
+      canonical: "UR5e"
+      priority: 1
+    
+    - pattern: "teach pendant|teaching pendant|TP"
+      canonical: "TeachPendant"
+      priority: 1
+    
+    - pattern: "e-?stop|emergency stop"
+      canonical: "EmergencyStop"
+      priority: 1
+
+  # 대소문자 무시
+  case_insensitive: true
+
+  # 띄어쓰기 정규화
+  normalize_whitespace: true
+
+linking_rules:
+  # 엔티티 타입별 우선순위
+  type_priority:
+    - Component
+    - ErrorCode
+    - Function
+    - Parameter
+    
+  # 최소 매칭 점수
+  min_confidence: 0.8
+  
+  # Fuzzy matching 활성화
+  fuzzy_matching: true
+  fuzzy_threshold: 0.85
