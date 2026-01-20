@@ -402,5 +402,3 @@ src/ingestion/
 | `docs/Phase1_완료보고서.md` | 본 문서 |
 
 ---
-
-**Phase 1 완료!** 다음은 Phase 2 (PDF 파싱 및 텍스트 추출)로 진행합니다.
