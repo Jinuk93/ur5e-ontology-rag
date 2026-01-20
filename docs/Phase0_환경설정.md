@@ -6,6 +6,83 @@
 
 ---
 
+## 다룰 파일들과 역할
+
+```
+ur5e-ontology-rag/
+│
+├── .env                    ← [1] API 키, DB 비밀번호 (민감 정보)
+├── .env.example            ← [2] .env의 템플릿 (Git에 올라가는 버전)
+├── requirements.txt        ← [3] Python 패키지 목록 (프로젝트 루트용)
+├── docker-compose.yaml     ← [4] Neo4j, ChromaDB 등 DB 컨테이너 정의
+│
+├── configs/
+│   └── settings.yaml       ← [5] 프로젝트 설정값 (청크 크기, top-k 등)
+│
+├── apps/api/
+│   └── requirements.txt    ← [6] API 서버용 패키지 목록
+│
+└── apps/ui/
+    └── requirements.txt    ← [7] UI용 패키지 목록
+```
+
+### 각 파일의 역할 설명
+
+| 번호 | 파일 | 역할 | 왜 필요? |
+|------|------|------|----------|
+| **1** | `.env` | API 키, 비밀번호 저장 | 코드에 비밀번호 노출 방지 |
+| **2** | `.env.example` | `.env` 템플릿 | 다른 사람이 프로젝트 받았을 때 어떤 변수 필요한지 알려줌 |
+| **3** | `requirements.txt` (루트) | 공통 패키지 | 프로젝트 전체에서 쓰는 패키지 |
+| **4** | `docker-compose.yaml` | DB 컨테이너 정의 | Neo4j, ChromaDB를 한 명령으로 실행 |
+| **5** | `configs/settings.yaml` | 프로젝트 설정 | 하드코딩 대신 설정 파일로 관리 |
+| **6** | `apps/api/requirements.txt` | API 패키지 | FastAPI, LangChain 등 |
+| **7** | `apps/ui/requirements.txt` | UI 패키지 | Streamlit 등 |
+
+---
+
+## Phase 0 진행 순서
+
+```
+Step 1: Python 확인
+   └─▶ 터미널에서 python --version 실행
+
+Step 2: 가상환경 생성
+   └─▶ python -m venv venv
+   └─▶ .\venv\Scripts\activate (Windows)
+
+Step 3: requirements.txt 작성 & 설치
+   └─▶ 필요한 패키지 정의
+   └─▶ pip install -r requirements.txt
+
+Step 4: .env 파일 설정
+   └─▶ .env.example 복사해서 .env 생성
+   └─▶ OpenAI API 키 입력
+
+Step 5: docker-compose.yaml 작성
+   └─▶ Neo4j, ChromaDB 컨테이너 정의
+
+Step 6: Docker 실행 테스트
+   └─▶ docker-compose up -d
+
+Step 7: 환경 검증
+   └─▶ 모든 것이 잘 동작하는지 테스트 스크립트 실행
+```
+
+---
+
+## 완료 조건 (체크리스트)
+
+- [ ] Python 3.10+ 설치 확인
+- [ ] 가상환경 생성 및 활성화
+- [ ] requirements.txt 작성
+- [ ] 패키지 설치 완료
+- [ ] .env 파일 생성 (API 키 입력)
+- [ ] docker-compose.yaml 작성
+- [ ] Docker 컨테이너 실행 확인
+- [ ] 환경 검증 스크립트 통과
+
+---
+
 ## 0.1 이번 Phase에서 배울 것
 
 | 개념 | 설명 | 왜 필요한가? |
@@ -18,7 +95,7 @@
 
 ---
 
-## 0.2 체크리스트
+## 0.2 상세 단계별 가이드
 
 ### Step 1: Python 설치 확인
 
@@ -252,15 +329,3 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - [ ] `.env` 파일 생성 및 API 키 설정
 - [ ] 검증 스크립트 실행 성공
 
----
-
-## 0.7 다음 Phase 미리보기
-
-**Phase 1: 데이터 탐색**에서는:
-- PDF 3개를 직접 열어보고
-- 어떤 정보가 어디에 있는지 파악하고
-- 추출할 데이터를 계획합니다
-
----
-
-*이 문서를 따라하다 막히는 부분이 있으면 바로 질문해주세요!*
