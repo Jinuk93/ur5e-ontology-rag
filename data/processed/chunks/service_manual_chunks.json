@@ -1,0 +1,2169 @@
+[
+  {
+    "id": "service_manual_000",
+    "content": "2.1. About This Document\nPurpose\nThe purpose of this service manual is to help Universal Robots (UR) users and integrators\nto safely perform service-related operations and troubleshooting. [GAB. Per Chicago\nManual of Style's (CMS) preference for the sparing use of capitals, referred to as down\nstyle. GAB]\nUniversal Robots industrial robots are designed using high-quality components to ensure\nlong product life cycle. However, improper use of a robot or robot parts will cause failures.\nIf, for example, the robot is overloaded, dropped during relocation, damaged by collision or\nany other improper use, the warranty will be void.\nUniversal Robots recommends the user not to repair, adjust, or make other interventions in\nthe mechanical or electrical systems of the robot without first consulting a UR-certified\nservice engineer. Any unauthorized repair and/or troubleshooting work(s) voids the\nwarranty. Service-related operations and troubleshooting should only be performed by\nqualified personnel.\nBefore performing service-related operations, stop the robot program and disconnect the\nmain power to any potential dangerous tool on the robot or its surroundings.\nIn the event of a defect, Universal Robots recommends ordering new parts from the\nUniversal Robot distributor where the robot was originally purchased. Alternately, parts\ncan be ordered from the nearest distributor, details of which can be obtained from\nUniversal Robots official website at www.universal-robots.com.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 5,
+      "doc_type": "service_manual",
+      "section": "About This Document",
+      "chapter": "2.1."
+    }
+  },
+  {
+    "id": "service_manual_001",
+    "content": "2.2. Company Details\nWhere we are\nUniversal Robots A/S\nEnergivej 51\nDK-5260 Odense Denmark\nTel.: +45 89 93 89 89\nFax: +45 38 79 89 89\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 5,
+      "doc_type": "service_manual",
+      "section": "Company Details",
+      "chapter": "2.2."
+    }
+  },
+  {
+    "id": "service_manual_002",
+    "content": "2.3. Copyright, Warranty and Disclaimers\nThe information contained herein is the property of Universal Robots A/S and shall not be reproduced in\nwhole or in part without prior written approval of Universal Robots A/S. The information herein is subject to\nchange without notice and should not be construed as a commitment by Universal Robots A/S. This\ndocument is periodically reviewed and revised.\nUniversal Robots A/S assumes no responsibility for any errors or omissions in this document.\nCopyright © 2009–2025 by Universal Robots A/S.\nThe Universal Robots logo is a registered trademark of Universal Robots A/S.\nNOTICE\nUniversal Robots continues to improve reliability and performance of its products, and\ntherefore reserves the right to upgrade the product without prior warning. Universal Robots\ntakes care that the content of this document is precise and correct, but takes no\nresponsibility for any errors or missing information.\nNOTICE\nUniversal Robots disclaims any liability, even if all guidelines in this document are followed.\nNOTICE\nThe product is covered under the Standard Warranty as detailed in the Standard Warranty\ndocument.\nYou can see the Standard Warranty document here: Standard Warranty\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 6,
+      "doc_type": "service_manual",
+      "section": "Copyright, Warranty and Disclaimers",
+      "chapter": "2.3."
+    }
+  },
+  {
+    "id": "service_manual_003",
+    "content": "2.4. Safety Message Types\nSafety Signs\nSafety messages and statements are used throughout this manual to emphasize important\ninformation.\nRead all messages and statements to help ensure safety and to prevent injury to personnel\nand product damage.\nThe safety message types are defined below.\nWARNING\nIndicates a hazardous situation which, if not avoided, could result in death\nor serious injury.\nWARNING: ELECTRICITY\nIndicates a hazardous electrical situation which, if not avoided, could\nresult in death or serious injury.\nWARNING: HOT SURFACE\nIndicates a hazardous hot surface where injury can result from contact and\nnon-contact proximity.\nCAUTION\nIndicates a hazardous situation which, if not avoided, could result in injury.\nGROUND\nIndicates grounding.\nPROTECTIVE GROUND\nIndicates protective grounding.\nNOTICE\nIndicates the risk damage to equipment and/or useful information that\nshould be particularly noted.\nREAD MANUAL\nIndicates more detailed information that should be consulted in the\nmanual.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 7,
+      "doc_type": "service_manual",
+      "section": "Safety Message Types",
+      "chapter": "2.4."
+    }
+  },
+  {
+    "id": "service_manual_004",
+    "content": "3. Handling Electrostatic Discharge (ESD)-Sensitive Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nFigure 1.0\nPCB, an ESD-sensitive part\nTo prevent damage to ESD-sensitive parts, that is, printed circuit board (PCB), follow the\ninstructions below in addition to all the usual precautions, such as turning off the power before\nremoving the PCB. See section Complete Rebooting Sequence.\nNOTICE\nBe sure you have intact ESD wristband and a spare ESD bag before\nreplacing any ESD-sensitive parts.\nFigure 1.1\nESD wristband, PCB, ESD bag\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 8,
+      "doc_type": "service_manual",
+      "section": "Handling Electrostatic Discharge (ESD)-Sensitive Parts",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_005",
+    "content": "3. Handling Electrostatic Discharge (ESD)-Sensitive Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nNOTICE\nKeep the ESD-sensitive part in its original shipping container (a special \"ESD\nbag\") until the part is ready to be installed.\nFigure 1.2\nESD bag\nNOTICE\nPut the ESD wristband on your wrist. Connect the wristband to the system\nground point. It discharges any static electricity in your body to ground.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 9,
+      "doc_type": "service_manual",
+      "section": "Handling Electrostatic Discharge (ESD)-Sensitive Parts",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_006",
+    "content": "3. Handling Electrostatic Discharge (ESD)-Sensitive Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nNOTICE\nReplacing an ESD-sensitive part in a safe way is important to avoid damage to\nthe part. It is important to take precautions when handling an ESD-sensitive part.\nFigure 1.3. ESD wristband connection to the system ground\nNOTICE\nHold the ESD-sensitive part by its edges. Do not touch its pins or hold directly on\nany exposed prints.\nFigure 1.4 Correct and incorrect PCB handling\nNOTICE\nFirst place the OLD part in the spare ESD bag, then take out the NEW part of the\nESD bag.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 10,
+      "doc_type": "service_manual",
+      "section": "Handling Electrostatic Discharge (ESD)-Sensitive Parts",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_007",
+    "content": "3. Handling Electrostatic Discharge (ESD)-Sensitive Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nFigure 1.5. Correct PCB handling\nNOTICE\nDo not place the ESD-sensitive part on nonconductive material or on metal\ntables/surfaces. If you must put down the ESD-sensitive part for any reason,\nthen first place it into the ESD bag.\nFigure 1.7. Wrong placement of ESD-sensitive part\nNOTICE\nMachine covers and metal tables/surfaces are electrical grounds. They increase\nthe risk of damage because they make a discharge path from your body through\nthe ESD-sensitive part. (Large metal objects can be discharge paths without\nbeing grounded.)\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 11,
+      "doc_type": "service_manual",
+      "section": "Handling Electrostatic Discharge (ESD)-Sensitive Parts",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_008",
+    "content": "3. Handling Electrostatic Discharge (ESD)-Sensitive Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nFigure 1.8. Wrong placement of ESD-sensitive part in metallic surface\nNOTICE\nIf handing an ESD-sensitive part to another person, ensure both are wearing\nESD wristband, attached to the system ground point.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 12,
+      "doc_type": "service_manual",
+      "section": "Handling Electrostatic Discharge (ESD)-Sensitive Parts",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_009",
+    "content": "3. Handling Electrostatic Discharge (ESD)-Sensitive Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nFigure 1.9. Improper and proper handing of PCB to another user.\nNOTICE\nExtra care is needed when working with ESD-sensitive parts during cold weather\nand when heating is used, because low air humidity increases accumulation of\nthe static electricity.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 13,
+      "doc_type": "service_manual",
+      "section": "Handling Electrostatic Discharge (ESD)-Sensitive Parts",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_010",
+    "content": "3. Handling Electrostatic Discharge (ESD)-Sensitive Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 14,
+      "doc_type": "service_manual",
+      "section": "Handling Electrostatic Discharge (ESD)-Sensitive Parts",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_011",
+    "content": "4. Recommended Inspection Activities\nThis chapter provides graphic and tabular information about UR robots inspection activities\nfor:\n• Robot arm\n• Control box\n• Teach pendant",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 15,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_012",
+    "content": "4.1.1. Inspection Plan\nUR\ninspection\ntypes\nThe table below is a checklist of the type of inspections recommended by Universal Robots.\nPerform inspections regularly as advised in the table. Any referenced parts found to be in\nan unacceptable state must be rectified or replaced.\nSee the following sections for detailed guidance:\n• 4.1.2 Visual Inspection: Robot arm on the next page\n• 5.1 Pre-Use Assessment on page 20\n• 5.2 Robot Arm on page 22\nInspection action type\nTimeframe\nMonthly\nBiannually\nAnnually",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 15,
+      "doc_type": "service_manual",
+      "section": "Inspection Plan",
+      "chapter": "4.1.1."
+    }
+  },
+  {
+    "id": "service_manual_013",
+    "content": "8\nCheck screws/bolts on joints *\nF\n✘\nV = Visual inspection\nF = Functional inspection\n* = Must also be checked after heavy\ncollision\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 15,
+      "doc_type": "service_manual",
+      "section": "Check screws/bolts on joints *",
+      "chapter": "8"
+    }
+  },
+  {
+    "id": "service_manual_014",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 15,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_015",
+    "content": "4.1.2. Visual Inspection: Robot arm\nNOTICE\nUsing compressed air to clean the robot arm can damage the robot arm\ncomponents.\n• Never use compressed air to clean the robot arm.\nNOTICE\nIf any damage is observed on a robot within the warranty period, contact the\ndistributor where the robot was purchased.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 16,
+      "doc_type": "service_manual",
+      "section": "Visual Inspection: Robot arm",
+      "chapter": "4.1.2."
+    }
+  },
+  {
+    "id": "service_manual_016",
+    "content": "6. Inspect the flat rings for wear and damage.\n• Replace the flat rings if they are worn out or damaged.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 16,
+      "doc_type": "service_manual",
+      "section": "Inspect the flat rings for wear and damage.",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_017",
+    "content": "7. Inspect the blue lids on all the joints for any cracks or damage.\n• Replace the blue lids if they cracked or damaged.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 16,
+      "doc_type": "service_manual",
+      "section": "Inspect the blue lids on all the joints for any cracks or damage.",
+      "chapter": "7."
+    }
+  },
+  {
+    "id": "service_manual_018",
+    "content": "8. Inspect the screws used for the blue lids are in place and properly tightened.\n• Replace or tighten screws, if necessary.\n• Correct the torque value for screws on the blue lids to 0.4 Nm\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 16,
+      "doc_type": "service_manual",
+      "section": "Inspect the screws used for the blue lids are in place and properly tightened.",
+      "chapter": "8."
+    }
+  },
+  {
+    "id": "service_manual_019",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 16,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_020",
+    "content": "4.1.3. Functional Inspection\nDo functional inspections to ensure the robot arm and its screws, bolts and tools are not\nloose.\nUse a correctly calibrated torque wrench, specified in Torque Values to check the screws and\nbolts listed in the inspection plan.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 17,
+      "doc_type": "service_manual",
+      "section": "Functional Inspection",
+      "chapter": "4.1.3."
+    }
+  },
+  {
+    "id": "service_manual_021",
+    "content": "4.1.4. Cleaning Your Robot\nEveryday\ncleaning\nYou can wipe away any dust/dirt/oil observed on the robot arm and/or teach pendant using\na cloth and one of the following cleaning agents:",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 17,
+      "doc_type": "service_manual",
+      "section": "Cleaning Your Robot",
+      "chapter": "4.1.4."
+    }
+  },
+  {
+    "id": "service_manual_022",
+    "content": "4. 10% naphtha\nIn rare cases, very small amounts of grease can be visible from the joint. This does not\naffect the function, use, or durability of the joint.\nAdditional\ncleaning\nDue to the added focus on cleaning your robot, Universal Robots recommends cleaning\nwith 70% isopropyl alcohol (rubbing alcohol).",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 17,
+      "doc_type": "service_manual",
+      "section": "10% naphtha",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_023",
+    "content": "1. Wipe the robot with a hard twisted micro fiber cloth and 70% isopropyl alcohol\n(rubbing alcohol).",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 17,
+      "doc_type": "service_manual",
+      "section": "Wipe the robot with a hard twisted micro fiber cloth and 70% isopropyl alcohol",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_024",
+    "content": "2. Let the 70% isopropyl alcohol dwell on the robot for 5 minutes, and then clean the\nrobot using standard cleaning procedure.\nDo not use bleach Do not use bleach in any diluted cleaning solution.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 17,
+      "doc_type": "service_manual",
+      "section": "Let the 70% isopropyl alcohol dwell on the robot for 5 minutes, and then clean the",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_025",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 17,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_026",
+    "content": "4.2.1. Inspection Plan\nInspection\nchecklist\nTable 2.0 below is a checklist of the type of inspections recommended by Universal Robots.\nPerform inspections regularly as stated in the table. Any referenced parts found to be in an\nunacceptable state must be corrected or replaced.\nSee the following sections for detailed guidance:\n• 4.2.2 Functional and Safety Inspection on the facing page\n• 4.1.2 Visual Inspection: Robot arm on page 12\n• 5.1 Pre-Use Assessment on page 20\n• Control Box\nInspection action type\nTime Frame\nMonthly\nBiannually\nAnnually",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 18,
+      "doc_type": "service_manual",
+      "section": "Inspection Plan",
+      "chapter": "4.2.1."
+    }
+  },
+  {
+    "id": "service_manual_027",
+    "content": "2 & 3\nOn a standard TP: check the\nfreedrive button by pressing it\ngently.\nOn a 3PE TP: check the 3PE\nbuttons pressing them gently.\nF\n✘\nCheck backdrive mode\nF\n✘\nCheck freedrive mode\nF\n✘",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 18,
+      "doc_type": "service_manual",
+      "section": "& 3",
+      "chapter": "2"
+    }
+  },
+  {
+    "id": "service_manual_028",
+    "content": "8 & 9\nCheck electrical grounding <1Ωto\ncontrol box\nF\n✘\nCheck main power to control box\nF\n✘\nTable 2.0. [Ask DK for particular name and function of this table]\nV = Visual inspection\nF = Functional inspection\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 18,
+      "doc_type": "service_manual",
+      "section": "& 9",
+      "chapter": "8"
+    }
+  },
+  {
+    "id": "service_manual_029",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 18,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_030",
+    "content": "4.2.2. Functional and Safety Inspection\nNOTICE\nRobot safety functions is highly recommended to be tested monthly to ensure\ncorrect function.\nFigure 3.1\nNumbered instruction per parts of teach pendant.\nEmergency stop button on the teach pendant:",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 19,
+      "doc_type": "service_manual",
+      "section": "Functional and Safety Inspection",
+      "chapter": "4.2.2."
+    }
+  },
+  {
+    "id": "service_manual_031",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nFreedrive",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 19,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_032",
+    "content": "1. Unmount attachment or set tool center point (TCP)/payload/CoG (center of\ngravity) according to tool specifications.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 20,
+      "doc_type": "service_manual",
+      "section": "Unmount attachment or set tool center point (TCP)/payload/CoG (center of",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_033",
+    "content": "2. To move the robot arm in freedrive, see figure 3.3 below.\nStandard TP\n3PE TP\nOn a standard teach\npendant (TP), press and\nhold the freedrive button.\nOn a 3-position enabling teach pendant (3PE TP), rapidly\nlight-press, release, light-press again, and keep holding\nthe 3PE button in this position",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 20,
+      "doc_type": "service_manual",
+      "section": "To move the robot arm in freedrive, see figure 3.3 below.",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_034",
+    "content": "3. Pull/Push the robot to a horizontally elongated position and release. See figure 3.4.\nFigure 3.4. Elongated horizontal position of UR robot.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 20,
+      "doc_type": "service_manual",
+      "section": "Pull/Push the robot to a horizontally elongated position and release. See figure 3.4.",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_035",
+    "content": "4. Verify the robot arm can maintain the position without support and without pressing the\nfreedrive or 3PE button.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 20,
+      "doc_type": "service_manual",
+      "section": "Verify the robot arm can maintain the position without support and without pressing the",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_036",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nBackdrive\nIf the robot arm is close to colliding with something, you can use the backdrive function to\nmove the robot arm to a safe position before (re)initializing it.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 20,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_037",
+    "content": "1. Press On to enable power. Status changes to Robot Active .\nFigure 3.5. Robot status and payload information in the teach pendant.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 21,
+      "doc_type": "service_manual",
+      "section": "Press On to enable power. Status changes to Robot Active .",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_038",
+    "content": "2. Press and hold Freedrive. Status changes to Backdrive, as shown in figure 3.6.\nStandard TP\n3PE TP\nFigure 3.6. Freedriving a standard TP and 3PE TP.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 21,
+      "doc_type": "service_manual",
+      "section": "Press and hold Freedrive. Status changes to Backdrive, as shown in figure 3.6.",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_039",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nNOTICE\nThe robot arm is “heavy” to move around in Backdrive, so efort is required to\nmove the joints.\nMANDATORY ACTION\nYou must test Backdrive mode on all joints.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 21,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_040",
+    "content": "3. Move robot as in Freedrive. Joint brakes are released where needed once the Freedrive\nbutton is activated.\nSafety settings\nVerify the robot safety settings comply with the robot installation risk assessment.\nAdditional safety inputs and outputs are still functioning\nCheck which safety inputs and outputs are active and that they can be triggered via PolyScope or\nexternal devices.\nBackup data\nSee section Backup of Data",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 22,
+      "doc_type": "service_manual",
+      "section": "Move robot as in Freedrive. Joint brakes are released where needed once the Freedrive",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_041",
+    "content": "3. Check for any dirt/dust inside the control box. Clean with ESD vacuum cleaner, if\nneeded.\nNOTICE\nUsing compressed air to clean the Control Box can cause damage to the\nControl Box components.\n• Never use compressed air to clean the Control Box.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 22,
+      "doc_type": "service_manual",
+      "section": "Check for any dirt/dust inside the control box. Clean with ESD vacuum cleaner, if",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_042",
+    "content": "4. Recommended Inspection Activities\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 22,
+      "doc_type": "service_manual",
+      "section": "Recommended Inspection Activities",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_043",
+    "content": "4.2.4. Cleaning\nCleaning the\nteach pendant\ntouch screen\nUse a mild, industrial cleaning agent without thinning agents or any aggressive additives.\nDo not use an abrasive material to wipe down the screen. Universal Robots does not\npromote a specific cleaning agent.\nCleaning the\ncontrol box\nfilters\nThere is a filter on either side of the control box.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 23,
+      "doc_type": "service_manual",
+      "section": "Cleaning",
+      "chapter": "4.2.4."
+    }
+  },
+  {
+    "id": "service_manual_044",
+    "content": "1. Gently remove the outer plastic frame by pulling where the red arrows are, as\nshown in the images below in figure 3.7. The frame tilts outward.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 23,
+      "doc_type": "service_manual",
+      "section": "Gently remove the outer plastic frame by pulling where the red arrows are, as",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_045",
+    "content": "2. Remove both filters and use low-pressure air to clean them. If necessary, replace\nfilters.\nFigure 3.7. Cleaning the control box filters.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 23,
+      "doc_type": "service_manual",
+      "section": "Remove both filters and use low-pressure air to clean them. If necessary, replace",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_046",
+    "content": "5. Service and Replacement of Parts\nInstallation of a new spare part might require a software update to ensure full functionality.\nUniversal Robots always recommends updating to the latest software release or the current\nlong-term support software version.\nSee more here: 6.2 Software Updates on page 80\nIn this chapter, information are provided for services and parts replacements for:\n• Pre-use assessment\n• Robot arm\n• Robot cable\n• Control box",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 24,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_047",
+    "content": "5.1. Pre-Use Assessment\nTests before\nfirst use\nThe following tests must be conducted before using the robot for the first time or after any\nmodifications are made. Verify all safety inputs and outputs are correctly connected. Test all\nconnected safety inputs and outputs, including devices common to multiple machines or\nrobots, are functioning.\n• Test the emergency stop buttons. Check the robot is stopped and the brakes are\nengaged.\n• Test the safeguard input stops the robot’s motion. If a safeguard reset is configured,\ncheck that it must be activated before motion can resume.\n• Test safety boundaries to ensure that Reduced Mode can switch the safety mode\nand back.\n• Test the Operational Mode switches, if connected. See icon on top right corner of\nuser interface to ensure the mode is changing.\n• Test the Three-Position Enabling Device (3PE), if connected, to enable motion in\nmanual mode and test that the robot is under reduced speed control.\n• Test that the System Emergency Stop Outputs can bring the entire system to a safe\nstate.\n• Test that the system connected to Robot Moving Output, Robot Not Stopping Output,\nReduced Mode Output, or Not Reduced Mode Output can detect the output\nchanges.\nRead Section 9 to learn how to pack down and ship the robot and/or spare parts. Packing\nand Shipping of Robot/Spare Parts\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 24,
+      "doc_type": "service_manual",
+      "section": "Pre-Use Assessment",
+      "chapter": "5.1."
+    }
+  },
+  {
+    "id": "service_manual_048",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 24,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_049",
+    "content": "5.1.1. Recommended Tools\nFigure 4.0.\nRobot arm and\ncontrol box\ncomponents\nRobot Arm\nControl Box\nService tools – part no.: 200119\nService tools – part no.: 200119\nSpirit level\nor\nDual Robot Calibration tooling\npart no.: 185500\nCabinet key\n(double-bit key)\nSD card reader\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 25,
+      "doc_type": "service_manual",
+      "section": "Recommended Tools",
+      "chapter": "5.1.1."
+    }
+  },
+  {
+    "id": "service_manual_050",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 25,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_051",
+    "content": "5.2. Robot Arm\nJoint names\nFigure 4.1 Robot arm joint names\nJoint sizes\nFigure 4.2 UR robot arm joint sizes\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 26,
+      "doc_type": "service_manual",
+      "section": "Robot Arm",
+      "chapter": "5.2."
+    }
+  },
+  {
+    "id": "service_manual_052",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 26,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_053",
+    "content": "5.2.1. Movement Without Drive Power\nForced back-\ndriving\nIn the unlikely event of an emergency, when the robot power is either impossible or\nunwanted, you can use forced back-driving or contact your Universal Robots distributor, if\nthis is not possible.\nTo perform forced back-driving you must push, or pull, the Robot Arm hard to move the\njoint. Each joint brake has a friction clutch that enables movement during high forced\ntorque.\nNOTICE\nMoving the Robot Arm manually is intended for urgent emergency and\nservice purposes only.\nThe brake inside each joint is not designed for manual release.\nAttempting to do so without proper training may cause damage to the\nbrake and other joint components. This will make the joint un-usable.\nDo not move the joint more than necessary.\nNot more than 160 degrees to ensure the robot can find its original\nphysical position.\nCAUTION\nAttempting to release a joint brake manually may result in injuries\npersonnel or damage to equipment.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 27,
+      "doc_type": "service_manual",
+      "section": "Movement Without Drive Power",
+      "chapter": "5.2.1."
+    }
+  },
+  {
+    "id": "service_manual_054",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 27,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_055",
+    "content": "5.2.2. General Guidance to Separate Joint from Counterpart\nSeparating joint\nfrom\ncounterpart\nWARNING\nBefore replacing any components inside the control box, it is important\nto completely shut it down first. Follow the first three steps in Complete\nRebooting Sequence\nNOTICE\nExercise caution when handling ESD-sensitive parts. See section 2:\nDisassemble",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 28,
+      "doc_type": "service_manual",
+      "section": "General Guidance to Separate Joint from Counterpart",
+      "chapter": "5.2.2."
+    }
+  },
+  {
+    "id": "service_manual_056",
+    "content": "1. Before repairing the robot, make sure the necessary tools are available:\n• service tools with torque tools\n• ESD wristband\n• etc.\nIf you must disassemble the robot arm, you will need:\n• new flat rings\n• wear rings\n• M3 and M4 tap tool (\"roll tap\" or \"forming tap\") for threads\n• pre-coated screws or Loctite\nMANDATORY ACTION\nBefore continuing, read the complete guide in this manual.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 28,
+      "doc_type": "service_manual",
+      "section": "Before repairing the robot, make sure the necessary tools are available:",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_057",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 28,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_058",
+    "content": "6. Reattach one of the screws on one of the standoffs and mount the alligator clip on your\nESD wristband, as shown below.\nNOTICE\nSome connectors have a lock that must be engaged before it is pulled out of the\nPCB.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 29,
+      "doc_type": "service_manual",
+      "section": "Reattach one of the screws on one of the standoffs and mount the alligator clip on your",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_059",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 29,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_060",
+    "content": "5.2.3. Joint Connection Types\nJoint\nconnections\nThere are two different ways the joints are assembled.\nScrew Connection\nClamp Connection\nHead\nSize\nTorque\nHead\nSize\nTorque\nTorx\nT10\n0.9Nm for\ncountersunk screws\n+0,10Nm\nHex key",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 30,
+      "doc_type": "service_manual",
+      "section": "Joint Connection Types",
+      "chapter": "5.2.3."
+    }
+  },
+  {
+    "id": "service_manual_061",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 30,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_062",
+    "content": "5.2.4. Torque Values\nTorque\nvalues\nConnection\nHead size\nTorque\nScrew Connection\nTorx T10\n0.9Nm for countersunk screws\n1.3Nm for non-countersunk\nscrews\n+0.10Nm\n-0.10Nm\nScrew Connection\nTorx T20\n2.0Nm for countersunk screws\n1.3Nm for non-countersunk\nscrews\n+0.30Nm\n-0.30Nm\nClamp\nConnection\nHex key 4\n4.0Nm\n+0.50Nm\n-0.50Nm\nBlue lid screws\nTorx T10\n0.4Nm\n+0.05Nm\n-0.05Nm\nTool connector\nNo tools to be\nused\n0.4Nm\nTool mounting\nMax. 8.0Nm\nNOTICE\nClick the torque tools a minimum of three times before use, to get the\ncorrect calibrated torque.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 31,
+      "doc_type": "service_manual",
+      "section": "Torque Values",
+      "chapter": "5.2.4."
+    }
+  },
+  {
+    "id": "service_manual_063",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 31,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_064",
+    "content": "5.2.5. Power and Communication Connector Types on the Joint\nPower plug\ntypes\nThere are two different power plug types and one plug type for communication.\nPower Plug Types\nThis plug can be removed by gently pulling in\nthe plug.\nThis plug has a lock. Use a flat-nose plier or\nfingers to unlock and gently pull in the plug.\nCommunication Plug Type\nThis plug can be removed by GENTLY\npulling in the wire.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 32,
+      "doc_type": "service_manual",
+      "section": "Power and Communication Connector Types on the Joint",
+      "chapter": "5.2.5."
+    }
+  },
+  {
+    "id": "service_manual_065",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 32,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_066",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 33,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_067",
+    "content": "5. Service and Replacement of Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 34,
+      "doc_type": "service_manual",
+      "section": "Service and Replacement of Parts",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_068",
+    "content": "31\ne-Series\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nSize 2-3\nSize 3\nSize 4\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 35,
+      "doc_type": "service_manual",
+      "section": "e-Series",
+      "chapter": "31"
+    }
+  },
+  {
+    "id": "service_manual_069",
+    "content": "32\nService Handbook\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nSize 4\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 36,
+      "doc_type": "service_manual",
+      "section": "Service Handbook",
+      "chapter": "32"
+    }
+  },
+  {
+    "id": "service_manual_070",
+    "content": "5.2.7. Screw Connection\nScrew\nconnection\nlocation\nThe following two sections describe how to disassemble and assemble a joint with a\nscrew-connection.\nScrew connection location\nUR3e\nUR5e\nUR10e and UR16e\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 39,
+      "doc_type": "service_manual",
+      "section": "Screw Connection",
+      "chapter": "5.2.7."
+    }
+  },
+  {
+    "id": "service_manual_071",
+    "content": "35\ne-Series\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nDisassembling Screw Connection\nScrew\ndisassemble",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 39,
+      "doc_type": "service_manual",
+      "section": "e-Series",
+      "chapter": "35"
+    }
+  },
+  {
+    "id": "service_manual_072",
+    "content": "1. Remove the screws in the blue lid, then remove the blue lid as shown in section\nGeneral Guidance to Separate Joint from Counterpart",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 40,
+      "doc_type": "service_manual",
+      "section": "Remove the screws in the blue lid, then remove the blue lid as shown in section",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_073",
+    "content": "2. Gently remove the power and communications wires from the terminals, as shown\nin section Power and Communication Connector Types on the Joint and\nConnector Location on Joints.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 40,
+      "doc_type": "service_manual",
+      "section": "Gently remove the power and communications wires from the terminals, as shown",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_074",
+    "content": "3. Use a small flat-head screwdriver to push off the flat ring. Then slide the flat ring\nover the joint.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 40,
+      "doc_type": "service_manual",
+      "section": "Use a small flat-head screwdriver to push off the flat ring. Then slide the flat ring",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_075",
+    "content": "4. Remove Teflon ring.\nMANDATORY ACTION\nThe joint can fall off if not supported when removing the screws.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 40,
+      "doc_type": "service_manual",
+      "section": "Remove Teflon ring.",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_076",
+    "content": "5. First remove the countersunk screws (a), then the remaining screws (b).\nNote: Be very careful when removing the screws. Always use a correct-sized and\nundamaged screwdriver. The screw head slots can easily be stripped.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 41,
+      "doc_type": "service_manual",
+      "section": "First remove the countersunk screws (a), then the remaining screws (b).",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_077",
+    "content": "37\ne-Series\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nAssemble Screw Connection Joint\nScrew\nassembly\nThe assembly procedure is done in reverse of the disassembly. However, a few things\nmust be noted before assembly is begun.\nNOTICE\n• Remove old Loctite residue in the screw holes with a roll tap or forming\ntap (size 2 M4; the rest M3) for threads before assembling the joint to get\nthe correct torque on the new screws.\n• Always use new precoated screws when possible. If you must\nassemble with old screws, carefully clean the screws and add Loctite 243\nto the screws before assembly.\n• Always replace the flexible flat black ring with a new one to maintain the\nIP classification.\n• Replace the wear rings if extensive wear or damage is shown.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 41,
+      "doc_type": "service_manual",
+      "section": "e-Series",
+      "chapter": "37"
+    }
+  },
+  {
+    "id": "service_manual_078",
+    "content": "1. Orient the joints according to the marks (indicated by red arrows in the image below) and\ngently push the two joints together.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 43,
+      "doc_type": "service_manual",
+      "section": "Orient the joints according to the marks (indicated by red arrows in the image below) and",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_079",
+    "content": "2. Insert and tighten the hex countersunk screws according to the image below. Do not\nexceed the recommended torque.\nExample: 1, 2, 3",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 43,
+      "doc_type": "service_manual",
+      "section": "Insert and tighten the hex countersunk screws according to the image below. Do not",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_080",
+    "content": "3. Insert and tighten the hex screws according to the image below. Do not exceed the\nrecommended torque.\nExample: 1A, 1B, 2A, 2B, etc.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 43,
+      "doc_type": "service_manual",
+      "section": "Insert and tighten the hex screws according to the image below. Do not exceed the",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_081",
+    "content": "5.2.8. Clamp Connection\nClamp\nconnection\nlocation\nThe following two sections describe how to disassemble and assemble a joint with a clamp\nconnection.\nClamp connection location\nUR5e\nUR10e and UR16e\nDisassembling Clamp Connection\nClamp\ndisassembly",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 45,
+      "doc_type": "service_manual",
+      "section": "Clamp Connection",
+      "chapter": "5.2.8."
+    }
+  },
+  {
+    "id": "service_manual_082",
+    "content": "1. Remove the screws in the blue lid, then remove the blue lid, as shown in section\nGeneral Guidance to Separate Joint from Counterpart.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 45,
+      "doc_type": "service_manual",
+      "section": "Remove the screws in the blue lid, then remove the blue lid, as shown in section",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_083",
+    "content": "2. Gently remove the power and communications wires from the terminals, as shown\nin section Power and Communication Connector Types on the Joint and Connector\nLocation on joints.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 45,
+      "doc_type": "service_manual",
+      "section": "Gently remove the power and communications wires from the terminals, as shown",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_084",
+    "content": "4. Remove the screws and the clamp on one side.\nMANDATORY ACTION\nThe joint can fall off if not supported when removing the clamp.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 46,
+      "doc_type": "service_manual",
+      "section": "Remove the screws and the clamp on one side.",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_085",
+    "content": "42\nService Handbook\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nAssembling Clamp Connection\nClamp\nassembly\nThe assembly is done in reverse of the disassembly. However, a few things must be noted\nbefore assembly is begun.\nNOTICE\n• Always replace the flexible flat black ring with a new one to maintain the\nIP classification.\n• Replace the foam seal on the clamps, if damaged, to maintain the IP\nclassification.\n• Replace the wear rings if extensive wear or damage is shown.\n• The dots must be aligned; otherwise, the connection cannot be made.\nCAUTION\n• Joints should be assembled in a vertical position to ensure proper\nmating between the joints.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 46,
+      "doc_type": "service_manual",
+      "section": "Service Handbook",
+      "chapter": "42"
+    }
+  },
+  {
+    "id": "service_manual_086",
+    "content": "43\ne-Series\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nCAUTION\n• Ensure the screws are inserted in the correct clamp.\n• Apply only to earlier version of brackets where one side has a circular marker.\nWhen tightening the clamps, it must be done in steps. Do not exceed recommended torque:\nStep 1: Tighten one side so there is a gap of 1.0mm to 1.5mm.\nStep 2: Tighten the other side completely with 5.0Nm. +/- 0.50 Nm.\nStep 3: Tighten the first side with 5.0Nm. +/- 0.50 Nm.\nStep 4: Ensure same gap at both ends.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 47,
+      "doc_type": "service_manual",
+      "section": "e-Series",
+      "chapter": "43"
+    }
+  },
+  {
+    "id": "service_manual_087",
+    "content": "5.2.9. Tool Flange\nDescription\nThe tool flange is a screw connection and is disassembled like a joint with this\nconnection.\nSee section Screw Connection\nPower and communication plug is in the same plug.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 49,
+      "doc_type": "service_manual",
+      "section": "Tool Flange",
+      "chapter": "5.2.9."
+    }
+  },
+  {
+    "id": "service_manual_088",
+    "content": "5.2.10. Joint Verification\nVerification\nsteps\nWhen a joint is replaced, it needs to be verified by the controller to be assigned the correct\nID. The screen below appear automatically when the robot arm is powered on for the first\ntime. Follow the steps.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 50,
+      "doc_type": "service_manual",
+      "section": "Joint Verification",
+      "chapter": "5.2.10."
+    }
+  },
+  {
+    "id": "service_manual_089",
+    "content": "2. A pop-up appears saying that joints need verification. Confirm the pop-up\nmessage by pressing Check.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 50,
+      "doc_type": "service_manual",
+      "section": "A pop-up appears saying that joints need verification. Confirm the pop-up",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_090",
+    "content": "4. Move all joints with the arrows respective to each joint.\n• If joints move as expected, press Valid, and a pop-up appears. Follow the pop-up\ninstructions.\n• If joints do not move as expected, i.e., wrong joint moves or incorrect direction),\npress Failed and a pop-up appears. Follow the pop-up instructions.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 51,
+      "doc_type": "service_manual",
+      "section": "Move all joints with the arrows respective to each joint.",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_091",
+    "content": "5.2.11. Zeroing of Joints\nSteps to zero\nthe joints\nWhen a joint has been replaced and verified, it may be necessary to zero the joint so that it\nis aligned with the rest of the robot arm. There are two ways this can be done.\n• Automatically - Dual robot calibration – this is recommended method as it is done via\ncontrolled procedure and removes human errors. Please consult Calibration manual\nfor this process.\n• Manually - Access Expert mode and use a spirit level, to level the joint.\nThe following step guides how to zero the joint(s) manually.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 52,
+      "doc_type": "service_manual",
+      "section": "Zeroing of Joints",
+      "chapter": "5.2.11."
+    }
+  },
+  {
+    "id": "service_manual_092",
+    "content": "5. Use the arrows in the Joint Position window on the right side of the screen to move each\njoint to align as shown in the images below. The Speed Slider can be used to reduce the\nspeed of movement.\nBase\nShoulder, Elbow, Wrist 1\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 53,
+      "doc_type": "service_manual",
+      "section": "Use the arrows in the Joint Position window on the right side of the screen to move each",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_093",
+    "content": "49\ne-Series\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nBase zero position is aligned so the Base joint\nis offset 180 degrees from the cable at the back\nof the robot base.\nShoulder, Elbow and Wrist 1 zero output flange\nvertically align (assuming Base is horizontal).\nMake sure that Base of the robot is horizontal,\nuse spirit level to align joints.\nWrist 2\nWrist 3\nWrist 2 zero position is aligned like the Base\njoint, with tool flange parallel with Wrist 1 output\nflange.\nWrist 3 zero position is aligned so the tool\nconnector is pointing upward. Mount two bolts in\ntool holes and use spirit level to align joint.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 53,
+      "doc_type": "service_manual",
+      "section": "e-Series",
+      "chapter": "49"
+    }
+  },
+  {
+    "id": "service_manual_094",
+    "content": "6. In the Joint Zeroing window select the joint you want to zero. When selected the box will\nchange from gray to blue. Press Zero Joints",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 54,
+      "doc_type": "service_manual",
+      "section": "In the Joint Zeroing window select the joint you want to zero. When selected the box will",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_095",
+    "content": "8. A popup shows to confirm that the joint(s) has now been zeroed. Press OK to close the\npopup and return it to normal.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 55,
+      "doc_type": "service_manual",
+      "section": "A popup shows to confirm that the joint(s) has now been zeroed. Press OK to close the",
+      "chapter": "8."
+    }
+  },
+  {
+    "id": "service_manual_096",
+    "content": "5.2.12. Dual Robot Calibration\nDescription\nDual Robot Calibration calibrates the robot in the full work space. Each new robot is Dual\nRobot Calibrated as part of final assembly.\nNOTICE\nIf a joint is replaced on a calibrated robot the calibration is no longer\nvalid.\nPerforming a Dual Robot Calibration after replacement of a joint allows the robot to\ncontinue in the production line without modifying waypoints in the robot program.\nTo perform a Dual Robot Calibration, you need:\n• 2 robots (same size and same generation)\n• Dual Robot Calibration Tooling Complete (Part no: 185500)\nYou can download the Calibration Manual from the Universal Robots Support site\nwww.universal-robots.com/support/",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 56,
+      "doc_type": "service_manual",
+      "section": "Dual Robot Calibration",
+      "chapter": "5.2.12."
+    }
+  },
+  {
+    "id": "service_manual_097",
+    "content": "5.2.13. Program Correction by Key Waypoints\nDescription\nProgram Correction by Key Waypoints helps adjusting programs waypoints when a\nprogram is moved from an uncalibrated robot to another. The technique can also be used\nto make programs work after replacements of joints.\nPlease refer to the Calibration Manual from the Universal Robots Support site\nwww.universal-robots.com/support/ for detailed description on how to use this feature.\nNOTICE\nProgram Correction by Key Waypoints does not currently support the\nfollowing:\n- Other types of waypoints with the exception fixed waypoints.\n- Move node with Use Joint Angles selected.\nThe unsupported program nodes above may need to be corrected\nmanually after the Program Correction by Key Waypoints process is\ncomplete.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 56,
+      "doc_type": "service_manual",
+      "section": "Program Correction by Key Waypoints",
+      "chapter": "5.2.13."
+    }
+  },
+  {
+    "id": "service_manual_098",
+    "content": "52\nService Handbook\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nImportant Notice about Size 3 Joint on UR10e\nUsing size 3 joints manufactured before November 12, 2020, as a replacement for any UR10e\nsize 3 elbow joint (either UR10e with 12,5kg max. payload or UR10e with 10kg max. payload)\nmay damage the housing.\nIf you hold any spare part joint size 3 in inventory from before 12 November 2020, use it only for\nreplacements of UR5e robots’ joints.\nUnder no circumstances use joints from robots before 12 November 2020 as replacements for\nUR10e size 3 elbow joint.\nSize 3 joints from serial number: 20205001663, date: 12 November 2020, must only be used as\nspare parts for UR5e robots.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 56,
+      "doc_type": "service_manual",
+      "section": "Service Handbook",
+      "chapter": "52"
+    }
+  },
+  {
+    "id": "service_manual_099",
+    "content": "5.3.1. Replacing Robot Cable\nCAUTION\nThe maximum robot connection from the robot arm to the Control Box is 12\nm. Improper robot connection can result in loss of power to the robot arm.\n• Do not extend beyond 12 m.\n• Do not make the connection from robot to control box shorter than 6 m.\nNOTICE\nConnecting the Base Flange Cable directly to any Control Box can result in\nequipments or property damage.\n• Do not connect the Base Flange Cable directly to the Control Box.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 57,
+      "doc_type": "service_manual",
+      "section": "Replacing Robot Cable",
+      "chapter": "5.3.1."
+    }
+  },
+  {
+    "id": "service_manual_100",
+    "content": "6. Connect the new Robot Cable to the Control Box connector and twist to the\nClosed position\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 58,
+      "doc_type": "service_manual",
+      "section": "Connect the new Robot Cable to the Control Box connector and twist to the",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_101",
+    "content": "5.4.1. Dismantling the Control Box\nWarnings\nWARNING\nBefore replacing ANY components inside the Control Box, you MUST do\na complete shutdown.\nFollow the first 3 steps in section Complete Rebooting Sequence\nNOTICE\nExercise caution when handling ESD sensitive parts.\nSee section 2.\nIf possible, lay the Control Box on its back.\nAssembling is done in revers from the steps shown.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 59,
+      "doc_type": "service_manual",
+      "section": "Dismantling the Control Box",
+      "chapter": "5.4.1."
+    }
+  },
+  {
+    "id": "service_manual_102",
+    "content": "5. Take out the Control Box bracket and place it on the edge of the Control Box as\nshown below.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 60,
+      "doc_type": "service_manual",
+      "section": "Take out the Control Box bracket and place it on the edge of the Control Box as",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_103",
+    "content": "6. Remove the wires connecting the Control Box bracket and the Control Box.\nTake note of the connections or consult the eletrical diagram in Section 7. Electrical\ndrawings\nPower Supply\nUR5e, UR10e and UR16e\nUR3e\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 61,
+      "doc_type": "service_manual",
+      "section": "Remove the wires connecting the Control Box bracket and the Control Box.",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_104",
+    "content": "7. Remove the four screws on the bottom of the power supply, then remove the power supply.\nNOTICE\nWhen assembling, the screws must not be tightened with a torque greater than\n1.0\nNm",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 62,
+      "doc_type": "service_manual",
+      "section": "Remove the four screws on the bottom of the power supply, then remove the power supply.",
+      "chapter": "7."
+    }
+  },
+  {
+    "id": "service_manual_105",
+    "content": "9. Removing the Energy Eater and fan assembly. Remove the four screws.\nNOTICE\nWhen assembling, remember to place the round spacers behind the Energy\nEater board.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 63,
+      "doc_type": "service_manual",
+      "section": "Removing the Energy Eater and fan assembly. Remove the four screws.",
+      "chapter": "9."
+    }
+  },
+  {
+    "id": "service_manual_106",
+    "content": "5.4.2. Dismantling the OEM AC and DC Control Box\nThe OEM AC and DC version are special Control Box units made for OEM installation in AC\nand DC environments.\nWARNING\nBefore replacing ANY components inside the Control Box, you MUST do a\ncomplete shutdown.\nFollow the first 3 steps in section Complete Rebooting Sequence\nNOTICE\nExercise caution when handling ESD sensitive parts.\nSee section 2.\nIf possible, lay the Control Box on its back.\nAssembling is done in revers from the steps shown.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 64,
+      "doc_type": "service_manual",
+      "section": "Dismantling the OEM AC and DC Control Box",
+      "chapter": "5.4.2."
+    }
+  },
+  {
+    "id": "service_manual_107",
+    "content": "60\nService Handbook\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nOEM DC Control Box Special Precautions\nWARNING\nIn case of a battery failure, (for example, due to a short circuit) the current\ncan cause fire or explosion. To avoid injury while performing service:\nWear safety glasses.\nWear fireproof protective gloves.\nDo not perform service or maintenance work on the OEM DC Control Box if a\ncircuit breaker, or a power switch and a fuse are not installed.\nEnsure that the circuit breaker or the power switch is off and there is no\nvoltage on the power connector before connecting or disconnecting the\nconnector.\nNOTICE\nSince the control box does not have the reverse polarity protection, reversing\nthe DC source polarity causes permanent damage to the control box. Such\ndamage requires the replacement of the DC-DC PSU. To ensure that the\npolarity of the power source wiring is correct:\nDoublecheck the polarity of wires in the power connector using a multimeter.\nDo not rely on the wire colors unless you have access to the battery terminals\nand can see where the wires are connected.\nEnsure that the wires are installed correctly in the connector terminals.\nEnsure that:\nWires are not loose.\nWires are fully inserted in terminals.\nEnsure that the control box is grounded properly. For information on\ngrounding, see the OEM Control Box Installation Guide.\nEnsure that the wires in the power connector can sustain the short circuit cut-\noff current of the circuit breaker or fuse. For example, an AWG12 wire is\nrated up to 34A, so the cut-off current of the protective device must be at\nleast 34A or lower to protect the wire and the system.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 64,
+      "doc_type": "service_manual",
+      "section": "Service Handbook",
+      "chapter": "60"
+    }
+  },
+  {
+    "id": "service_manual_108",
+    "content": "61\ne-Series\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nDismantling the OEM AC and DC Control Box",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 65,
+      "doc_type": "service_manual",
+      "section": "e-Series",
+      "chapter": "61"
+    }
+  },
+  {
+    "id": "service_manual_109",
+    "content": "3. Remove robot cable by unscrew the top part clock-vise then pull the plug out.\nCAUTION\nWhen pulling the robot arm cable connector, be careful not to scrape your\nhand/fingers on the frame edge.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 66,
+      "doc_type": "service_manual",
+      "section": "Remove robot cable by unscrew the top part clock-vise then pull the plug out.",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_110",
+    "content": "7. Now the power plug on the inside needs to be disconnected from the frame, how to do this\ncorrectly is shown in Step 8.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 67,
+      "doc_type": "service_manual",
+      "section": "Now the power plug on the inside needs to be disconnected from the frame, how to do this",
+      "chapter": "7."
+    }
+  },
+  {
+    "id": "service_manual_111",
+    "content": "8. For removing the power plug, you will need a small 2mm flathead screwdriver. Pull in the\npower plug AND tip the two front locks upwards at the same time",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 67,
+      "doc_type": "service_manual",
+      "section": "For removing the power plug, you will need a small 2mm flathead screwdriver. Pull in the",
+      "chapter": "8."
+    }
+  },
+  {
+    "id": "service_manual_112",
+    "content": "13. There are now two possibilities:\n• Remove Power Supply and/or Control Board\n• See step 7 and 8 in section Dismantling the Control Box\nNOTE: Remember to cable tie the energy eater cable to the power cable when\nassembly the unit.\n- Remove Energy Eater and/or Fan\nSee next step.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 69,
+      "doc_type": "service_manual",
+      "section": "There are now two possibilities:",
+      "chapter": "13."
+    }
+  },
+  {
+    "id": "service_manual_113",
+    "content": "14. Remove the 4 nuts(7mm) on the Energy eater side and pull the individually part off the\nscrews(T20).\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 69,
+      "doc_type": "service_manual",
+      "section": "Remove the 4 nuts(7mm) on the Energy eater side and pull the individually part off the",
+      "chapter": "14."
+    }
+  },
+  {
+    "id": "service_manual_114",
+    "content": "66\nService Handbook\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nTorque Values and Notes for Control Box\nBelow are the torque values used in the Control Box.\nNO.\nDESCRIPTION\nTool size\nTorque",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 70,
+      "doc_type": "service_manual",
+      "section": "Service Handbook",
+      "chapter": "66"
+    }
+  },
+  {
+    "id": "service_manual_115",
+    "content": "67\ne-Series\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nTorque Values and Notes for OEM AC and DC Control Box\nBelow are the torque values used in the OEM AC and DC Control Box.\nNOTICE\nThe washer, when present, need to have the spikes facing downwards.\nNO.\nDESCRIPTION\nTool size\nTorque",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 71,
+      "doc_type": "service_manual",
+      "section": "e-Series",
+      "chapter": "67"
+    }
+  },
+  {
+    "id": "service_manual_116",
+    "content": "68\nService Handbook\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nNO.\nDESCRIPTION\nTool size\nTorque\n1a\nAC external power terminal screws\nPZ2\n1.2Nm\n1b\nDC external power terminal bolts\n8mm\n1.6Nm\n2a\nAC internal power terminal screws\nPZ2\n1.2Nm\n2b\nDC internal power terminal screws\nPZ2\n1.6Nm",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 72,
+      "doc_type": "service_manual",
+      "section": "Service Handbook",
+      "chapter": "68"
+    }
+  },
+  {
+    "id": "service_manual_117",
+    "content": "5.4.4. Replacing the Teach Pendant: Standard TP\nRemoving &\nReplacing\nThis section describes how to remove and replace a Standard Teach Pendant. For\ninformation on how to replace a Standard Teach Pendant with a 3PE Teach Pendant, see",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 73,
+      "doc_type": "service_manual",
+      "section": "Replacing the Teach Pendant: Standard TP",
+      "chapter": "5.4.4."
+    }
+  },
+  {
+    "id": "service_manual_118",
+    "content": "5.4.5 Replacing the Teach Pendant: 3PE TP on page 71.\nWARNING\nWhen the Teach Pendant is replaced, test the E-stop button function.\nNOTICE\nReplacing the Teach Pendant can result in the system reporting a fault\non start-up.\n• Always select the correct configuration for the type of Teach\nPendant.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 73,
+      "doc_type": "service_manual",
+      "section": "Replacing the Teach Pendant: 3PE TP on page 71.",
+      "chapter": "5.4.5"
+    }
+  },
+  {
+    "id": "service_manual_119",
+    "content": "2. If mounted, remove the ferrite core with snap lock from the teach pendant cable by\ncutting the cable ties of key.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 74,
+      "doc_type": "service_manual",
+      "section": "If mounted, remove the ferrite core with snap lock from the teach pendant cable by",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_120",
+    "content": "5. Press in the clips on both sides of the Teach Pendant plug, as illustrated below, and\npull down to disconnect from the Teach Pendant port.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 74,
+      "doc_type": "service_manual",
+      "section": "Press in the clips on both sides of the Teach Pendant plug, as illustrated below, and",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_121",
+    "content": "6. Fully open/loosen the plastic grommet at the bottom of the control box and remove the\nTeach Pendant plug and cable.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 74,
+      "doc_type": "service_manual",
+      "section": "Fully open/loosen the plastic grommet at the bottom of the control box and remove the",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_122",
+    "content": "1. Place the Teach Pendant plug and cable in through the bottom of the Control Box and\nfully close/tighten the plastic grommet.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 75,
+      "doc_type": "service_manual",
+      "section": "Place the Teach Pendant plug and cable in through the bottom of the Control Box and",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_123",
+    "content": "1. If mounted previously, mount the ferrite core with snap lock again. If the ferrite core\nwas not mounted from production, a new one does not need to be mounted.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 75,
+      "doc_type": "service_manual",
+      "section": "If mounted previously, mount the ferrite core with snap lock again. If the ferrite core",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_124",
+    "content": "5.4.5. Replacing the Teach Pendant: 3PE TP\nDescription\nThis section describes how to replace a Standard Teach Pendant with a 3PE Teach\nPendant. For information on how to remove and replace a Standard Teach Pendant, see",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 75,
+      "doc_type": "service_manual",
+      "section": "Replacing the Teach Pendant: 3PE TP",
+      "chapter": "5.4.5."
+    }
+  },
+  {
+    "id": "service_manual_125",
+    "content": "5.4.4 Replacing the Teach Pendant: Standard TP on page 69.\nWARNING\nWhen the Teach Pendant is replaced, test the function of the 3PE\nbuttons.\nNOTICE\nReplacing the Teach Pendant can result in the system reporting a fault\non start-up.\n• Always select the correct configuration for the type of Teach\nPendant.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 75,
+      "doc_type": "service_manual",
+      "section": "Replacing the Teach Pendant: Standard TP on page 69.",
+      "chapter": "5.4.4"
+    }
+  },
+  {
+    "id": "service_manual_126",
+    "content": "2. If mounted, remove the ferrite core with snap lock from the teach pendant cable by\ncutting the cable ties of key.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 76,
+      "doc_type": "service_manual",
+      "section": "If mounted, remove the ferrite core with snap lock from the teach pendant cable by",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_127",
+    "content": "5. Press in the clips on both sides of the Teach Pendant plug, as illustrated, and pull\ndown to disconnect from the Teach Pendant port.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 76,
+      "doc_type": "service_manual",
+      "section": "Press in the clips on both sides of the Teach Pendant plug, as illustrated, and pull",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_128",
+    "content": "6. Fully open/loosen the plastic grommet at the bottom of the Control Box and remove\nthe Teach Pendant plug and cable.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 76,
+      "doc_type": "service_manual",
+      "section": "Fully open/loosen the plastic grommet at the bottom of the Control Box and remove",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_129",
+    "content": "1. Place the 3PE Teach Pendant plug and cable in through the bottom of the control box\nand fully close/tighten the plastic grommet.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 77,
+      "doc_type": "service_manual",
+      "section": "Place the 3PE Teach Pendant plug and cable in through the bottom of the control box",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_130",
+    "content": "5.4.6. Replacement of Teach Pendant Cable\nUse the teach\npendant cable\nrepair kit\nThe teach pendant cable can be replaced with a teach pendant cable repair kit.\nNote: Read thoroughly the disclaimer in the kit before installing.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 77,
+      "doc_type": "service_manual",
+      "section": "Replacement of Teach Pendant Cable",
+      "chapter": "5.4.6."
+    }
+  },
+  {
+    "id": "service_manual_131",
+    "content": "1. Turn the teach pendant around and place it screen down on a soft surface. Be\ncareful not to damage the E-stop button.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 78,
+      "doc_type": "service_manual",
+      "section": "Turn the teach pendant around and place it screen down on a soft surface. Be",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_132",
+    "content": "2. Remove the eighteen (18) bolts connecting the front frame to the back plate using a\nT8 torx screwdriver.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 78,
+      "doc_type": "service_manual",
+      "section": "Remove the eighteen (18) bolts connecting the front frame to the back plate using a",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_133",
+    "content": "3. Pull the front frame and back plate apart. This will, in some cases, require some\nforce, but note that there is a cable connecting the two parts. Be careful that this\ncable or connectors do not get damaged.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 78,
+      "doc_type": "service_manual",
+      "section": "Pull the front frame and back plate apart. This will, in some cases, require some",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_134",
+    "content": "4. On the front frame, cut the cable tie and unplug the cable that connects the front frame and\nback plate.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 79,
+      "doc_type": "service_manual",
+      "section": "On the front frame, cut the cable tie and unplug the cable that connects the front frame and",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_135",
+    "content": "6. On the back plate, remove the four bolts on the teach pendant cable bracket using a T8\ntorx screwdriver, and remove the bracket.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 79,
+      "doc_type": "service_manual",
+      "section": "On the back plate, remove the four bolts on the teach pendant cable bracket using a T8",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_136",
+    "content": "8. Find the new teach pendant cable from the kit. Pull it through the hole of the back plate.\nMake sure that the rubber cable collar is mounted correctly at the hole.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 80,
+      "doc_type": "service_manual",
+      "section": "Find the new teach pendant cable from the kit. Pull it through the hole of the back plate.",
+      "chapter": "8."
+    }
+  },
+  {
+    "id": "service_manual_137",
+    "content": "9. Mount the teach pendant cable bracket again and mount the four bolts with 0.3 Nm using a\nT8 torx screwdriver.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 80,
+      "doc_type": "service_manual",
+      "section": "Mount the teach pendant cable bracket again and mount the four bolts with 0.3 Nm using a",
+      "chapter": "9."
+    }
+  },
+  {
+    "id": "service_manual_138",
+    "content": "11. Connect the cable between the front frame and back plate on the other PCB and mount the\nnew cable tie from the kit.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 81,
+      "doc_type": "service_manual",
+      "section": "Connect the cable between the front frame and back plate on the other PCB and mount the",
+      "chapter": "11."
+    }
+  },
+  {
+    "id": "service_manual_139",
+    "content": "13. Mount the eighteen (18) bolts connecting the front frame to the back plate with 0.3 Nm,\nusing a T8 torx screwdriver.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 82,
+      "doc_type": "service_manual",
+      "section": "Mount the eighteen (18) bolts connecting the front frame to the back plate with 0.3 Nm,",
+      "chapter": "13."
+    }
+  },
+  {
+    "id": "service_manual_140",
+    "content": "6. Software\nPolyscope\nUnder 5.13, Universal Robots does not recommend or support downgrading of Polyscope\nsoftware. Downgrading can, in some cases, break hardware compatibility or corrupt\nprogram functionality. When in doubt, reach out to Universal Robots.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 83,
+      "doc_type": "service_manual",
+      "section": "Software",
+      "chapter": "6."
+    }
+  },
+  {
+    "id": "service_manual_141",
+    "content": "6.1. Long Term Support\nSoftware\nsupport\nSince PolyScope software release 5.12, UR has introduced a long-term support strategy to\nensure hardware compatibility with requiring updating to latest software version. The long-\nterm supported software version does not introduce new features but will ensure hardware\ncompatibility due to product changes. Please note that it is the major software release that\nwill be long-term supported. The minor releases are continuously updated (e.g. 5.12.x is\nlong-term supported, the minor releases, stated with x, will be subject for changes)\nSee which PolyScope version is currently long-term supported on Universal Robot's\nwebsite: https://www.universal-robots.com/support/\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 83,
+      "doc_type": "service_manual",
+      "section": "Long Term Support",
+      "chapter": "6.1."
+    }
+  },
+  {
+    "id": "service_manual_142",
+    "content": "6.2. Software Updates\nAbout\nPolyscope\nUniversal Robots software is called PolyScope.\nCAUTION\nRead these instructions and the instructions on our support website\n(www.universal-robots.com/support) completely prior to updating your\nsoftware. Universal Robots assumes no responsibility for failed updates\ncaused by improper operation.\nControl Box power MUST NOT be turned off during the software update\nprocess. Failure to meet this demand is likely to cause loss of data and\nmalfunction.\nKeeping the robot software up to date is required to ensure safe\noperation. Also, the latest software provides more features and a better\nperformance.\nRead the Release Notes of the software you install. Release Notes hold\nnotes about the software changes which in some cases are relevant for\nsafe operation of the robot.\nUpdating the software may cause changes to functionality. Robot\nmotions might change or be subjected to different restrictions.\nIn case of questions or concerns related to your application please\ncontact your supplier for advice and assistance.\nNot all combinations of updates are possible. These are the rules to observe:\n• If running PolyScope 5.5.0 and above:\nUpdate directly to PolyScope 5.8.0 or any later version.\n• If running PolyScope 5.4.3 and below:\nUpdates must be done incrementally in steps of one minor version.\nE.g. PolyScope 5.2.1 à 5.3.1 à 5.4.3 à 5.5.1.\nWhen PolyScope 5.5.0 is reached, software can be updated directly to the latest\nversion.\nTherefore, when updating your robot software care must be taken to select a proper\nupdate path. Several update steps will be necessary until reaching a version of 5.5.0.\nDowngrading software is not supported. In PolyScope 5.5.0 backup and restore\nfunctionality is added and this is the recommended way to go back to any prior version\ninstalled. We strongly recommend that you precede any update cycle with a backup to\ncounter the situation of a failing update. Please contact your supplier if updating causes\nany trouble.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 84,
+      "doc_type": "service_manual",
+      "section": "Software Updates",
+      "chapter": "6.2."
+    }
+  },
+  {
+    "id": "service_manual_143",
+    "content": "2. Download to your computer the software versions needed to be installed, you can\ndownload from Universal Robot’s website (www.universal-robots.com/support).\n• If your SW is below 5.5 (E.g.: 5.3), you will need to incrementally update until\nyou reach 5.5 (E.g.: 5.3 to 5.4, then 5.4 to 5.5), after updating to software 5.5\nyou can download the most up to date software and go straight from 5.5 to\nthis last update (E.g.: 5.5 to 5.8).\n• If your SW is equal or above 5.5, just download the most updated software\nversion file and install it straight from your current software version (E.g: 5.5\nto 5.8).",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 85,
+      "doc_type": "service_manual",
+      "section": "Download to your computer the software versions needed to be installed, you can",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_144",
+    "content": "3. Download the software version(s) needed to update your software and save file(s) in\nthe root of a USB stick on your computer.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 85,
+      "doc_type": "service_manual",
+      "section": "Download the software version(s) needed to update your software and save file(s) in",
+      "chapter": "3."
+    }
+  },
+  {
+    "id": "service_manual_145",
+    "content": "5. On teach pendant screen, press the right top corner icon\nto access the\nsettings menu.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 85,
+      "doc_type": "service_manual",
+      "section": "On teach pendant screen, press the right top corner icon",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_146",
+    "content": "11. The robot will power off and power on again. Once the update is complete, the Control Box\nautomatically reboots. Do not power off or unplug the robot from the outlet during\nstartup.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 87,
+      "doc_type": "service_manual",
+      "section": "The robot will power off and power on again. Once the update is complete, the Control Box",
+      "chapter": "11."
+    }
+  },
+  {
+    "id": "service_manual_147",
+    "content": "13. When complete, go to the Initialize screen and press ON, if available joint firmware is going\nto update.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 87,
+      "doc_type": "service_manual",
+      "section": "When complete, go to the Initialize screen and press ON, if available joint firmware is going",
+      "chapter": "13."
+    }
+  },
+  {
+    "id": "service_manual_148",
+    "content": "15. If it is the case, repeat steps 4. To 14. until reaching the most updated version.\n• Note: From software version 5.5 beyond, the most updated version available in UR’s\nwebsite can be installed direct, no need to incrementally install updates.\nMore info is displayed on release notes on support site. Read it for new features releases and\nimprovements.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 87,
+      "doc_type": "service_manual",
+      "section": "If it is the case, repeat steps 4. To 14. until reaching the most updated version.",
+      "chapter": "15."
+    }
+  },
+  {
+    "id": "service_manual_149",
+    "content": "6.2.2. Update Timeline\nWhen to\nupdate\n• If your software version belongs in the yellow-orange section, you need to install\nincrementally until 5.5.\n• If your software version belongs in the blue section, you can directly update to any in\nthe green version.\n• If your software version belongs in the green section, you can directly update to a\nnewer version.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 88,
+      "doc_type": "service_manual",
+      "section": "Update Timeline",
+      "chapter": "6.2.2."
+    }
+  },
+  {
+    "id": "service_manual_150",
+    "content": "6.2.3. Downgrading vs. Restoring System Backup\nDo not\ndowngrade\nDo not downgrade the robot software to an earlier version prior to the robot's\nmanufacturing date.\nDo not revert your robot software using older update packages if you have installed 5.8 or\nabove software version. If, for any reason, you need to downgrade below PolyScope\nversion 5.8, you can do so by restoring your old system backup (system backup was\nimplemented from Polyscope version 5.5 ahead).\nNOTICE\nThe system backup requires around 4Gb memory, please use a USB\nstick of 4Gb or more capacity.\nNOTICE\nAlways perform program and installation files backup before updating\nthe software.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 89,
+      "doc_type": "service_manual",
+      "section": "Downgrading vs. Restoring System Backup",
+      "chapter": "6.2.3."
+    }
+  },
+  {
+    "id": "service_manual_151",
+    "content": "6.3. Using Support File\nFor easy backup, Universal Robots provides a feature available from software version equal to\nor above 5.8, called Support File, an automatically copied file of the robot data from control box\nto the USB stick.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 90,
+      "doc_type": "service_manual",
+      "section": "Using Support File",
+      "chapter": "6.3."
+    }
+  },
+  {
+    "id": "service_manual_152",
+    "content": "1. Go to Log tab, insert a USB stick, and click on Support File.\nNOTICE\nThis backup requires around 1Gb memory, please use a USB stick of 2Gb or\nmore capacity.\nNOTICE\nAlways perform program and installation files backup before updating the\nsoftware.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 90,
+      "doc_type": "service_manual",
+      "section": "Go to Log tab, insert a USB stick, and click on Support File.",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_153",
+    "content": "6.4. Using Magic Files\nFor easy backup, Universal Robots provides magic files to automatically copy data from the\ncontrol box to USB stick. Magic files back up works with all software versions, but starting with\nversion 5.11, execution of magic files could be disabled in general security settings.\nNOTICE\nAlways perform program and installation files backup before updating the\nsoftware.\nAvailable File\nFunction\nURmagic log file\nCopies the entire log history file to USB stick\nURmagic backup\nprograms\nCopies all programs and installation files to USB stick\nURmagic configuration\nfiles\nCopies all configuration files to USB stick\nURmagic upload\nprograms\nCopies all programs and installation files from a USB stick to the\nrobot\nURmagic screenshot\nGenerates a screenshot of GUI when USB stick is inserted\nYou can download magic files at: www.universal-robots.com/support",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 91,
+      "doc_type": "service_manual",
+      "section": "Using Magic Files",
+      "chapter": "6.4."
+    }
+  },
+  {
+    "id": "service_manual_154",
+    "content": "1. Download and save magic files to the root folder on a USB stick. If more than one magic\nfile is on the USB stick, they run in sequence. Warnings appear for each file. Do not\nremove the USB stick until the last file is finished. Multiple folders are created and\nnamed with serial number as well as a sequence number (e.g., 201855xxxx_0,\n201855xxxx_1).",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 91,
+      "doc_type": "service_manual",
+      "section": "Download and save magic files to the root folder on a USB stick. If more than one magic",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_155",
+    "content": "2. Insert the USB stick into the USB slot in the controller box or on the top right side of the\nteach pendant.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 91,
+      "doc_type": "service_manual",
+      "section": "Insert the USB stick into the USB slot in the controller box or on the top right side of the",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_156",
+    "content": "4. Wait for a green <-USB-sign to appear. If more than one magic file is on the USB stick,\nproceed to step 3.\nNote: Large files (e.g., history log) may take up to two minutes to download.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 91,
+      "doc_type": "service_manual",
+      "section": "Wait for a green <-USB-sign to appear. If more than one magic file is on the USB stick,",
+      "chapter": "4."
+    }
+  },
+  {
+    "id": "service_manual_157",
+    "content": "5. After the last magic file is completed, the USB stick can be safely removed.\nThe magic file creates a folder on the USB stick named with the serial number of the robot.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 91,
+      "doc_type": "service_manual",
+      "section": "After the last magic file is completed, the USB stick can be safely removed.",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_158",
+    "content": "6.5. Backup of Data\nData backup\nNOTICE\nWhen copying/moving files and folders, incorrect use might corrupt the file\nsystem.\nContact your IT professional for assistance if you are not comfortable with\nthis procedure.\nThis section explains the process of moving required files during a robot backup.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 92,
+      "doc_type": "service_manual",
+      "section": "Backup of Data",
+      "chapter": "6.5."
+    }
+  },
+  {
+    "id": "service_manual_159",
+    "content": "6.5.1. Hardware Requirements\nThe following hardware is needed:\n• SD card (Universal Robots 4GB industrial grade SD card)\n• A standard SD card reader",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 92,
+      "doc_type": "service_manual",
+      "section": "Hardware Requirements",
+      "chapter": "6.5.1."
+    }
+  },
+  {
+    "id": "service_manual_160",
+    "content": "6.5.2. Software Requirements\nWhen using Windows operation system, a software file system driver is required to read a\nLinux partition. In this example, we are using “Linux File Systems for Windows” by Paragon,\nbut other Windows Linux reader can be used as well (these are, however, not tested by\nUniversal Robots).\nNOTICE\n\"Linux File Systems for Windows” by Paragon software is a third-party\nsoftware.\nUniversal Robot takes no responsibility for this software.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 92,
+      "doc_type": "service_manual",
+      "section": "Software Requirements",
+      "chapter": "6.5.2."
+    }
+  },
+  {
+    "id": "service_manual_161",
+    "content": "6.5.3. How to Access Linux Partition from Windows\nLinux partition\nWith the software from Paragon, you can access all partitions on the SD card. The files\nneeded are located on the partition called datafs\nIf the partition is not shown, it could be that it is not mounted automatically. To correct this:",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 93,
+      "doc_type": "service_manual",
+      "section": "How to Access Linux Partition from Windows",
+      "chapter": "6.5.3."
+    }
+  },
+  {
+    "id": "service_manual_162",
+    "content": "6.5.4. Copy the Data from SD Card\nDatafs\nNavigate to the SD card partition called datafs and copy the listed files/folders below.\nNOTICE\nDo not alter any files. You must only take backup copies as needed.\n• programs/ [all of the following files: .urp, .txt, .script, .installation, .variable, .old]\n• root/ur-serial\n• root/log_history.txt\n• root/log_history.bak [if existing]\n• root/histogram.properties\n• root/flightreports [Complete folder if existing]\n• root/.urcontrol/calibration.conf\n• root/.urcontrol/calibration.log\n• root/.urcontrol/robot_calibration_summary.txt\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 94,
+      "doc_type": "service_manual",
+      "section": "Copy the Data from SD Card",
+      "chapter": "6.5.4."
+    }
+  },
+  {
+    "id": "service_manual_163",
+    "content": "7.1. Adding External Equipment for Troubleshooting\nPurpose\nAdd External\nEquipment\nFor troubleshooting, it can be useful to add a mouse, keyboard, or monitor.\nMost USB mouse and keyboards are supported. Plug in the mouse or keyboard in one of\nthe available USB ports. A restart of the the control box may be required for it to work.\nIn the control box, a mini display port is available. When a monitor is connected, it will\ndisplay the same content as the teach pendant and can be connected at the same time\nas the teach pendant. A restart of the control box may be required for it to work.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 95,
+      "doc_type": "service_manual",
+      "section": "Adding External Equipment for Troubleshooting",
+      "chapter": "7.1."
+    }
+  },
+  {
+    "id": "service_manual_164",
+    "content": "7.2. Log Viewer\nSpecifications\nCompatible robots: UR3, UR3e, UR5, UR5e, UR10, UR10e, UR16e, and UR20\nController versions: CB3 & e-Series\nSoftware versions: CB3: 3.4 and higher. e-Series: 5.0 and higher, PolyScope X.\nUR Log Viewer version: 1.3.2\nDocumentation version: 1.3.2\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 95,
+      "doc_type": "service_manual",
+      "section": "Log Viewer",
+      "chapter": "7.2."
+    }
+  },
+  {
+    "id": "service_manual_165",
+    "content": "7.2.1. General Purpose\nPurpose\nThe purpose of the UR log viewer manual is to help Universal Robots (UR) users and\nintegrators to perform service-related analysis and understand robot behavior to support\nany enhancements and needed troubleshooting.\nUniversal Robots industrial robots are designed using high-quality components to ensure a\nlong lifetime. However, improper use of the robot or robot parts can potentially cause\nunexpected failures due to misuse. If, for example, the robot is overloaded, dropped during\nrelocation, damaged by collision or any other improper usage, the warranty will be void.\nUniversal Robots recommends the user not to repair, adjust, or make other interventions in\nthe mechanical or electrical systems of the robot without first being trained and consulting\na UR-certified service engineer. Any unauthorized intervention voids the warranty.\nService-related operations and troubleshooting should only be performed by qualified\npersonnel.\nBefore performing service-related operations, stop the robot program, power it off, and\ndisconnect the main power input to any potentially dangerous tool on the robot or the\nsurroundings.\nIn the event of a defect, Universal Robots recommends ordering new parts from the\nUniversal Robot distributor where the robot was originally purchased. Alternatively, parts\ncan be ordered from the nearest distributor, details of which can be obtained from\nUniversal Robots official website at www.universal-robots.com",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 96,
+      "doc_type": "service_manual",
+      "section": "General Purpose",
+      "chapter": "7.2.1."
+    }
+  },
+  {
+    "id": "service_manual_166",
+    "content": "7.2.2. Log Viewer Requirements\nIntention\nThe UR log viewer is a software intended for reading and viewing the Support File from the\nUniversal Robot’s cobots, which are generated automatically inside each robot, and\ncontain the log files, programs and flight reports. The software is a support tool for the user\nof the robot to do troubleshooting in case needed. It is a tool for understanding the robot\nbehavior and have data analysis, as well to do improvements on your application and\nprogramming.\nThe Log Viewer is applicable for the following robots: UR3, UR3e, UR5, UR5e, UR10,\nUR10e, UR16e and UR20.\nRequirements:\n• To install and execute the UR Log Viewer you need the following requisites:\n• OS Windows 7, 8, 8.1 or 10 – current version doesn’t work on Linux or Mac.\n• .Net 4.8 minimum installed.\n• User access defined to be able to install and execute the software\n• Works with Polyscope SW versions:\n• CB3: 3.4 and higher\n• E-series: 5.0 and higher\n• PolyScope X\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 96,
+      "doc_type": "service_manual",
+      "section": "Log Viewer Requirements",
+      "chapter": "7.2.2."
+    }
+  },
+  {
+    "id": "service_manual_167",
+    "content": "7.2.3. Installation Log Viewer\nDownloading\nDownload UR Log Viewer\nFirst step is to download the UR Log Viewer’s software from Universal Robot’s website:\nwww.universal-robots.com/download. Choose robot version: CB-Series or e-Series ->\nSoftware -> UR Log Viewer\nInstallation",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 97,
+      "doc_type": "service_manual",
+      "section": "Installation Log Viewer",
+      "chapter": "7.2.3."
+    }
+  },
+  {
+    "id": "service_manual_168",
+    "content": "7.2.4. How to Use the UR Log Viewer\nPurpose\nThe purpose of the tool is to read, analyze and examine robot data from e-Series and CB3-\nSeries robots. Any findings based on this tool is the sole responsibility and interpretation of\nthe user. To have a final saying in case of service needs, please refer to your distributor or\nUniversal Robot’s technical supporter for guidance on service, trainings and warranties.\nThe following files are supported:\nSupport File (implemented on SW 3.13 and 5.8 forward): ex.:ur_20195099999_2020-\n07-16_09-24.zip\nService File (via “urmagic_data_capture_v0_6_X.sh”): ex.:ur_service_20235XXXXXX_\n2023-09-08_16-50-24.zip\nFlight Reports: ex.: recording20200520_17_59_14.zip\nLog History: ex.: log_history.txt, log_history.bak\nReal-time recordings: Created by UR Log Viewer: ex.: recording.csv\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 97,
+      "doc_type": "service_manual",
+      "section": "How to Use the UR Log Viewer",
+      "chapter": "7.2.4."
+    }
+  },
+  {
+    "id": "service_manual_169",
+    "content": "7.2.5. Loading the Data\nThe available file can be either dragged and drop on the Log Reader tab or opened by\nselecting the path where the file is stored in your computer.\nA third option is by selecting it directly from Windows, using right-click on the file -> open with -\n> choose another app -> UR Log Viewer.\nNOTICE\nIf you try to load the file and it doesn’t allow you to do so, please restart your\nsoftware and try it again. Make sure you have the correct file while loading. If you\nneed any support or service, consult your local Universal Robots distributor or\nUniversal Robot’s website.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 98,
+      "doc_type": "service_manual",
+      "section": "Loading the Data",
+      "chapter": "7.2.5."
+    }
+  },
+  {
+    "id": "service_manual_170",
+    "content": "7.2.6. Log Reader Tab\nUse this tab to load the desired support file. If a log file is loaded, you can choose which types\nof messages to be shown.\nOnce the file is loaded you will have the option of choosing which types of messages to be\nshown on the Log Reader screen, the options are:\n• Info\n• Warning\n• Error\nNOTICE\n\"Developer Messages\" are intended for expert-level users only. Please use it\nonly if advised.\nThe user will see the Flight Records section only when opening a Support File, Flight Report\nfile or Real-time Recordings data file, if you open a Log History file, you will only see the Log\nStart section with the info, warnings and error codes and their respective entries.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 99,
+      "doc_type": "service_manual",
+      "section": "Log Reader Tab",
+      "chapter": "7.2.6."
+    }
+  },
+  {
+    "id": "service_manual_171",
+    "content": "7.2.7. Flight Records\nThe Flight Records section gives the user the capability of generating graphs from the stored\ndata on the mentioned files above. To open the standard graphs, double-click on the Flight\nRecord entry to open the graphs of the data recordings.\nThis will open 6 new windows with real-time data graphs for the selected Flight Record. Each\nopened window contains data for the respective joint and the data of the exact moment of the\nfault that has happened on the robot.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 100,
+      "doc_type": "service_manual",
+      "section": "Flight Records",
+      "chapter": "7.2.7."
+    }
+  },
+  {
+    "id": "service_manual_172",
+    "content": "7. Troubleshooting\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nRepresentation of the standard graph window at the exact fault recorded data from joint Shoulder.\nThe standard generated graph contains information of the robot behavior when it had the fault.\nThe information shown on the standard graph is: Position, Velocity, Acceleration, Current,\nTorque.\nThe X axis shows the script line number of the program or the index of the data point, if available.\nIf you need any other graph to be generated, the user has the option of choosing other data\nvariables by right-clicking on the Flight Record and choosing on the seen drop-down list:\nExample of a personalized graph generated of all joints by right-clicking on chosen Flight Record\nand picking acceleration at the time of the fault.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 100,
+      "doc_type": "service_manual",
+      "section": "Troubleshooting",
+      "chapter": "7."
+    }
+  },
+  {
+    "id": "service_manual_173",
+    "content": "7.2.8. Log Start\nTo read the log history section, you must click on the Log Start arrow to open and be able to\nread where the entries from the robot will be shown accordingly to its date and time and the\ntype of message. The description of the message, error category, error code, error source,\ntime, date and time stamp will be shown after opening the log start entry. You can also press\nthe “Open groups” button to open all grouped entries.\nExample of a window showing warning and errors from a log start entry\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 102,
+      "doc_type": "service_manual",
+      "section": "Log Start",
+      "chapter": "7.2.8."
+    }
+  },
+  {
+    "id": "service_manual_174",
+    "content": "7. Troubleshooting\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nBy right-clicking on the Log entry and choosing “Error Default Timeline” or “Error Selection\nTimeline” a new window will be displayed. It shows you the occurrence of errors over the time.\nHere you can switch the displayed range of errors, change the type of chart and switch to an\naccumulated view.\nContext menu for Error Timeline Charts\nExample of a window showing Error Default Timeline\nShortcuts:\n• CTRL+C: Copy the selected Log History line.\n• CTRL+E: Copy the error codes of the selected Log History line(s). You can select many\nlines and click the shortcut to copy the codes.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 102,
+      "doc_type": "service_manual",
+      "section": "Troubleshooting",
+      "chapter": "7."
+    }
+  },
+  {
+    "id": "service_manual_175",
+    "content": "7.2.9. Log Analysis Tab\nUse this tab to see a summary of important error codes found in the loaded file. You can select\ndifferent time frames to see the progress of your robot in time.\nThe Serial Number of the robot, the robot software current version, and the last program\nrunning on the robot will be displayed on this screen for information.\nIf a high number of critical error codes are found, they will be highlighted on the list for\nawareness and corrective actions to be taken by the user to solve the source of the message.\nNOTICE\nIf you have a high number of messages shown up on the Log Analysis tab,\ntake action to try to solve the source of these error/warning messages\ngeneration. It is not right to have many messages showing up on the robot,\nthey need to be acted upon.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 104,
+      "doc_type": "service_manual",
+      "section": "Log Analysis Tab",
+      "chapter": "7.2.9."
+    }
+  },
+  {
+    "id": "service_manual_176",
+    "content": "7. Troubleshooting\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 1,
+      "doc_type": "service_manual",
+      "section": "Troubleshooting",
+      "chapter": "7."
+    }
+  },
+  {
+    "id": "service_manual_177",
+    "content": "Description\nFunction\nThis tab enables the real-time data recording of the robot connected through ethernet\ncable with your computer.\nBefore starting to record any data, make sure you have your computer connected to the\nrobot’s ethernet port and you have setup your computer’s IP address on the same range\nof the robot’s IP address. Make sure your firewall is not blocking the connection from\nhappening and make sure RTDE Interface is enabled \"on\" robot security.\nAfter you have the connection done, select the relevant data fields you want to be\nrecorded. The frequency of update can be defined as wanted. You can adjust sample time\nand measurement duration for the recording. We advise keeping the default values not to\ncreate high memory consumption. Press “start” on the right top corner for the data\nrecording to begin.\nContinue record enables long record periods. If selected a new record file will be saved\nperiodically, depending on the setting time of the auto record field. We recommend for\nlong terms 100Hz and 5 minutes. This has the reason of memory consumption and for\nbetter analysis.\nNOTICE\nHigh frequency combined with long sample periods leads to big data\ntraffic recordings, potentially affecting memory consumption on some\nsystems.\nAfter starting to record, the data will be available in the Log Reader’s tab. Please check if\nyour robot’s software version has all selected data field available, if not, update your robot\nto the latest software version for complete usage experience.\nNOTICE\nPlease notice that the button \"save last record\" only saves the last\nrecord started. If there were many records started and stopped, and you\nwant to save the others, go to the Log Reader tab, right-click on the\nprevious Flight Record you want to save, and press save. The previous\nones are not saved automatically and if you close the software they will\nbe lost.\nShortcuts:\n• CTRL+A: Select all check boxes\n• CTRL+N: Select the default check boxes\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 1,
+      "doc_type": "service_manual",
+      "section": "Troubleshooting",
+      "chapter": "7."
+    }
+  },
+  {
+    "id": "service_manual_178",
+    "content": "7.2.11. Export From Robot Tab\nExporting data\nThe Export from Robot tab allows you to create and export the Support File from your\nconnected robot via ethernet connection to the computer. Refer to 2.5.5 Record Data tab\ntopic in this manual, to understand how to connect the robot’s and computer IP addresses.\nFor older robot software versions (PolyScope 5.7 and 3.12 below) the Log History and\nFlight Reports are retrieved instead of the Support File.\nAfter the download the user will be asked, if he/she wants to open the pulled data directly\non UR Log Viewer or just store in the computer.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 108,
+      "doc_type": "service_manual",
+      "section": "Export From Robot Tab",
+      "chapter": "7.2.11."
+    }
+  },
+  {
+    "id": "service_manual_179",
+    "content": "7.2.12. Types of Messages\nMessage\ntypes\nMessage’s icons in this document contain information that helps you to understand and\ntroubleshoot the robot.\nThe Symbols are the same as in the protocol tab from Polyscope.\nDebug Message\nInfo Message\nWarning Message\nError Message\nFault Message\nDeveloper Message\nDeveloper Message\nDeveloper Message\nDeveloper Message\nDeveloper Message\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 109,
+      "doc_type": "service_manual",
+      "section": "Types of Messages",
+      "chapter": "7.2.12."
+    }
+  },
+  {
+    "id": "service_manual_180",
+    "content": "7.3. Support Log Reader (SLR)\nSteps\nOpen log files with the Universal Robots Support Log Reader (SLR).\nGo to www.universal-robots.com/support to download the Support Log Reader",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 110,
+      "doc_type": "service_manual",
+      "section": "Support Log Reader (SLR)",
+      "chapter": "7.3."
+    }
+  },
+  {
+    "id": "service_manual_181",
+    "content": "10. Expand or collapse all Info bars (point 4)\nNOTICE\nAfter loading the log file every Log Start Info Bar (4) is collapsed and only\nthe summary for each log start is visible.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 110,
+      "doc_type": "service_manual",
+      "section": "Expand or collapse all Info bars (point 4)",
+      "chapter": "10."
+    }
+  },
+  {
+    "id": "service_manual_182",
+    "content": "7.4.1. LED Indicators on Safety Control Board\nThe below LEDs are “power” LEDs. They are either on or off.\nLED for power\n• Green color permanent = Power on\n• No color permanent = Error or no power\nBelow are “communication” LEDs. They flash in different patterns, depending on the status.\nLED for Safety A and Safety B\nGreen fast flash = Bootloader\nGreen slow flash = Normal communication\nRed permanent = Error (Red flash can happen during bootup/power on, this is normal.)\nLED for FPGA\nGreen/Red permanent = Normal communication\nGreen slow flash = No communication/trying to establish communication\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 111,
+      "doc_type": "service_manual",
+      "section": "LED Indicators on Safety Control Board",
+      "chapter": "7.4.1."
+    }
+  },
+  {
+    "id": "service_manual_183",
+    "content": "7.4.2. Fuse\nFuse is a 10A fast-acting mini blade fuse.\nWARNING\nNever use a different fuse than specified. Only use high grade components.\nFuse specifications:\n• Interrupting Rating: 1000A @ 32 VDC\n• Voltage Rating: 32 VDC\n• Component Level Temperature Range: -40˚C to +125˚C\n• System Level Temperature Range: -40˚C to +105˚C\n• Terminals: Ag plated zinc alloy\n• Housing Material: PA66\n• Complies with: SAE J2077, ISO 8820-3\n• UL 248 Special Purpose Fuses\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 112,
+      "doc_type": "service_manual",
+      "section": "Fuse",
+      "chapter": "7.4.2."
+    }
+  },
+  {
+    "id": "service_manual_184",
+    "content": "7.5. Complete Rebooting Sequence\nDiagram\nshowing\nrebooting steps\nTo completely reboot the robot system, follow the following steps:\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 113,
+      "doc_type": "service_manual",
+      "section": "Complete Rebooting Sequence",
+      "chapter": "7.5."
+    }
+  },
+  {
+    "id": "service_manual_185",
+    "content": "7.6. Protective Stop\nYes-No\nFlowchart\nRead also article 18939 on the support site www.universal-robots.com/support\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 115,
+      "doc_type": "service_manual",
+      "section": "Protective Stop",
+      "chapter": "7.6."
+    }
+  },
+  {
+    "id": "service_manual_186",
+    "content": "7.6.1. Preventive Measures\nPreventive\nMeasures\nIgnoring protective stops is considered abuse of the robot which voids the warranty.\nThese faults can be hidden from view under the following two circumstances:",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 116,
+      "doc_type": "service_manual",
+      "section": "Preventive Measures",
+      "chapter": "7.6.1."
+    }
+  },
+  {
+    "id": "service_manual_187",
+    "content": "1. Personnel simply resetting a fault without review of why the fault has happened.\nWARNING\nIgnoring protective stops masks fault detection, which can increase the\nrisk of injury.\n• Pay careful attention to protective stops.\nLearn why they happen to improve your programs and preserve\nfault detection.\nProtective stops must never be acknowledged and reset automatically, it must always\nbe a deliberate action by a user to resume after a protective stop.\nIn general, protective stops are designed to inform the user that the robot has stopped due\nto an external event such as hitting an obstacle or similar. In case the robots are pushed\nclose to the limits, the robots can generate protective stops to indicate that they are not\ncapable of following the desired trajectory.  After a protective stop, the following must be\ndone before resuming operation:\ni. If there has been a collision or similar:\nRemove the obstacle and ensure that operators are out of the way before resuming\noperation.  See Section 2 of Service Manual (see link below).\nii. If there has been NO collision or similar:\nThe robot is operating too close to the limits, the application should be adjusted to\nreduce the load on the robot, for instance by reducing accelerations, by correct use\nof blends or similar measures.\nProtective stops are indications of issues, including program or production issues – not\nonly safety issues.  An application which results in daily protective stops is not\ndesigned correctly and needs to be modified.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 116,
+      "doc_type": "service_manual",
+      "section": "Personnel simply resetting a fault without review of why the fault has happened.",
+      "chapter": "1."
+    }
+  },
+  {
+    "id": "service_manual_188",
+    "content": "2. If an automatic acknowledgment and reset of a protective stop has been\nprogrammed – no one will see the protective stop.\nNOTICE\nAutomatic acknowledgment and reset of protective stops masks faults\nthat will lead to a failure condition.\n• When there is a protective stop, verify the cause.\nIf there is no collision, adjust the program\nIf an integrator has set-up the application program to do automatic acknowledgement\nand reset of protective stops, the customer should contact the integrator change the\nprogram immediately, as such override voids the product warranty and masks fault\ndetection.\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 116,
+      "doc_type": "service_manual",
+      "section": "If an automatic acknowledgment and reset of a protective stop has been",
+      "chapter": "2."
+    }
+  },
+  {
+    "id": "service_manual_189",
+    "content": "9. Spare Parts\nSee Support\nSection of\nUR website\nNOTICE\nEnsure you have the correct part numbers when ordering spare parts.\nThe full list of spare parts have been moved to the support section on Universal Robot's\nwebsite: https://www.universal-robots.com/support/\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 118,
+      "doc_type": "service_manual",
+      "section": "Spare Parts",
+      "chapter": "9."
+    }
+  },
+  {
+    "id": "service_manual_190",
+    "content": "10. Packing and Shipping of Robot/Spare\nParts\nBefore shipping any robots or spare parts back to Universal Robots, please note the following\nNOTICE\nRemove external tools and external electrical connections before shipment.\nUniversal Robots may reject the shipment if third party products cannot be\nunmounted safely, or if they prohibit the execution of required post repair\ntests.\nUniversal Robots assumes no responsibility for the return shipment of third\nparty goods.\nEnsure the robot, Control Box, and Teach Pendant are packed responsibly.\nUniversal Robots will return Universal Robots products in original Universal\nRobots packaging.\nNOTICE\nThe robot software/firmware is updated when repaired. New parts are also\nupdated to their newest versions (hardware/software). Therefore, updating\nPolyScope may be necessary when new parts are mounted.\nMANDATORY ACTION\nIf the robot/part(s) has been in contact with, or worked in environments,\nwhere dangerous chemicals or materials are present, it must be cleaned\nbefore shipment. If this is not possible, the shipment must be accompanied by\nan MSDA (Material Safety Data Sheet) in English and include instructions for\ncleaning. The amount of labor hours needed for cleaning will be billed at the\nstandard rate.\nIf Universal Robots finds the robot/part unsafe to service, UR reserves the\nright to get the robot/part(s) cleaned or decline the case and send the part(s)\nback at customers expense.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 119,
+      "doc_type": "service_manual",
+      "section": "Packing and Shipping of Robot/Spare",
+      "chapter": "10."
+    }
+  },
+  {
+    "id": "service_manual_191",
+    "content": "10. Packing and Shipping of Robot/Spare Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nPacking Down the Robot and Control Box for Shipment",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 119,
+      "doc_type": "service_manual",
+      "section": "Packing and Shipping of Robot/Spare Parts",
+      "chapter": "10."
+    }
+  },
+  {
+    "id": "service_manual_192",
+    "content": "5. Pack the Robot Arm and Control Box in designated boxes. Ensure the Robot Arm is\norientated correctly in the box.\nNOTICE\nTransporting the robot without its original packaging voids all warranties from\nUniversal Robots A/S.\nIf the robot is transported attached to a 3rd-party application / installation, see the\nrecommendations for transporting the robot without the original transport\npackaging.\nYou can see the recommendations for transportation without packaging on help.universal-\nrobots.com/\ne-Series",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 120,
+      "doc_type": "service_manual",
+      "section": "Pack the Robot Arm and Control Box in designated boxes. Ensure the Robot Arm is",
+      "chapter": "5."
+    }
+  },
+  {
+    "id": "service_manual_193",
+    "content": "10. Packing and Shipping of Robot/Spare Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 120,
+      "doc_type": "service_manual",
+      "section": "Packing and Shipping of Robot/Spare Parts",
+      "chapter": "10."
+    }
+  },
+  {
+    "id": "service_manual_194",
+    "content": "10.1. Transport Without Packaging\nDescription\nUniversal Robots always recommends transporting the robot in its original packaging.\nThese recommendations are written to reduce unwanted vibrations in joints and brake\nsystems and reduce joint rotation.\nIf the robot is transported without its original packaging, refer to the following guidelines:\n• Fold the robot as much as possible. Do not transport the robot in the singularity\nposition.\n• Move the center of gravity in the robot as close to the base as possible.\n• Secure each tube to a solid surface on two different points on the tube.\n• Secure any attached end effector rigidly in three axes.\nHow to\ntransport\nFold the robot as\nmuch as possible.\nDo not transport\nextended.\n(singularity position)\nSecure the tubes to a\nsolid surface.\nSecure attached end\neffector in three axes.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 121,
+      "doc_type": "service_manual",
+      "section": "Transport Without Packaging",
+      "chapter": "10.1."
+    }
+  },
+  {
+    "id": "service_manual_195",
+    "content": "10. Packing and Shipping of Robot/Spare Parts\nCopyright © 2009–2025 by Universal Robots A/S. All rights reserved.\n\nSoftware Name: PolyScope 5\nSoftware Version: 5.22\nDocument Version:10.12.29",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 121,
+      "doc_type": "service_manual",
+      "section": "Packing and Shipping of Robot/Spare Parts",
+      "chapter": "10."
+    }
+  },
+  {
+    "id": "service_manual_196",
+    "content": "1. Copyright and disclaimers\nThe information contained herein is the property of Universal Robots A/S and shall not be reproduced in\nwhole or in part without prior written approval of Universal Robots A/S. The information herein is subject to\nchange without notice and should not be construed as a commitment by Universal Robots A/S. This\ndocument is periodically reviewed and revised.\nUniversal Robots A/S assumes no responsibility for any errors or omissions in this document.\nCopyright © 2009–2025 by Universal Robots A/S.\nThe Universal Robots logo is a registered trademark of Universal Robots A/S.\nNOTICE\nUniversal Robots continues to improve reliability and performance of its products, and\ntherefore reserves the right to upgrade the product without prior warning. Universal Robots\ntakes care that the content of this document is precise and correct, but takes no\nresponsibility for any errors or missing information.\nNOTICE\nUniversal Robots disclaims any liability, even if all guidelines in this document are followed.\nService Handbook",
+    "metadata": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "page": 123,
+      "doc_type": "service_manual",
+      "section": "Copyright and disclaimers",
+      "chapter": "1."
+    }
+  }
+]
