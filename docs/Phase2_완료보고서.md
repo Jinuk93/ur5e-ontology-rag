@@ -360,7 +360,3 @@ src/
 └── retrieval/
     └── retriever.py     ← 검색 로직
 ```
-
----
-
-**Phase 2 완료!**
