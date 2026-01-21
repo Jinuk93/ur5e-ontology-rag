@@ -1,0 +1,52 @@
+[
+  {
+    "id": "inv_001",
+    "question": "C999 에러 해결법",
+    "expected_answer": "C999 에러 코드에 대한 정보를 찾을 수 없습니다. 정확한 에러 코드를 확인해 주세요.",
+    "expected_contexts": [],
+    "category": "invalid",
+    "difficulty": "easy",
+    "expected_verification": "insufficient",
+    "tags": ["invalid_code", "hallucination_test"]
+  },
+  {
+    "id": "inv_002",
+    "question": "E1234 에러가 발생했습니다",
+    "expected_answer": "E1234 에러 코드는 UR5e 로봇의 알려진 에러 코드가 아닙니다. 에러 코드를 다시 확인해 주세요.",
+    "expected_contexts": [],
+    "category": "invalid",
+    "difficulty": "easy",
+    "expected_verification": "insufficient",
+    "tags": ["invalid_code", "hallucination_test"]
+  },
+  {
+    "id": "inv_003",
+    "question": "X500 에러 해결 방법 알려주세요",
+    "expected_answer": "X500은 UR5e 로봇에서 사용하지 않는 에러 코드입니다. 올바른 에러 코드를 확인해 주세요.",
+    "expected_contexts": [],
+    "category": "invalid",
+    "difficulty": "easy",
+    "expected_verification": "insufficient",
+    "tags": ["invalid_code", "hallucination_test"]
+  },
+  {
+    "id": "inv_004",
+    "question": "ABC123 에러 원인은 무엇인가요?",
+    "expected_answer": "ABC123은 유효한 UR5e 에러 코드가 아닙니다. Teach Pendant에서 정확한 에러 코드를 확인해 주세요.",
+    "expected_contexts": [],
+    "category": "invalid",
+    "difficulty": "easy",
+    "expected_verification": "insufficient",
+    "tags": ["invalid_code", "hallucination_test"]
+  },
+  {
+    "id": "inv_005",
+    "question": "ERR-9999 에러가 계속 발생합니다",
+    "expected_answer": "ERR-9999는 UR5e 에러 코드 형식이 아닙니다. UR5e 에러 코드는 일반적으로 'C' 뒤에 숫자가 오는 형식입니다.",
+    "expected_contexts": [],
+    "category": "invalid",
+    "difficulty": "easy",
+    "expected_verification": "insufficient",
+    "tags": ["invalid_code", "hallucination_test"]
+  }
+]

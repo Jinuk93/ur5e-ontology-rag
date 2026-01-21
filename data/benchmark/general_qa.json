@@ -1,0 +1,102 @@
+[
+  {
+    "id": "gen_001",
+    "question": "로봇이 갑자기 멈췄어요",
+    "expected_answer": "로봇이 갑자기 멈추면 비상정지 버튼 상태, 안전 시스템 상태, 에러 코드를 확인하세요. Teach Pendant에서 에러 메시지를 확인할 수 있습니다.",
+    "expected_contexts": ["emergency", "stop", "safety"],
+    "category": "general",
+    "difficulty": "medium",
+    "expected_verification": "partial",
+    "tags": ["sudden_stop", "diagnosis"]
+  },
+  {
+    "id": "gen_002",
+    "question": "로봇 속도가 느려졌어요",
+    "expected_answer": "로봇 속도 저하는 속도 설정, 안전 모드, 부하 상태를 확인하세요. 안전 모드가 활성화되면 속도가 제한됩니다.",
+    "expected_contexts": ["speed", "safety_mode"],
+    "category": "general",
+    "difficulty": "easy",
+    "expected_verification": "partial",
+    "tags": ["speed", "performance"]
+  },
+  {
+    "id": "gen_003",
+    "question": "로봇 전원이 안 켜져요",
+    "expected_answer": "전원이 켜지지 않으면 전원 케이블 연결, 브레이커 상태, Control Box LED 상태를 확인하세요.",
+    "expected_contexts": ["power", "startup"],
+    "category": "general",
+    "difficulty": "easy",
+    "expected_verification": "partial",
+    "tags": ["power", "startup"]
+  },
+  {
+    "id": "gen_004",
+    "question": "프로그램 실행 중 로봇이 떨려요",
+    "expected_answer": "로봇 떨림은 속도 설정 과다, 부하 초과, 기구부 이상을 의심할 수 있습니다. 프로그램 속도와 가속도 설정을 확인하세요.",
+    "expected_contexts": ["vibration", "program"],
+    "category": "general",
+    "difficulty": "medium",
+    "expected_verification": "partial",
+    "tags": ["vibration", "program", "troubleshooting"]
+  },
+  {
+    "id": "gen_005",
+    "question": "UR5e 로봇 정기 점검 항목",
+    "expected_answer": "정기 점검 항목: 볼트 체결 상태, 케이블 손상 여부, 그리스 상태, 안전 기능 테스트, 캘리브레이션 상태를 점검합니다.",
+    "expected_contexts": ["maintenance", "inspection"],
+    "category": "general",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["maintenance", "inspection", "checklist"]
+  },
+  {
+    "id": "gen_006",
+    "question": "로봇 팔이 이상한 경로로 움직여요",
+    "expected_answer": "비정상 경로 이동은 특이점(Singularity) 회피, 좌표계 설정, 프로그램 오류를 확인하세요.",
+    "expected_contexts": ["path", "movement", "singularity"],
+    "category": "general",
+    "difficulty": "hard",
+    "expected_verification": "partial",
+    "tags": ["path", "movement", "singularity"]
+  },
+  {
+    "id": "gen_007",
+    "question": "로봇에서 경고음이 계속 울려요",
+    "expected_answer": "경고음은 에러 발생, 안전 경고, 과열 경고 등을 알립니다. Teach Pendant에서 경고 메시지를 확인하세요.",
+    "expected_contexts": ["warning", "alarm", "sound"],
+    "category": "general",
+    "difficulty": "easy",
+    "expected_verification": "partial",
+    "tags": ["alarm", "warning", "sound"]
+  },
+  {
+    "id": "gen_008",
+    "question": "로봇 정확도가 떨어졌어요",
+    "expected_answer": "정확도 저하는 캘리브레이션 상태, 기구부 마모, 온도 변화, 부하 변화를 점검하세요. 재캘리브레이션이 필요할 수 있습니다.",
+    "expected_contexts": ["accuracy", "precision", "calibration"],
+    "category": "general",
+    "difficulty": "medium",
+    "expected_verification": "partial",
+    "tags": ["accuracy", "precision"]
+  },
+  {
+    "id": "gen_009",
+    "question": "자유드라이브 모드가 작동하지 않아요",
+    "expected_answer": "자유드라이브 모드 불가 시 Teach Pendant 연결 상태, 안전 시스템 설정, 로봇 상태(에러 여부)를 확인하세요.",
+    "expected_contexts": ["freedrive", "mode"],
+    "category": "general",
+    "difficulty": "medium",
+    "expected_verification": "partial",
+    "tags": ["freedrive", "mode", "operation"]
+  },
+  {
+    "id": "gen_010",
+    "question": "로봇 좌표계 설정 방법",
+    "expected_answer": "좌표계 설정은 Teach Pendant > 설정 > 좌표계에서 Base, Tool, Feature 좌표계를 설정할 수 있습니다.",
+    "expected_contexts": ["coordinate", "setup", "configuration"],
+    "category": "general",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["coordinate", "setup"]
+  }
+]

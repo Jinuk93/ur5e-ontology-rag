@@ -1,0 +1,152 @@
+[
+  {
+    "id": "err_001",
+    "question": "C103 에러가 발생했습니다. 해결 방법을 알려주세요.",
+    "expected_answer": "C103 에러는 Joint 관련 통신 문제입니다. 케이블 연결 상태를 확인하고 필요 시 재부팅을 수행하세요.",
+    "expected_contexts": ["C103"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C103", "joint", "communication"]
+  },
+  {
+    "id": "err_002",
+    "question": "C151 에러 해결법",
+    "expected_answer": "C151 에러는 안전 시스템 관련 에러입니다. 안전 설정을 확인하고 비상정지 버튼 상태를 점검하세요.",
+    "expected_contexts": ["C151"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C151", "safety"]
+  },
+  {
+    "id": "err_003",
+    "question": "C200 에러가 뜨는데 어떻게 해야 하나요?",
+    "expected_answer": "C200은 시스템 관련 에러입니다. 시스템 로그를 확인하고 재부팅을 시도해 보세요.",
+    "expected_contexts": ["C200"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C200", "system"]
+  },
+  {
+    "id": "err_004",
+    "question": "C259 에러 발생 시 조치 방법",
+    "expected_answer": "C259 에러는 통신 관련 문제입니다. 네트워크 연결 및 케이블 상태를 점검하세요.",
+    "expected_contexts": ["C259"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C259", "communication"]
+  },
+  {
+    "id": "err_005",
+    "question": "C300 에러 코드 해결 방안을 알려주세요",
+    "expected_answer": "C300은 Control Box 관련 에러입니다. Control Box 상태를 점검하고 전원을 재시작하세요.",
+    "expected_contexts": ["C300"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C300", "control_box"]
+  },
+  {
+    "id": "err_006",
+    "question": "C402 에러가 계속 발생합니다",
+    "expected_answer": "C402는 하드웨어 관련 에러입니다. 관련 부품을 점검하고 필요 시 서비스 센터에 문의하세요.",
+    "expected_contexts": ["C402"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C402", "hardware"]
+  },
+  {
+    "id": "err_007",
+    "question": "C500 에러 해결 방법 알려주세요",
+    "expected_answer": "C500은 소프트웨어 관련 에러입니다. 소프트웨어 업데이트 상태를 확인하고 재설치를 고려하세요.",
+    "expected_contexts": ["C500"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C500", "software"]
+  },
+  {
+    "id": "err_008",
+    "question": "C710 에러 발생했어요",
+    "expected_answer": "C710은 센서 관련 에러입니다. 센서 연결 상태와 캘리브레이션을 확인하세요.",
+    "expected_contexts": ["C710"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C710", "sensor"]
+  },
+  {
+    "id": "err_009",
+    "question": "C900 에러가 떴는데 어떻게 해야 하죠?",
+    "expected_answer": "C900은 시스템 크리티컬 에러입니다. 즉시 작업을 중단하고 기술 지원팀에 연락하세요.",
+    "expected_contexts": ["C900"],
+    "category": "error_code",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["C900", "critical"]
+  },
+  {
+    "id": "err_010",
+    "question": "C32 에러 원인과 해결책",
+    "expected_answer": "C32는 Joint 과열 관련 에러입니다. 로봇을 잠시 멈추고 냉각 시간을 가진 후 재시작하세요.",
+    "expected_contexts": ["C32"],
+    "category": "error_code",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["C32", "joint", "overheat"]
+  },
+  {
+    "id": "err_011",
+    "question": "C45 에러와 C50 에러가 동시에 발생했습니다",
+    "expected_answer": "C45와 C50 에러가 동시에 발생하면 복합적인 문제일 수 있습니다. 각 에러를 순차적으로 점검하고 공통 원인을 찾으세요.",
+    "expected_contexts": ["C45", "C50"],
+    "category": "error_code",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["C45", "C50", "multiple"]
+  },
+  {
+    "id": "err_012",
+    "question": "로봇 작동 중 C740 에러 발생 시 안전 조치",
+    "expected_answer": "C740 에러 발생 시 즉시 로봇 작동을 중단하고 안전 구역을 확보하세요. 원인 파악 후 재시작하세요.",
+    "expected_contexts": ["C740"],
+    "category": "error_code",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["C740", "safety", "operation"]
+  },
+  {
+    "id": "err_013",
+    "question": "C171과 C173 에러의 차이점은 무엇인가요?",
+    "expected_answer": "C171과 C173은 모두 통신 관련 에러이지만 발생 원인이 다릅니다. C171은 내부 통신 오류, C173은 외부 통신 오류입니다.",
+    "expected_contexts": ["C171", "C173"],
+    "category": "error_code",
+    "difficulty": "hard",
+    "expected_verification": "verified",
+    "tags": ["C171", "C173", "communication", "comparison"]
+  },
+  {
+    "id": "err_014",
+    "question": "C503 에러가 반복적으로 발생하는 원인",
+    "expected_answer": "C503 에러가 반복 발생하면 하드웨어 결함이나 케이블 손상을 의심해 볼 수 있습니다. 정밀 점검이 필요합니다.",
+    "expected_contexts": ["C503"],
+    "category": "error_code",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["C503", "recurring"]
+  },
+  {
+    "id": "err_015",
+    "question": "C61 에러 발생 후 로봇이 완전히 멈췄습니다",
+    "expected_answer": "C61 에러로 로봇이 정지하면 전원을 끄고 5분 후 재시작하세요. 문제가 지속되면 서비스 센터에 문의하세요.",
+    "expected_contexts": ["C61"],
+    "category": "error_code",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["C61", "stop", "recovery"]
+  }
+]

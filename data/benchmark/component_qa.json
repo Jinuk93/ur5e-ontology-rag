@@ -1,0 +1,102 @@
+[
+  {
+    "id": "comp_001",
+    "question": "Control Box에서 발생할 수 있는 에러들은 무엇인가요?",
+    "expected_answer": "Control Box에서는 전원 관련, 통신 관련, 과열 관련 에러가 발생할 수 있습니다. 대표적으로 C200, C300 계열 에러가 있습니다.",
+    "expected_contexts": ["Control Box", "C200", "C300"],
+    "category": "component",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["control_box", "error_list"]
+  },
+  {
+    "id": "comp_002",
+    "question": "Joint 3 통신 에러 해결법",
+    "expected_answer": "Joint 3 통신 에러는 케이블 연결 상태 확인, 커넥터 청소, 케이블 교체 순으로 점검하세요.",
+    "expected_contexts": ["Joint", "communication"],
+    "category": "component",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["joint", "communication", "joint3"]
+  },
+  {
+    "id": "comp_003",
+    "question": "Teach Pendant 연결 문제",
+    "expected_answer": "Teach Pendant 연결 문제는 USB 케이블 확인, 포트 변경, 드라이버 재설치로 해결할 수 있습니다.",
+    "expected_contexts": ["Teach Pendant", "connection"],
+    "category": "component",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["teach_pendant", "connection"]
+  },
+  {
+    "id": "comp_004",
+    "question": "Tool Flange 센서 에러",
+    "expected_answer": "Tool Flange 센서 에러는 센서 캘리브레이션, 센서 청소, 필요 시 센서 교체로 해결하세요.",
+    "expected_contexts": ["Tool Flange", "sensor"],
+    "category": "component",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["tool_flange", "sensor"]
+  },
+  {
+    "id": "comp_005",
+    "question": "Safety System이 갑자기 작동했어요",
+    "expected_answer": "Safety System 작동 시 비상정지 버튼, 안전 평면 설정, 안전 I/O를 점검하세요. 설정된 안전 조건이 위반되었을 수 있습니다.",
+    "expected_contexts": ["Safety System", "emergency"],
+    "category": "component",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["safety_system", "emergency_stop"]
+  },
+  {
+    "id": "comp_006",
+    "question": "Base 부분에서 이상한 소리가 납니다",
+    "expected_answer": "Base에서 이상 소음 발생 시 볼트 체결 상태, 베어링 마모, 그리스 상태를 확인하세요.",
+    "expected_contexts": ["Base", "noise"],
+    "category": "component",
+    "difficulty": "easy",
+    "expected_verification": "partial",
+    "tags": ["base", "noise", "maintenance"]
+  },
+  {
+    "id": "comp_007",
+    "question": "Wrist 3 Joint 에러 빈번 발생",
+    "expected_answer": "Wrist 3 Joint 에러가 빈번하면 케이블 손상, 엔코더 이상, 과부하 상태를 점검하세요.",
+    "expected_contexts": ["Wrist", "Joint"],
+    "category": "component",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["wrist", "joint", "recurring"]
+  },
+  {
+    "id": "comp_008",
+    "question": "Power Supply Unit 문제 진단법",
+    "expected_answer": "Power Supply Unit 문제는 전압 출력 측정, LED 상태 확인, 팬 동작 확인으로 진단합니다.",
+    "expected_contexts": ["Power Supply", "diagnosis"],
+    "category": "component",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["power_supply", "diagnosis"]
+  },
+  {
+    "id": "comp_009",
+    "question": "Shoulder Joint 과열 문제",
+    "expected_answer": "Shoulder Joint 과열 시 작업 부하 감소, 냉각 시간 확보, 작업 사이클 조정을 권장합니다.",
+    "expected_contexts": ["Shoulder", "overheat"],
+    "category": "component",
+    "difficulty": "medium",
+    "expected_verification": "verified",
+    "tags": ["shoulder", "overheat", "temperature"]
+  },
+  {
+    "id": "comp_010",
+    "question": "Elbow Joint 캘리브레이션 방법",
+    "expected_answer": "Elbow Joint 캘리브레이션은 Teach Pendant의 설정 메뉴에서 진행합니다. 로봇을 Home 위치로 이동 후 캘리브레이션을 수행하세요.",
+    "expected_contexts": ["Elbow", "calibration"],
+    "category": "component",
+    "difficulty": "easy",
+    "expected_verification": "verified",
+    "tags": ["elbow", "calibration", "setup"]
+  }
+]
