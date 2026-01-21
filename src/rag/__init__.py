@@ -12,6 +12,9 @@ from .query_analyzer import QueryAnalyzer, QueryAnalysis
 from .graph_retriever import GraphRetriever, GraphResult
 from .hybrid_retriever import HybridRetriever, HybridResult
 
+# Phase 7: Verifier (검증)
+from .verifier import Verifier, VerificationResult, VerificationStatus
+
 __all__ = [
     # Phase 5
     "Retriever",
@@ -25,4 +28,8 @@ __all__ = [
     "GraphResult",
     "HybridRetriever",
     "HybridResult",
+    # Phase 7
+    "Verifier",
+    "VerificationResult",
+    "VerificationStatus",
 ]
