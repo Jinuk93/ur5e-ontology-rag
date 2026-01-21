@@ -1,0 +1,153 @@
+# ============================================================
+# sources.yaml - 문서 출처 및 메타 정보
+# ============================================================
+# Main-F3에서 생성
+# 문서 버전, 페이지 수, 섹션 구조 등을 정의합니다.
+# ============================================================
+
+version: "1.0"
+last_updated: "2024-01-21"
+
+documents:
+  # ---------------------------------------------------------
+  # Error Codes Directory
+  # ---------------------------------------------------------
+  error_codes:
+    doc_id: "error_codes"
+    title: "Error Codes Directory"
+    subtitle: "All Robots"
+    version: "5.12"
+    date: "2024-01"
+    language: "en"
+    pages: 167
+    publisher: "Universal Robots A/S"
+    copyright: "2009-2025"
+
+    # 원본 파일 정보
+    source_file: "ErrorCodes.pdf"
+
+    # 처리 정보
+    processed_date: "2024-01-21"
+    chunk_count: 99
+
+    # 문서 URL
+    url: "https://www.universal-robots.com/download/?option=101202"
+
+    # 주요 섹션
+    sections:
+      - id: "intro"
+        title: "Introduction"
+        page_start: 1
+        page_end: 11
+      - id: "error_codes"
+        title: "Error Codes (C0-C55)"
+        page_start: 12
+        page_end: 167
+
+  # ---------------------------------------------------------
+  # Service Manual (e-Series)
+  # ---------------------------------------------------------
+  service_manual:
+    doc_id: "service_manual"
+    title: "e-Series Service Manual"
+    subtitle: "UR5e, UR10e, UR16e"
+    version: "5.12"
+    date: "2024-01"
+    language: "en"
+    pages: 123
+    publisher: "Universal Robots A/S"
+    copyright: "2009-2025"
+
+    source_file: "e-Series_Service_Manual_en.pdf"
+
+    processed_date: "2024-01-21"
+    chunk_count: 197
+
+    url: "https://www.universal-robots.com/download/?option=101201"
+
+    sections:
+      - id: "safety"
+        title: "Safety"
+        page_start: 1
+        page_end: 15
+      - id: "installation"
+        title: "Installation"
+        page_start: 16
+        page_end: 35
+      - id: "operation"
+        title: "Operation"
+        page_start: 36
+        page_end: 60
+      - id: "maintenance"
+        title: "Maintenance"
+        page_start: 61
+        page_end: 90
+      - id: "troubleshooting"
+        title: "Troubleshooting"
+        page_start: 91
+        page_end: 110
+      - id: "specifications"
+        title: "Specifications"
+        page_start: 111
+        page_end: 123
+
+  # ---------------------------------------------------------
+  # User Manual (UR5e)
+  # ---------------------------------------------------------
+  user_manual:
+    doc_id: "user_manual"
+    title: "UR5e User Manual"
+    subtitle: "e-Series"
+    version: "5.12"
+    date: "2024-01"
+    language: "en"
+    pages: 249
+    publisher: "Universal Robots A/S"
+    copyright: "2009-2025"
+
+    source_file: "710-965-00_UR5e_User_Manual_en_Global.pdf"
+
+    processed_date: "2024-01-21"
+    chunk_count: 426
+
+    url: "https://www.universal-robots.com/download/?option=101200"
+
+    sections:
+      - id: "overview"
+        title: "Robot Overview"
+        page_start: 1
+        page_end: 30
+      - id: "safety"
+        title: "Safety"
+        page_start: 31
+        page_end: 60
+      - id: "installation"
+        title: "Installation"
+        page_start: 61
+        page_end: 100
+      - id: "operation"
+        title: "Operation"
+        page_start: 101
+        page_end: 150
+      - id: "programming"
+        title: "Programming"
+        page_start: 151
+        page_end: 200
+      - id: "io"
+        title: "I/O Interfaces"
+        page_start: 201
+        page_end: 230
+      - id: "specifications"
+        title: "Specifications"
+        page_start: 231
+        page_end: 249
+
+# ---------------------------------------------------------
+# 메타 정보
+# ---------------------------------------------------------
+meta:
+  total_documents: 3
+  total_chunks: 722
+  total_pages: 539
+  index_version: "1.0"
+  embedding_model: "text-embedding-3-small"

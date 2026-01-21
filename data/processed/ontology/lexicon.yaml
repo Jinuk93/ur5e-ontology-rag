@@ -1,37 +1,401 @@
-# 동의어 및 별칭 사전
+# ============================================================
+# lexicon.yaml - 동의어/별칭 사전
+# ============================================================
+# 에러코드와 부품명의 동의어를 정의합니다.
+# EntityLinker가 이 파일을 로드하여 매칭에 사용합니다.
+# ============================================================
 
-synonyms:
-  UR5e:
-    - "UR-5e"
-    - "UR5-e"
-    - "유니버설로봇 5e"
-    
-  TeachPendant:
-    - "teach pendant"
-    - "teaching pendant"
-    - "TP"
-    - "티치펜던트"
-    
-  EmergencyStop:
-    - "e-stop"
-    - "emergency stop"
-    - "E-Stop"
-    - "비상정지"
-    
-  SafetyMode:
-    - "safety mode"
-    - "세이프티 모드"
-    - "안전 모드"
+# ------------------------------------------------------------
+# 에러 코드 동의어
+# ------------------------------------------------------------
+error_codes:
+  # Communication Errors (C4)
+  C4:
+    canonical: "C4"
+    synonyms: ["C-4", "c4", "C 4"]
+    node_id: "ERR_C4"
+    category: "communication"
 
-# 표기 변형
-variants:
-  case_variations: true
-  hyphen_variations: true
-  spacing_variations: true
+  C4A1:
+    canonical: "C4A1"
+    synonyms: ["C-4A1", "c4a1", "C4-A1", "C 4 A 1"]
+    node_id: "ERR_C4A1"
+    category: "communication"
 
-# 언어별 매핑
-language_mappings:
-  ko:
-    UR5e: ["유니버설로봇 5e", "UR5e"]
-    TeachPendant: ["티치펜던트", "교시 펜던트"]
-    EmergencyStop: ["비상정지", "긴급정지"]
+  C4A15:
+    canonical: "C4A15"
+    synonyms: ["C-4A15", "c4a15", "C4-A15", "C 4 A 15", "C-4-A-15"]
+    node_id: "ERR_C4A15"
+    category: "communication"
+
+  C4A16:
+    canonical: "C4A16"
+    synonyms: ["C-4A16", "c4a16", "C4-A16"]
+    node_id: "ERR_C4A16"
+    category: "communication"
+
+  C4A17:
+    canonical: "C4A17"
+    synonyms: ["C-4A17", "c4a17", "C4-A17"]
+    node_id: "ERR_C4A17"
+    category: "communication"
+
+  # Safety Errors
+  C103:
+    canonical: "C103"
+    synonyms: ["C-103", "c103"]
+    node_id: "ERR_C103"
+    category: "safety"
+
+  C104:
+    canonical: "C104"
+    synonyms: ["C-104", "c104"]
+    node_id: "ERR_C104"
+    category: "safety"
+
+  C119:
+    canonical: "C119"
+    synonyms: ["C-119", "c119"]
+    node_id: "ERR_C119"
+    category: "safety"
+
+  C153:
+    canonical: "C153"
+    synonyms: ["C-153", "c153"]
+    node_id: "ERR_C153"
+    category: "safety"
+
+  # Overload/Force Errors
+  C189:
+    canonical: "C189"
+    synonyms: ["C-189", "c189"]
+    node_id: "ERR_C189"
+    category: "overload"
+
+  C190:
+    canonical: "C190"
+    synonyms: ["C-190", "c190"]
+    node_id: "ERR_C190"
+    category: "overload"
+
+  # Vibration Errors
+  C204:
+    canonical: "C204"
+    synonyms: ["C-204", "c204"]
+    node_id: "ERR_C204"
+    category: "vibration"
+
+  C207:
+    canonical: "C207"
+    synonyms: ["C-207", "c207"]
+    node_id: "ERR_C207"
+    category: "vibration"
+
+  # Joint Communication Errors (C50-C55)
+  C50:
+    canonical: "C50"
+    synonyms: ["C-50", "c50"]
+    node_id: "ERR_C50"
+    category: "joint_communication"
+
+  C50A100:
+    canonical: "C50A100"
+    synonyms: ["C-50A100", "c50a100", "C50-A100"]
+    node_id: "ERR_C50A100"
+    category: "joint_communication"
+
+  C51:
+    canonical: "C51"
+    synonyms: ["C-51", "c51"]
+    node_id: "ERR_C51"
+    category: "joint_communication"
+
+  C52:
+    canonical: "C52"
+    synonyms: ["C-52", "c52"]
+    node_id: "ERR_C52"
+    category: "joint_communication"
+
+  C53:
+    canonical: "C53"
+    synonyms: ["C-53", "c53"]
+    node_id: "ERR_C53"
+    category: "joint_communication"
+
+  C54:
+    canonical: "C54"
+    synonyms: ["C-54", "c54"]
+    node_id: "ERR_C54"
+    category: "joint_communication"
+
+  C55:
+    canonical: "C55"
+    synonyms: ["C-55", "c55"]
+    node_id: "ERR_C55"
+    category: "joint_communication"
+
+  # Power Errors
+  C10:
+    canonical: "C10"
+    synonyms: ["C-10", "c10"]
+    node_id: "ERR_C10"
+    category: "power"
+
+  C17:
+    canonical: "C17"
+    synonyms: ["C-17", "c17"]
+    node_id: "ERR_C17"
+    category: "power"
+
+# ------------------------------------------------------------
+# 부품명 동의어
+# ------------------------------------------------------------
+components:
+  # 메인 컴포넌트
+  control_box:
+    canonical: "Control Box"
+    synonyms:
+      - "control box"
+      - "컨트롤 박스"
+      - "컨트롤박스"
+      - "controller"
+      - "컨트롤러"
+      - "제어기"
+      - "제어 박스"
+      - "제어박스"
+      - "CB"
+    node_id: "COMP_CONTROL_BOX"
+
+  teach_pendant:
+    canonical: "Teach Pendant"
+    synonyms:
+      - "teach pendant"
+      - "티치 펜던트"
+      - "티치펜던트"
+      - "펜던트"
+      - "pendant"
+      - "TP"
+      - "교시기"
+    node_id: "COMP_TEACH_PENDANT"
+
+  robot_arm:
+    canonical: "Robot Arm"
+    synonyms:
+      - "robot arm"
+      - "로봇 팔"
+      - "로봇팔"
+      - "arm"
+      - "매니퓰레이터"
+      - "manipulator"
+      - "로봇 암"
+    node_id: "COMP_ROBOT_ARM"
+
+  # 보드류
+  safety_control_board:
+    canonical: "Safety Control Board"
+    synonyms:
+      - "safety control board"
+      - "safety board"
+      - "세이프티 보드"
+      - "안전 제어 보드"
+      - "안전제어보드"
+      - "SCB"
+    node_id: "COMP_SAFETY_BOARD"
+
+  motherboard:
+    canonical: "Motherboard"
+    synonyms:
+      - "motherboard"
+      - "마더보드"
+      - "메인보드"
+      - "mainboard"
+      - "main board"
+    node_id: "COMP_MOTHERBOARD"
+
+  screen_board:
+    canonical: "Screen Board"
+    synonyms:
+      - "screen board"
+      - "스크린보드"
+      - "스크린 보드"
+      - "display board"
+    node_id: "COMP_SCREEN_BOARD"
+
+  # 조인트
+  joint_0:
+    canonical: "Joint 0"
+    synonyms:
+      - "joint 0"
+      - "joint0"
+      - "조인트 0"
+      - "조인트0"
+      - "base joint"
+      - "베이스 조인트"
+      - "J0"
+      - "0번 조인트"
+    node_id: "COMP_JOINT_0"
+
+  joint_1:
+    canonical: "Joint 1"
+    synonyms:
+      - "joint 1"
+      - "joint1"
+      - "조인트 1"
+      - "조인트1"
+      - "shoulder joint"
+      - "숄더 조인트"
+      - "J1"
+      - "1번 조인트"
+    node_id: "COMP_JOINT_1"
+
+  joint_2:
+    canonical: "Joint 2"
+    synonyms:
+      - "joint 2"
+      - "joint2"
+      - "조인트 2"
+      - "조인트2"
+      - "elbow joint"
+      - "엘보우 조인트"
+      - "J2"
+      - "2번 조인트"
+    node_id: "COMP_JOINT_2"
+
+  joint_3:
+    canonical: "Joint 3"
+    synonyms:
+      - "joint 3"
+      - "joint3"
+      - "조인트 3"
+      - "조인트3"
+      - "wrist 1"
+      - "손목 1"
+      - "J3"
+      - "3번 조인트"
+    node_id: "COMP_JOINT_3"
+
+  joint_4:
+    canonical: "Joint 4"
+    synonyms:
+      - "joint 4"
+      - "joint4"
+      - "조인트 4"
+      - "조인트4"
+      - "wrist 2"
+      - "손목 2"
+      - "J4"
+      - "4번 조인트"
+    node_id: "COMP_JOINT_4"
+
+  joint_5:
+    canonical: "Joint 5"
+    synonyms:
+      - "joint 5"
+      - "joint5"
+      - "조인트 5"
+      - "조인트5"
+      - "wrist 3"
+      - "손목 3"
+      - "J5"
+      - "5번 조인트"
+    node_id: "COMP_JOINT_5"
+
+  # 케이블
+  communication_cable:
+    canonical: "Communication Cable"
+    synonyms:
+      - "communication cable"
+      - "통신 케이블"
+      - "통신케이블"
+      - "통신선"
+      - "comm cable"
+    node_id: "COMP_COMM_CABLE"
+
+  power_cable:
+    canonical: "Power Cable"
+    synonyms:
+      - "power cable"
+      - "전원 케이블"
+      - "전원케이블"
+      - "전원선"
+    node_id: "COMP_POWER_CABLE"
+
+  ethernet_cable:
+    canonical: "Ethernet Cable"
+    synonyms:
+      - "ethernet cable"
+      - "이더넷 케이블"
+      - "랜선"
+      - "lan cable"
+      - "LAN 케이블"
+    node_id: "COMP_ETHERNET_CABLE"
+
+  # 전원
+  power_supply:
+    canonical: "Power Supply"
+    synonyms:
+      - "power supply"
+      - "전원 공급 장치"
+      - "전원공급장치"
+      - "전원"
+      - "psu"
+      - "PSU"
+    node_id: "COMP_POWER_SUPPLY"
+
+  # 안전 장치
+  emergency_stop:
+    canonical: "Emergency Stop"
+    synonyms:
+      - "emergency stop"
+      - "비상 정지"
+      - "비상정지"
+      - "e-stop"
+      - "estop"
+      - "이머전시 스톱"
+      - "E-Stop"
+    node_id: "COMP_ESTOP"
+
+  safety_system:
+    canonical: "Safety System"
+    synonyms:
+      - "safety system"
+      - "안전 시스템"
+      - "안전시스템"
+      - "세이프티 시스템"
+    node_id: "COMP_SAFETY_SYSTEM"
+
+  # 툴
+  gripper:
+    canonical: "Gripper"
+    synonyms:
+      - "gripper"
+      - "그리퍼"
+      - "집게"
+      - "end effector"
+      - "엔드 이펙터"
+      - "엔드이펙터"
+    node_id: "COMP_GRIPPER"
+
+  tool:
+    canonical: "Tool"
+    synonyms:
+      - "tool"
+      - "툴"
+      - "공구"
+      - "도구"
+    node_id: "COMP_TOOL"
+
+  # 센서 (Main 추가)
+  force_torque_sensor:
+    canonical: "Force/Torque Sensor"
+    synonyms:
+      - "force torque sensor"
+      - "ft sensor"
+      - "FT 센서"
+      - "힘토크 센서"
+      - "힘/토크 센서"
+      - "axia80"
+      - "ATI Axia80"
+      - "Axia80"
+      - "힘 토크 센서"
+    node_id: "COMP_FT_SENSOR"

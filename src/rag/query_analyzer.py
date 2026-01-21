@@ -8,6 +8,10 @@
 #   - 부품명 감지 (Control Box, Joint 등)
 #   - 쿼리 타입 분류 (error_resolution, component_info, general)
 #   - 검색 전략 결정 (graph_first, vector_first, hybrid)
+#
+# [Main-F1 개선] EntityLinker 통합
+#   - lexicon.yaml 기반 동의어 매칭
+#   - rules.yaml 기반 정규화
 # ============================================================
 
 import re
@@ -19,6 +23,13 @@ from typing import List, Optional, Set
 # 프로젝트 루트 추가
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
+
+# EntityLinker 임포트 (Main-F1)
+try:
+    from src.rag.entity_linker import EntityLinker, LinkedEntity
+    ENTITY_LINKER_AVAILABLE = True
+except ImportError:
+    ENTITY_LINKER_AVAILABLE = False
 
 
 # ============================================================
@@ -128,6 +139,10 @@ class QueryAnalyzer:
     사용자 질문을 분석하여 에러 코드, 부품명을 감지하고
     최적의 검색 전략을 결정합니다.
 
+    [Main-F1] EntityLinker 통합:
+    - lexicon.yaml 기반 동의어 매칭
+    - rules.yaml 기반 정규화
+
     사용 예시:
         analyzer = QueryAnalyzer()
         analysis = analyzer.analyze("C4A15 에러가 발생했어요")
@@ -135,21 +150,40 @@ class QueryAnalyzer:
         print(analysis.search_strategy)  # 'graph_first'
     """
 
-    def __init__(self):
-        """QueryAnalyzer 초기화"""
-        # 에러 코드 패턴: C4, C4A1, C4A15, C50A100 등
-        self.error_code_pattern = re.compile(r'\b(C\d+(?:A\d+)?)\b', re.IGNORECASE)
+    def __init__(self, use_entity_linker: bool = True):
+        """
+        QueryAnalyzer 초기화
 
-        # 유효한 에러 코드 기본 번호 (C0 ~ C55)
-        self.valid_error_bases = set(range(0, 56))  # 0~55
+        Args:
+            use_entity_linker: EntityLinker 사용 여부 (기본: True)
+        """
+        # [Main-F1] EntityLinker 초기화
+        self.entity_linker = None
+        self.use_entity_linker = use_entity_linker and ENTITY_LINKER_AVAILABLE
 
-        # 부품명 매핑 구축 (검색용)
-        self.component_mapping = {}
-        for canonical, variants in COMPONENT_NAMES.items():
-            for variant in variants:
-                self.component_mapping[variant.lower()] = canonical
+        if self.use_entity_linker:
+            try:
+                self.entity_linker = EntityLinker()
+                print("[OK] QueryAnalyzer initialized with EntityLinker")
+            except Exception as e:
+                print(f"[WARN] EntityLinker 초기화 실패, 기본 모드 사용: {e}")
+                self.use_entity_linker = False
 
-        print("[OK] QueryAnalyzer initialized")
+        if not self.use_entity_linker:
+            # 기존 방식 (Fallback)
+            # 에러 코드 패턴: C4, C4A1, C4A15, C50A100 등
+            self.error_code_pattern = re.compile(r'\b(C\d+(?:A\d+)?)\b', re.IGNORECASE)
+
+            # 유효한 에러 코드 기본 번호 (C0 ~ C55)
+            self.valid_error_bases = set(range(0, 56))  # 0~55
+
+            # 부품명 매핑 구축 (검색용)
+            self.component_mapping = {}
+            for canonical, variants in COMPONENT_NAMES.items():
+                for variant in variants:
+                    self.component_mapping[variant.lower()] = canonical
+
+            print("[OK] QueryAnalyzer initialized (legacy mode)")
 
     # --------------------------------------------------------
     # [3.1] 메인 분석 메서드
@@ -165,6 +199,11 @@ class QueryAnalyzer:
         Returns:
             QueryAnalysis: 분석 결과
         """
+        # [Main-F1] EntityLinker 사용
+        if self.use_entity_linker and self.entity_linker:
+            return self._analyze_with_entity_linker(query)
+
+        # 기존 방식 (Fallback)
         # 1. 에러 코드 감지
         error_codes = self._detect_error_codes(query)
 
@@ -178,6 +217,51 @@ class QueryAnalyzer:
         query_type = self._determine_query_type(query, error_codes, components)
 
         # 5. 검색 전략 결정
+        search_strategy = self._determine_search_strategy(query_type, error_codes, components)
+
+        return QueryAnalysis(
+            original_query=query,
+            error_codes=error_codes,
+            components=components,
+            keywords=keywords,
+            query_type=query_type,
+            search_strategy=search_strategy,
+        )
+
+    def _analyze_with_entity_linker(self, query: str) -> QueryAnalysis:
+        """
+        [Main-F1] EntityLinker를 사용한 질문 분석
+
+        Args:
+            query: 사용자 질문
+
+        Returns:
+            QueryAnalysis: 분석 결과
+        """
+        # EntityLinker로 엔티티 추출 및 링킹
+        linked_entities = self.entity_linker.link_from_text(query)
+
+        # 에러코드/부품명 분리
+        error_codes = []
+        components = []
+
+        for entity in linked_entities:
+            if entity.entity_type == "error_code":
+                # 정규화된 에러코드 사용
+                if entity.canonical not in error_codes:
+                    error_codes.append(entity.canonical)
+            elif entity.entity_type == "component":
+                # 정규화된 부품명 사용
+                if entity.canonical not in components:
+                    components.append(entity.canonical)
+
+        # 키워드 추출
+        keywords = self._extract_keywords(query)
+
+        # 쿼리 타입 결정
+        query_type = self._determine_query_type(query, error_codes, components)
+
+        # 검색 전략 결정
         search_strategy = self._determine_search_strategy(query_type, error_codes, components)
 
         return QueryAnalysis(

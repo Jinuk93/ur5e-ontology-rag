@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-from src.api.routes import health, query, search, info
+from src.api.routes import health, query, search, info, evidence
 from src.api.services.rag_service import RAGService
 
 
@@ -71,6 +71,7 @@ app = FastAPI(
 - **분석 (Analyze)**: 질문 분석 (에러 코드, 부품명 감지)
 - **검색 (Search)**: 관련 문서 검색 (LLM 생성 없이)
 - **정보 (Info)**: 에러 코드/부품 정보 조회
+- **근거 (Evidence)**: trace_id로 답변 근거/경로 상세 조회
 
 ### 기술 스택
 
@@ -127,6 +128,7 @@ app.include_router(health.router, tags=["Health"])
 app.include_router(query.router, prefix="/api/v1", tags=["Query"])
 app.include_router(search.router, prefix="/api/v1", tags=["Search"])
 app.include_router(info.router, prefix="/api/v1", tags=["Info"])
+app.include_router(evidence.router, prefix="/api/v1", tags=["Evidence"])
 
 
 # ============================================================
@@ -154,7 +156,8 @@ async def root():
             "analyze": "/api/v1/analyze",
             "search": "/api/v1/search",
             "errors": "/api/v1/errors",
-            "components": "/api/v1/components"
+            "components": "/api/v1/components",
+            "evidence": "/api/v1/evidence/{trace_id}"
         }
     }
 
