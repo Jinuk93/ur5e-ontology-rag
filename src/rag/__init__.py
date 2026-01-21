@@ -15,6 +15,21 @@ from .hybrid_retriever import HybridRetriever, HybridResult
 # Phase 7: Verifier (검증)
 from .verifier import Verifier, VerificationResult, VerificationStatus
 
+# Main-S5: Sensor/Ontology Verifier (센서 검증)
+from .sensor_verifier import SensorVerifier, SensorVerificationResult
+from .ontology_verifier import OntologyVerifier, OntologyVerificationResult
+
+# Main-S3: Context Enricher (센서 통합)
+from .context_enricher import ContextEnricher, get_context_enricher
+from .schemas.enriched_context import (
+    EnrichedContext,
+    DocEvidence,
+    SensorEvidence,
+    AxisStats,
+    CorrelationResult,
+    CorrelationLevel,
+)
+
 __all__ = [
     # Phase 5
     "Retriever",
@@ -32,4 +47,18 @@ __all__ = [
     "Verifier",
     "VerificationResult",
     "VerificationStatus",
+    # Main-S5: Sensor/Ontology Verifier
+    "SensorVerifier",
+    "SensorVerificationResult",
+    "OntologyVerifier",
+    "OntologyVerificationResult",
+    # Main-S3
+    "ContextEnricher",
+    "get_context_enricher",
+    "EnrichedContext",
+    "DocEvidence",
+    "SensorEvidence",
+    "AxisStats",
+    "CorrelationResult",
+    "CorrelationLevel",
 ]

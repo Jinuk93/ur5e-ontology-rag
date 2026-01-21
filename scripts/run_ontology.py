@@ -27,6 +27,7 @@ if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
 from src.ingestion.models import load_chunks_from_json
+import json
 from src.ontology.schema import (
     Entity,
     EntityType,
@@ -34,6 +35,8 @@ from src.ontology.schema import (
     RelationType,
     create_component,
     create_error_code,
+    create_sensor_pattern,
+    create_cause,
 )
 from src.ontology.graph_store import GraphStore
 from src.ontology.entity_extractor import EntityExtractor
@@ -44,6 +47,7 @@ from src.ontology.entity_extractor import EntityExtractor
 # ============================================================
 
 CHUNKS_DIR = os.path.join(project_root, "data", "processed", "chunks")
+ONTOLOGY_JSON = os.path.join(project_root, "data", "processed", "ontology", "ontology.json")
 
 CHUNK_FILES = [
     "error_codes_chunks.json",
@@ -53,6 +57,80 @@ CHUNK_FILES = [
 
 # 샘플링 설정 (전체 처리 시 비용 절감)
 SAMPLE_SIZE = 10  # 각 문서에서 추출할 청크 수 (0 = 전체)
+
+
+# ============================================================
+# [1.5] 센서 패턴 온톨로지 로드 [Main-S4]
+# ============================================================
+
+def load_sensor_ontology(store: GraphStore):
+    """
+    ontology.json에서 센서 패턴과 관계를 Neo4j에 적재
+
+    Returns:
+        tuple: (entity_count, relation_count)
+    """
+    if not os.path.exists(ONTOLOGY_JSON):
+        print(f"    [WARN] ontology.json not found: {ONTOLOGY_JSON}")
+        return 0, 0
+
+    with open(ONTOLOGY_JSON, "r", encoding="utf-8") as f:
+        ontology = json.load(f)
+
+    entity_count = 0
+    relation_count = 0
+
+    # 1. SensorPattern 노드 적재
+    sensor_patterns = ontology.get("nodes", {}).get("SensorPattern", [])
+    for sp in sensor_patterns:
+        entity = create_sensor_pattern(
+            pattern_id=sp.get("pattern_id"),
+            pattern_type=sp.get("type"),
+            description=sp.get("description", ""),
+            threshold=sp.get("threshold", {}),
+            severity=sp.get("severity", "medium")
+        )
+        store.add_entity(entity)
+        entity_count += 1
+
+    # 2. Cause 노드 적재
+    causes = ontology.get("nodes", {}).get("Cause", [])
+    for c in causes:
+        entity = create_cause(
+            cause_id=c.get("cause_id"),
+            description=c.get("description", ""),
+            category=c.get("category", "unknown")
+        )
+        store.add_entity(entity)
+        entity_count += 1
+
+    # 3. 관계 적재
+    relationships = ontology.get("relationships", [])
+    for rel in relationships:
+        rel_type_str = rel.get("type", "")
+        source = rel.get("source", "")
+        target = rel.get("target", "")
+
+        # RelationType 매핑
+        if rel_type_str == "INDICATES":
+            rel_type = RelationType.INDICATES
+            props = {"confidence": rel.get("confidence", 0.5)}
+        elif rel_type_str == "TRIGGERS":
+            rel_type = RelationType.TRIGGERS
+            props = {"probability": rel.get("probability", 0.5)}
+        else:
+            continue  # 알 수 없는 관계 타입 스킵
+
+        relation = Relation(
+            source_id=source,
+            target_id=target,
+            type=rel_type,
+            properties=props
+        )
+        store.add_relation(relation)
+        relation_count += 1
+
+    return entity_count, relation_count
 
 
 # ============================================================
@@ -235,9 +313,19 @@ def run_ontology_pipeline():
     print(f"    Added {chunk_count} Chunk nodes")
 
     # --------------------------------------------------------
-    # Step 7: 최종 통계
+    # Step 7: 센서 패턴 온톨로지 적재 [Main-S4]
     # --------------------------------------------------------
-    print(f"\n[Step 7] Final Statistics")
+    print(f"\n[Step 7] Loading Sensor Pattern Ontology")
+    print("-" * 40)
+
+    sensor_entities, sensor_relations = load_sensor_ontology(store)
+    print(f"    Added {sensor_entities} SensorPattern/Cause nodes")
+    print(f"    Added {sensor_relations} INDICATES/TRIGGERS relations")
+
+    # --------------------------------------------------------
+    # Step 8: 최종 통계
+    # --------------------------------------------------------
+    print(f"\n[Step 8] Final Statistics")
     print("=" * 60)
 
     final_stats = store.get_statistics()
@@ -331,6 +419,49 @@ def run_test_queries(store: GraphStore):
     """)
     for r in results:
         print(f"    {r['document']}: {r['chunk_count']} chunks")
+
+    # [Main-S4] 쿼리 6: 센서 패턴 목록
+    print("\n[Query 6] Sensor Patterns [Main-S4]")
+    print("-" * 40)
+    results = store.query("""
+        MATCH (sp:SensorPattern)
+        RETURN sp.pattern_id as id, sp.type as type, sp.description as desc, sp.severity as severity
+    """)
+    if results:
+        for r in results:
+            print(f"    {r['id']} ({r['type']}): {r['desc']} [{r.get('severity', 'n/a')}]")
+    else:
+        print("    (no SensorPattern nodes found)")
+
+    # [Main-S4] 쿼리 7: 센서 패턴 → 원인
+    print("\n[Query 7] SensorPattern → Cause (INDICATES) [Main-S4]")
+    print("-" * 40)
+    results = store.query("""
+        MATCH (sp:SensorPattern)-[r:INDICATES]->(c:Cause)
+        RETURN sp.type as pattern, c.description as cause, r.confidence as confidence
+        ORDER BY r.confidence DESC
+        LIMIT 10
+    """)
+    if results:
+        for r in results:
+            print(f"    {r['pattern']} → {r['cause']} (신뢰도: {r['confidence']:.0%})")
+    else:
+        print("    (no INDICATES relations found)")
+
+    # [Main-S4] 쿼리 8: 센서 패턴 → 에러코드
+    print("\n[Query 8] SensorPattern → ErrorCode (TRIGGERS) [Main-S4]")
+    print("-" * 40)
+    results = store.query("""
+        MATCH (sp:SensorPattern)-[r:TRIGGERS]->(e:ErrorCode)
+        RETURN sp.type as pattern, e.name as error, r.probability as probability
+        ORDER BY r.probability DESC
+        LIMIT 10
+    """)
+    if results:
+        for r in results:
+            print(f"    {r['pattern']} → {r['error']} (확률: {r['probability']:.0%})")
+    else:
+        print("    (no TRIGGERS relations found)")
 
 
 # ============================================================

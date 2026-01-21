@@ -128,6 +128,7 @@ with st.sidebar:
             "📊 시스템 현황 (Overview)",
             "🔍 검색 탐색기 (Search Explorer)",
             "🕸️ 지식 그래프 (Knowledge Graph)",
+            "📉 센서 분석 (Sensor Analysis)",
             "📈 성능 평가 (Performance)",
             "🔧 운영 모니터 (LLMOps Monitor)",
         ],
@@ -201,6 +202,10 @@ elif page == "🔍 검색 탐색기 (Search Explorer)":
 elif page == "🕸️ 지식 그래프 (Knowledge Graph)":
     from src.dashboard.pages.knowledge_graph import render_knowledge_graph
     render_knowledge_graph()
+
+elif page == "📉 센서 분석 (Sensor Analysis)":
+    from src.dashboard.pages.sensor_analysis import render_sensor_analysis
+    render_sensor_analysis()
 
 elif page == "📈 성능 평가 (Performance)":
     from src.dashboard.pages.performance import render_performance

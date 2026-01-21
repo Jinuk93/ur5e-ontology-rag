@@ -1,0 +1,288 @@
+[
+  {
+    "pattern_id": "PAT-007",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-15T06:22:07",
+    "duration_ms": 58456000,
+    "confidence": 1.0,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": -1.5996142731560958,
+      "deviation_pct": 42.972156863803704,
+      "duration_hours": 16.23777777777778
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-008",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-16T06:21:15",
+    "duration_ms": 230184000,
+    "confidence": 1.0,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": -1.5998138453313189,
+      "deviation_pct": 86.32720058076198,
+      "duration_hours": 63.94
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-003",
+    "pattern_type": "overload",
+    "timestamp": "2024-01-16T14:17:00",
+    "duration_ms": 9000,
+    "confidence": 1.0,
+    "metrics": {
+      "axis": "Fz",
+      "max_value": 327.61629050329884,
+      "mean_value": 327.61629050329884,
+      "duration_s": 9
+    },
+    "related_error_codes": [
+      "C189"
+    ],
+    "event_id": "EVT-003",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-001",
+    "pattern_type": "collision",
+    "timestamp": "2024-01-17T14:00:00",
+    "duration_ms": 0,
+    "confidence": 1.0,
+    "metrics": {
+      "peak_axis": "Fz",
+      "peak_value": -829.2386774570303,
+      "baseline": -20.461574733937425,
+      "deviation": 808.7771027230929
+    },
+    "related_error_codes": [
+      "C153",
+      "C119"
+    ],
+    "event_id": "EVT-001",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-004",
+    "pattern_type": "overload",
+    "timestamp": "2024-01-17T14:32:00",
+    "duration_ms": 22000,
+    "confidence": 1.0,
+    "metrics": {
+      "axis": "Fz",
+      "max_value": 369.0104883891997,
+      "mean_value": 369.01048838919974,
+      "duration_s": 22
+    },
+    "related_error_codes": [
+      "C189"
+    ],
+    "event_id": "EVT-004",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-005",
+    "pattern_type": "overload",
+    "timestamp": "2024-01-18T14:12:00",
+    "duration_ms": 22000,
+    "confidence": 1.0,
+    "metrics": {
+      "axis": "Fz",
+      "max_value": 364.345541186584,
+      "mean_value": 364.34554118658406,
+      "duration_s": 22
+    },
+    "related_error_codes": [
+      "C189"
+    ],
+    "event_id": "EVT-005",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-009",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-18T22:47:35",
+    "duration_ms": 26684000,
+    "confidence": 0.9574232321363809,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": 1.61076201025441,
+      "deviation_pct": 19.148464642727618,
+      "duration_hours": 7.412222222222222
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-010",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-19T06:43:59",
+    "duration_ms": 55960000,
+    "confidence": 1.0,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": -1.6072709550257365,
+      "deviation_pct": 39.80653237258648,
+      "duration_hours": 15.544444444444444
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-006",
+    "pattern_type": "overload",
+    "timestamp": "2024-01-19T14:30:00",
+    "duration_ms": 23000,
+    "confidence": 1.0,
+    "metrics": {
+      "axis": "Fz",
+      "max_value": 394.57635783296615,
+      "mean_value": 394.57635783296615,
+      "duration_s": 23
+    },
+    "related_error_codes": [
+      "C189"
+    ],
+    "event_id": "EVT-006",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-011",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-19T22:45:50",
+    "duration_ms": 26794000,
+    "confidence": 0.9750758311199921,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": 1.6139203214386644,
+      "deviation_pct": 19.50151662239984,
+      "duration_hours": 7.442777777777778
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-012",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-20T06:41:11",
+    "duration_ms": 56328000,
+    "confidence": 1.0,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": -1.602114871697598,
+      "deviation_pct": 28.245997501633664,
+      "duration_hours": 15.646666666666667
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-002",
+    "pattern_type": "collision",
+    "timestamp": "2024-01-20T10:00:00",
+    "duration_ms": 0,
+    "confidence": 1.0,
+    "metrics": {
+      "peak_axis": "Fz",
+      "peak_value": -815.2287270054231,
+      "baseline": -14.127141069921754,
+      "deviation": 801.1015859355014
+    },
+    "related_error_codes": [
+      "C153",
+      "C119"
+    ],
+    "event_id": "EVT-002",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-013",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-20T22:49:21",
+    "duration_ms": 26590000,
+    "confidence": 0.9540090506284992,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": 1.6061091704886383,
+      "deviation_pct": 19.080181012569984,
+      "duration_hours": 7.386111111111111
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-014",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-21T06:40:38",
+    "duration_ms": 15697000,
+    "confidence": 1.0,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": -1.6026059933011076,
+      "deviation_pct": 26.984657351117747,
+      "duration_hours": 4.360277777777778
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-015",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-21T11:55:03",
+    "duration_ms": 9653000,
+    "confidence": 1.0,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": 1.605816716100632,
+      "deviation_pct": 58.62008769445512,
+      "duration_hours": 2.681388888888889
+    },
+    "related_error_codes": [],
+    "event_id": "EVT-010",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-016",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-21T14:50:35",
+    "duration_ms": 26762000,
+    "confidence": 1.0,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": -1.6115363344232705,
+      "deviation_pct": 29.30262798032356,
+      "duration_hours": 7.433888888888889
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  },
+  {
+    "pattern_id": "PAT-017",
+    "pattern_type": "drift",
+    "timestamp": "2024-01-21T22:45:53",
+    "duration_ms": 4446000,
+    "confidence": 0.9517357950463763,
+    "metrics": {
+      "baseline": -15.98657158106423,
+      "drift_amount": 3.0410146615143834,
+      "deviation_pct": 19.034715900927527,
+      "duration_hours": 1.235
+    },
+    "related_error_codes": [],
+    "event_id": "",
+    "context": {}
+  }
+]

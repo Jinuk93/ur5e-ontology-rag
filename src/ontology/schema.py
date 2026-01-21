@@ -37,6 +37,8 @@ class EntityType(str, Enum):
     PROCEDURE = "Procedure"      # 절차/해결책
     DOCUMENT = "Document"        # 문서
     CHUNK = "Chunk"              # 청크 (VectorDB 연결)
+    SENSOR_PATTERN = "SensorPattern"  # [Main-S4] 센서 패턴
+    CAUSE = "Cause"              # [Main-S4] 원인
 
 
 # ============================================================
@@ -64,6 +66,10 @@ class RelationType(str, Enum):
     MENTIONED_IN = "MENTIONED_IN"    # Entity → Document
     HAS_CHUNK = "HAS_CHUNK"          # Document → Chunk
     DESCRIBES = "DESCRIBES"          # Chunk → Entity
+
+    # [Main-S4] SensorPattern 관련
+    INDICATES = "INDICATES"          # SensorPattern → Cause
+    TRIGGERS = "TRIGGERS"            # SensorPattern → ErrorCode
 
 
 # ============================================================
@@ -184,6 +190,9 @@ VALID_RELATIONS = {
     RelationType.MENTIONED_IN: (None, EntityType.DOCUMENT),  # Any → Document
     RelationType.HAS_CHUNK: (EntityType.DOCUMENT, EntityType.CHUNK),
     RelationType.DESCRIBES: (EntityType.CHUNK, None),  # Chunk → Any
+    # [Main-S4] SensorPattern 관련
+    RelationType.INDICATES: (EntityType.SENSOR_PATTERN, EntityType.CAUSE),
+    RelationType.TRIGGERS: (EntityType.SENSOR_PATTERN, EntityType.ERROR_CODE),
 }
 
 
@@ -289,6 +298,66 @@ def create_procedure(
         properties={
             "steps": steps or [],
             "tools_required": tools_required or [],
+            **kwargs,
+        }
+    )
+
+
+def create_sensor_pattern(
+    pattern_id: str,
+    pattern_type: str,
+    description: str = "",
+    threshold: Dict[str, Any] = None,
+    severity: str = "medium",
+    **kwargs
+) -> Entity:
+    """
+    [Main-S4] SensorPattern 엔티티 생성 헬퍼
+
+    Args:
+        pattern_id: 패턴 고유 ID (PAT_COLLISION 등)
+        pattern_type: 패턴 유형 (collision, vibration, overload, drift)
+        description: 설명
+        threshold: 임계값 정보
+        severity: 심각도 (high, medium, low)
+    """
+    # ID는 ontology.json 관계 참조와 일치하도록 그대로 사용
+    return Entity(
+        id=pattern_id,
+        type=EntityType.SENSOR_PATTERN,
+        name=pattern_id,
+        properties={
+            "type": pattern_type,
+            "description": description,
+            "threshold": threshold or {},
+            "severity": severity,
+            **kwargs,
+        }
+    )
+
+
+def create_cause(
+    cause_id: str,
+    description: str,
+    category: str = "unknown",
+    **kwargs
+) -> Entity:
+    """
+    [Main-S4] Cause 엔티티 생성 헬퍼
+
+    Args:
+        cause_id: 원인 고유 ID
+        description: 원인 설명
+        category: 카테고리 (physical, electrical, software 등)
+    """
+    # ID는 ontology.json 관계 참조와 일치하도록 그대로 사용
+    return Entity(
+        id=cause_id,
+        type=EntityType.CAUSE,
+        name=description,
+        properties={
+            "description": description,
+            "category": category,
             **kwargs,
         }
     )

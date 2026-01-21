@@ -8,6 +8,8 @@
 #   - Context Verifier: 컨텍스트 충분성 사전 검증
 #   - Answer Verifier: 답변-컨텍스트 일치 사후 검증
 #   - Safe Response: 검증 실패 시 안전 응답 생성
+#   - [Main-S5] Sensor Verifier: 센서 증거 검증
+#   - [Main-S5] Ontology Verifier: 온톨로지 교차 검증
 # ============================================================
 
 import re
@@ -34,13 +36,19 @@ class VerificationStatus(Enum):
     검증 상태
 
     Values:
-        VERIFIED: 검증됨 (충분한 근거 있음)
-        PARTIAL: 부분 검증 (일부 근거만 있음)
+        VERIFIED: 검증됨 (문서 + 센서 + 온톨로지 완전 검증)
+        PARTIAL: 부분 검증 (일부 근거만 있음, 레거시 호환)
+        PARTIAL_BOTH: 문서 + 센서 있으나 온톨로지 불일치 [Main-S5]
+        PARTIAL_DOC_ONLY: 문서만 검증 [Main-S5]
+        PARTIAL_SENSOR_ONLY: 센서만 검증 [Main-S5]
         UNVERIFIED: 미검증 (근거 없음)
         INSUFFICIENT: 컨텍스트 부족
     """
     VERIFIED = "verified"
     PARTIAL = "partial"
+    PARTIAL_BOTH = "partial_both"           # [Main-S5]
+    PARTIAL_DOC_ONLY = "partial_doc"        # [Main-S5]
+    PARTIAL_SENSOR_ONLY = "partial_sensor"  # [Main-S5]
     UNVERIFIED = "unverified"
     INSUFFICIENT = "insufficient"
 
@@ -60,6 +68,10 @@ class VerificationResult:
         evidence_count: 근거 수
         evidence_sources: 근거 출처 리스트
         warnings: 경고 메시지 리스트
+        sensor_evidence_count: 센서 증거 수 [Main-S5]
+        sensor_patterns: 감지된 센서 패턴 목록 [Main-S5]
+        ontology_match: 온톨로지 매칭 여부 [Main-S5]
+        correlation_level: 상관관계 레벨 [Main-S5]
     """
     status: VerificationStatus
     confidence: float
@@ -67,10 +79,33 @@ class VerificationResult:
     evidence_sources: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
 
+    # [Main-S5] 센서 관련 필드
+    sensor_evidence_count: int = 0
+    sensor_patterns: List[str] = field(default_factory=list)
+    ontology_match: bool = False
+    correlation_level: str = "NONE"
+
     @property
     def is_safe_to_answer(self) -> bool:
         """답변해도 안전한지 여부"""
-        return self.status in [VerificationStatus.VERIFIED, VerificationStatus.PARTIAL]
+        safe_statuses = [
+            VerificationStatus.VERIFIED,
+            VerificationStatus.PARTIAL,
+            VerificationStatus.PARTIAL_BOTH,
+            VerificationStatus.PARTIAL_DOC_ONLY,
+            VerificationStatus.PARTIAL_SENSOR_ONLY,
+        ]
+        return self.status in safe_statuses
+
+    @property
+    def has_sensor_support(self) -> bool:
+        """[Main-S5] 센서 증거 존재 여부"""
+        return self.sensor_evidence_count > 0
+
+    @property
+    def has_dual_evidence(self) -> bool:
+        """[Main-S5] 이중 증거 (문서 + 센서) 존재 여부"""
+        return self.evidence_count > 0 and self.sensor_evidence_count > 0
 
     def __repr__(self):
         return (
@@ -575,6 +610,7 @@ class Verifier:
     통합 검증기
 
     Context Verifier + Answer Verifier + Safe Response를 통합합니다.
+    [Main-S5] Sensor Verifier + Ontology Verifier 추가
 
     사용 예시:
         verifier = Verifier()
@@ -589,12 +625,17 @@ class Verifier:
 
         # 출처 추가
         answer = verifier.add_citation(answer, post_result)
+
+        # [Main-S5] EnrichedContext 검증
+        enriched_result = verifier.verify_enriched_context(enriched, analysis)
     """
 
     def __init__(
         self,
         min_contexts: int = 1,
         min_relevance_score: float = 0.3,
+        use_sensor_verification: bool = False,
+        graph_retriever: Optional[Any] = None,
     ):
         """
         Verifier 초기화
@@ -602,6 +643,8 @@ class Verifier:
         Args:
             min_contexts: 최소 필요 컨텍스트 수
             min_relevance_score: 최소 관련성 점수
+            use_sensor_verification: 센서 검증 사용 여부 [Main-S5]
+            graph_retriever: GraphRetriever 인스턴스 [Main-S5]
         """
         self.context_verifier = ContextVerifier(
             min_contexts=min_contexts,
@@ -610,7 +653,23 @@ class Verifier:
         self.answer_verifier = AnswerVerifier()
         self.safe_response_generator = SafeResponseGenerator()
 
-        print("[OK] Verifier initialized")
+        # [Main-S5] 센서 검증기
+        self.use_sensor_verification = use_sensor_verification
+        self.sensor_verifier = None
+        self.ontology_verifier = None
+
+        if use_sensor_verification:
+            try:
+                from src.rag.sensor_verifier import SensorVerifier
+                from src.rag.ontology_verifier import OntologyVerifier
+                self.sensor_verifier = SensorVerifier()
+                self.ontology_verifier = OntologyVerifier(graph_retriever)
+                print("[OK] Verifier initialized (with sensor verification)")
+            except ImportError:
+                print("[WARN] Sensor verifier modules not available")
+                print("[OK] Verifier initialized (without sensor verification)")
+        else:
+            print("[OK] Verifier initialized")
 
     def verify_before_generation(
         self,
@@ -720,7 +779,13 @@ class Verifier:
         Returns:
             str: 경고가 추가된 답변
         """
-        if verification.status != VerificationStatus.PARTIAL:
+        partial_statuses = [
+            VerificationStatus.PARTIAL,
+            VerificationStatus.PARTIAL_BOTH,
+            VerificationStatus.PARTIAL_DOC_ONLY,
+            VerificationStatus.PARTIAL_SENSOR_ONLY,
+        ]
+        if verification.status not in partial_statuses:
             return answer
 
         if not verification.warnings:
@@ -728,6 +793,271 @@ class Verifier:
 
         warning = self.safe_response_generator._partial_response(verification.warnings)
         return answer + warning
+
+    # --------------------------------------------------------
+    # [Main-S5] EnrichedContext 검증
+    # --------------------------------------------------------
+
+    def verify_enriched_context(
+        self,
+        enriched_context: Any,
+        query_analysis: Optional[Any] = None,
+    ) -> VerificationResult:
+        """
+        [Main-S5] EnrichedContext 통합 검증
+
+        문서 증거 + 센서 증거 + 온톨로지 교차 검증을 수행합니다.
+
+        Args:
+            enriched_context: EnrichedContext 객체
+            query_analysis: QueryAnalysis 객체 (Optional)
+
+        Returns:
+            VerificationResult: 이중 검증 결과
+        """
+        warnings = []
+        evidence_sources = []
+
+        # 기본값
+        doc_score = 0.0
+        sensor_score = 0.0
+        ontology_match = False
+        correlation_level = "NONE"
+        sensor_patterns = []
+
+        # ─────────────────────────────────────────────────────
+        # 1. 문서 증거 검증
+        # ─────────────────────────────────────────────────────
+        doc_evidence = getattr(enriched_context, 'doc_evidence', [])
+        if doc_evidence:
+            doc_count = len(doc_evidence)
+            evidence_sources.extend([
+                f"{d.source}:{d.chunk_id}" if hasattr(d, 'source') else str(d)
+                for d in doc_evidence[:3]
+            ])
+            # 문서 점수: 평균 score 기반
+            doc_scores = [
+                getattr(d, 'score', 0.5)
+                for d in doc_evidence
+            ]
+            doc_score = sum(doc_scores) / len(doc_scores) if doc_scores else 0.0
+        else:
+            warnings.append("문서 증거 없음")
+
+        # ─────────────────────────────────────────────────────
+        # 2. 센서 증거 검증 (Main-S5)
+        # ─────────────────────────────────────────────────────
+        sensor_evidence = getattr(enriched_context, 'sensor_evidence', None)
+        sensor_evidence_count = 0
+
+        if self.use_sensor_verification and self.sensor_verifier:
+            error_code = getattr(enriched_context, 'error_code', None)
+            sensor_result = self.sensor_verifier.verify(
+                sensor_evidence=sensor_evidence,
+                error_code=error_code
+            )
+
+            if sensor_result.is_valid:
+                sensor_score = sensor_result.score
+                sensor_patterns = sensor_result.pattern_types
+                sensor_evidence_count = len(sensor_result.pattern_types)
+            else:
+                warnings.extend(sensor_result.warnings)
+
+        elif sensor_evidence and hasattr(sensor_evidence, 'patterns'):
+            # 간단한 패턴 체크 (sensor_verifier 없을 때)
+            patterns = sensor_evidence.patterns or []
+            if patterns:
+                sensor_patterns = [
+                    p.get("pattern_type", p.get("type", "unknown"))
+                    for p in patterns
+                ]
+                sensor_score = 0.6
+                sensor_evidence_count = len(patterns)
+
+        # ─────────────────────────────────────────────────────
+        # 3. 온톨로지 교차 검증 (Main-S5)
+        # ─────────────────────────────────────────────────────
+        if self.ontology_verifier and sensor_patterns:
+            error_code = getattr(enriched_context, 'error_code', None)
+            if error_code:
+                for pattern_type in sensor_patterns:
+                    is_match, probability = self.ontology_verifier.verify_pattern_error_relation(
+                        pattern_type=pattern_type,
+                        error_code=error_code
+                    )
+                    if is_match:
+                        ontology_match = True
+                        break
+
+        # ─────────────────────────────────────────────────────
+        # 4. ContextEnricher의 correlation 정보 활용
+        # ─────────────────────────────────────────────────────
+        correlation = getattr(enriched_context, 'correlation', None)
+        if correlation:
+            correlation_level = getattr(correlation, 'level', None)
+            if hasattr(correlation_level, 'value'):
+                correlation_level = correlation_level.value
+            elif correlation_level is None:
+                correlation_level = "NONE"
+
+        # ─────────────────────────────────────────────────────
+        # 5. 최종 상태 및 신뢰도 계산
+        # ─────────────────────────────────────────────────────
+        confidence = self._calculate_dual_confidence(
+            doc_score=doc_score,
+            sensor_score=sensor_score,
+            ontology_match=ontology_match,
+            correlation_level=correlation_level
+        )
+
+        status = self._determine_verification_status(
+            has_doc=len(doc_evidence) > 0,
+            has_sensor=sensor_evidence_count > 0,
+            ontology_match=ontology_match,
+            confidence=confidence
+        )
+
+        return VerificationResult(
+            status=status,
+            confidence=confidence,
+            evidence_count=len(doc_evidence),
+            evidence_sources=evidence_sources,
+            warnings=warnings,
+            sensor_evidence_count=sensor_evidence_count,
+            sensor_patterns=sensor_patterns,
+            ontology_match=ontology_match,
+            correlation_level=correlation_level
+        )
+
+    def _calculate_dual_confidence(
+        self,
+        doc_score: float,
+        sensor_score: float,
+        ontology_match: bool,
+        correlation_level: str
+    ) -> float:
+        """
+        [Main-S5] 이중 검증 신뢰도 계산
+
+        Args:
+            doc_score: 문서 증거 점수
+            sensor_score: 센서 증거 점수
+            ontology_match: 온톨로지 매칭 여부
+            correlation_level: 상관관계 레벨
+
+        Returns:
+            float: 종합 신뢰도 (0.0 ~ 1.0)
+        """
+        # 기본 점수: 문서 50%, 센서 30%
+        base = (doc_score * 0.5) + (sensor_score * 0.3)
+
+        # 온톨로지 매칭 보너스
+        if ontology_match:
+            base += 0.15
+
+        # 상관관계 레벨 보너스
+        if correlation_level == "STRONG":
+            base += 0.1
+        elif correlation_level == "MODERATE":
+            base += 0.05
+
+        return min(1.0, max(0.0, base))
+
+    def _determine_verification_status(
+        self,
+        has_doc: bool,
+        has_sensor: bool,
+        ontology_match: bool,
+        confidence: float
+    ) -> VerificationStatus:
+        """
+        [Main-S5] 검증 상태 판정
+
+        Args:
+            has_doc: 문서 증거 존재 여부
+            has_sensor: 센서 증거 존재 여부
+            ontology_match: 온톨로지 매칭 여부
+            confidence: 신뢰도
+
+        Returns:
+            VerificationStatus: 검증 상태
+        """
+        # VERIFIED: 문서 + 센서 + 온톨로지 완전 검증
+        if has_doc and has_sensor and ontology_match and confidence >= 0.75:
+            return VerificationStatus.VERIFIED
+
+        # PARTIAL_BOTH: 문서 + 센서 있으나 온톨로지 불일치
+        if has_doc and has_sensor and not ontology_match:
+            return VerificationStatus.PARTIAL_BOTH
+
+        # PARTIAL_DOC_ONLY: 문서만 검증
+        if has_doc and not has_sensor:
+            return VerificationStatus.PARTIAL_DOC_ONLY
+
+        # PARTIAL_SENSOR_ONLY: 센서만 검증
+        if has_sensor and not has_doc:
+            return VerificationStatus.PARTIAL_SENSOR_ONLY
+
+        # VERIFIED (문서 + 센서, 높은 신뢰도)
+        if has_doc and has_sensor and confidence >= 0.7:
+            return VerificationStatus.VERIFIED
+
+        # INSUFFICIENT: 증거 없음
+        if not has_doc and not has_sensor:
+            return VerificationStatus.INSUFFICIENT
+
+        # 기본: PARTIAL
+        return VerificationStatus.PARTIAL
+
+    def add_enriched_citation(
+        self,
+        answer: str,
+        verification: VerificationResult,
+    ) -> str:
+        """
+        [Main-S5] 답변에 이중 검증 정보 추가
+
+        Args:
+            answer: 원본 답변
+            verification: 이중 검증 결과
+
+        Returns:
+            str: 검증 정보가 추가된 답변
+        """
+        # 신뢰도 아이콘
+        if verification.confidence >= 0.7:
+            confidence_icon = "🟢"
+        elif verification.confidence >= 0.4:
+            confidence_icon = "🟡"
+        else:
+            confidence_icon = "🔴"
+
+        citation_parts = ["\n\n---", "**검증 정보:**"]
+
+        # 문서 근거
+        if verification.evidence_count > 0:
+            sources = verification.evidence_sources[:3]
+            sources_text = ", ".join(sources) if sources else "unknown"
+            citation_parts.append(f"- 📄 문서 근거: {verification.evidence_count}건 ({sources_text})")
+
+        # 센서 분석
+        if verification.sensor_evidence_count > 0:
+            patterns_text = ", ".join(verification.sensor_patterns)
+            citation_parts.append(f"- 📊 센서 분석: {patterns_text} 패턴 감지")
+
+        # 온톨로지 매칭
+        if verification.ontology_match:
+            citation_parts.append(f"- 🔗 온톨로지: 패턴-에러 매칭 확인")
+
+        # 상관관계
+        if verification.correlation_level != "NONE":
+            citation_parts.append(f"- 📈 상관관계: {verification.correlation_level}")
+
+        # 종합 신뢰도
+        citation_parts.append(f"- {confidence_icon} 종합 신뢰도: {verification.confidence:.0%}")
+
+        return answer + "\n".join(citation_parts)
 
 
 # ============================================================

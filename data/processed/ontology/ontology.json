@@ -1,0 +1,158 @@
+{
+  "version": "1.0",
+  "description": "UR5e Ontology - Sensor Patterns (Main-S4)",
+
+  "nodes": {
+    "SensorPattern": [
+      {
+        "pattern_id": "PAT_COLLISION",
+        "type": "collision",
+        "description": "Z축 급격한 힘 증가 (충돌)",
+        "threshold": {
+          "axis": "Fz",
+          "value": 500,
+          "rise_time_ms": 100
+        },
+        "severity": "high"
+      },
+      {
+        "pattern_id": "PAT_VIBRATION",
+        "type": "vibration",
+        "description": "토크 축 고주파 진동",
+        "threshold": {
+          "axes": ["Tx", "Ty"],
+          "multiplier": 2.0,
+          "min_duration_s": 10
+        },
+        "severity": "medium"
+      },
+      {
+        "pattern_id": "PAT_OVERLOAD",
+        "type": "overload",
+        "description": "지속적 과부하",
+        "threshold": {
+          "axis": "Fz",
+          "value": 300,
+          "duration_s": 5
+        },
+        "severity": "high"
+      },
+      {
+        "pattern_id": "PAT_DRIFT",
+        "type": "drift",
+        "description": "Baseline 점진적 이동",
+        "threshold": {
+          "deviation_pct": 10,
+          "min_duration_h": 0.5
+        },
+        "severity": "low"
+      }
+    ],
+    "Cause": [
+      {
+        "cause_id": "CAUSE_PHYSICAL_CONTACT",
+        "description": "물리적 접촉 (장애물 충돌)",
+        "category": "physical"
+      },
+      {
+        "cause_id": "CAUSE_UNEXPECTED_OBSTACLE",
+        "description": "예상치 못한 장애물",
+        "category": "physical"
+      },
+      {
+        "cause_id": "CAUSE_PAYLOAD_EXCEEDED",
+        "description": "하중 초과",
+        "category": "mechanical"
+      },
+      {
+        "cause_id": "CAUSE_JOINT_WEAR",
+        "description": "조인트 마모",
+        "category": "mechanical"
+      },
+      {
+        "cause_id": "CAUSE_LOOSE_BOLTS",
+        "description": "볼트 풀림",
+        "category": "mechanical"
+      },
+      {
+        "cause_id": "CAUSE_CALIBRATION_NEEDED",
+        "description": "캘리브레이션 필요",
+        "category": "sensor"
+      },
+      {
+        "cause_id": "CAUSE_PROGRAM_ERROR",
+        "description": "프로그램 경로 오류",
+        "category": "software"
+      }
+    ]
+  },
+
+  "relationships": [
+    {
+      "type": "INDICATES",
+      "source": "PAT_COLLISION",
+      "target": "CAUSE_PHYSICAL_CONTACT",
+      "confidence": 0.9
+    },
+    {
+      "type": "INDICATES",
+      "source": "PAT_COLLISION",
+      "target": "CAUSE_UNEXPECTED_OBSTACLE",
+      "confidence": 0.85
+    },
+    {
+      "type": "INDICATES",
+      "source": "PAT_COLLISION",
+      "target": "CAUSE_PROGRAM_ERROR",
+      "confidence": 0.7
+    },
+    {
+      "type": "TRIGGERS",
+      "source": "PAT_COLLISION",
+      "target": "C153",
+      "probability": 0.95
+    },
+    {
+      "type": "TRIGGERS",
+      "source": "PAT_COLLISION",
+      "target": "C119",
+      "probability": 0.8
+    },
+    {
+      "type": "INDICATES",
+      "source": "PAT_OVERLOAD",
+      "target": "CAUSE_PAYLOAD_EXCEEDED",
+      "confidence": 0.9
+    },
+    {
+      "type": "TRIGGERS",
+      "source": "PAT_OVERLOAD",
+      "target": "C189",
+      "probability": 0.9
+    },
+    {
+      "type": "INDICATES",
+      "source": "PAT_VIBRATION",
+      "target": "CAUSE_JOINT_WEAR",
+      "confidence": 0.7
+    },
+    {
+      "type": "INDICATES",
+      "source": "PAT_VIBRATION",
+      "target": "CAUSE_LOOSE_BOLTS",
+      "confidence": 0.65
+    },
+    {
+      "type": "TRIGGERS",
+      "source": "PAT_VIBRATION",
+      "target": "C204",
+      "probability": 0.75
+    },
+    {
+      "type": "INDICATES",
+      "source": "PAT_DRIFT",
+      "target": "CAUSE_CALIBRATION_NEEDED",
+      "confidence": 0.8
+    }
+  ]
+}

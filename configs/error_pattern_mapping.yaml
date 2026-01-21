@@ -1,0 +1,128 @@
+# ============================================================
+# configs/error_pattern_mapping.yaml - 에러코드-패턴 매핑
+# ============================================================
+# Main-S3에서 구현
+#
+# 에러코드와 예상되는 센서 패턴 간의 매핑을 정의합니다.
+# ContextEnricher가 상관관계 분석에 사용합니다.
+# ============================================================
+
+# ============================================================
+# 에러코드 → 센서 패턴 매핑
+# ============================================================
+error_to_pattern:
+  # 충돌 관련 에러
+  C153:
+    expected_patterns:
+      - collision
+    description: "Safety Stop - 충돌 감지"
+    confidence_boost: 0.2
+    keywords:
+      - 충돌
+      - collision
+      - 물리적 접촉
+
+  C119:
+    expected_patterns:
+      - collision
+    description: "Safety Limit Violation"
+    confidence_boost: 0.15
+    keywords:
+      - 안전 한계
+      - safety limit
+      - 과속
+
+  # 과부하 관련 에러
+  C189:
+    expected_patterns:
+      - overload
+    description: "Payload 과부하"
+    confidence_boost: 0.2
+    keywords:
+      - 과부하
+      - overload
+      - 하중 초과
+
+  # 진동 관련 에러
+  C204:
+    expected_patterns:
+      - vibration
+    description: "Joint 진동 경고"
+    confidence_boost: 0.15
+    keywords:
+      - 진동
+      - vibration
+      - 떨림
+
+# ============================================================
+# 센서 패턴 → 원인 매핑
+# ============================================================
+pattern_to_cause:
+  collision:
+    possible_causes:
+      - "물리적 충돌 (장애물 접촉)"
+      - "예상치 못한 작업물 위치"
+      - "프로그램 경로 오류"
+      - "안전 영역 침범"
+    severity: high
+
+  vibration:
+    possible_causes:
+      - "조인트 마모"
+      - "볼트 풀림"
+      - "불균형 하중"
+      - "고속 운전 중 공진"
+    severity: medium
+
+  overload:
+    possible_causes:
+      - "하중 초과"
+      - "작업물 무게 오측정"
+      - "그리퍼 오작동"
+      - "장기 과부하 운전"
+    severity: high
+
+  drift:
+    possible_causes:
+      - "센서 캘리브레이션 필요"
+      - "온도 변화에 의한 drift"
+      - "기계적 마모"
+    severity: low
+
+# ============================================================
+# 상관관계 판정 기준
+# ============================================================
+correlation_thresholds:
+  # STRONG: 문서 원인 + 센서 패턴 모두 일치
+  strong:
+    min_confidence: 0.85
+    requirements:
+      - doc_evidence
+      - matching_pattern
+
+  # MODERATE: 한쪽만 확인
+  moderate:
+    min_confidence: 0.65
+    requirements_any:
+      - doc_evidence
+      - matching_pattern
+
+  # WEAK: 패턴 있으나 불일치
+  weak:
+    min_confidence: 0.45
+    requirements:
+      - any_pattern
+
+  # NONE: 센서 데이터 없음
+  none:
+    min_confidence: 0.0
+
+# ============================================================
+# 기본 시간 윈도우 설정
+# ============================================================
+time_windows:
+  default: "1h"
+  collision: "30m"    # 충돌은 짧은 윈도우
+  vibration: "2h"     # 진동은 긴 윈도우
+  overload: "1h"
+  drift: "4h"         # 드리프트는 더 긴 윈도우

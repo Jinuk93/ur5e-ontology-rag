@@ -1,0 +1,121 @@
+{
+  "total_expected": 10,
+  "total_detected": 17,
+  "matched": [
+    {
+      "expected_event_id": "EVT-001",
+      "expected_type": "collision",
+      "detected_pattern_id": "PAT-001",
+      "detected_type": "collision",
+      "confidence": 1.0
+    },
+    {
+      "expected_event_id": "EVT-002",
+      "expected_type": "collision",
+      "detected_pattern_id": "PAT-002",
+      "detected_type": "collision",
+      "confidence": 1.0
+    },
+    {
+      "expected_event_id": "EVT-003",
+      "expected_type": "overload",
+      "detected_pattern_id": "PAT-003",
+      "detected_type": "overload",
+      "confidence": 1.0
+    },
+    {
+      "expected_event_id": "EVT-004",
+      "expected_type": "overload",
+      "detected_pattern_id": "PAT-004",
+      "detected_type": "overload",
+      "confidence": 1.0
+    },
+    {
+      "expected_event_id": "EVT-005",
+      "expected_type": "overload",
+      "detected_pattern_id": "PAT-005",
+      "detected_type": "overload",
+      "confidence": 1.0
+    },
+    {
+      "expected_event_id": "EVT-006",
+      "expected_type": "overload",
+      "detected_pattern_id": "PAT-006",
+      "detected_type": "overload",
+      "confidence": 1.0
+    },
+    {
+      "expected_event_id": "EVT-010",
+      "expected_type": "drift_no_doc",
+      "detected_pattern_id": "PAT-014",
+      "detected_type": "drift",
+      "confidence": 1.0
+    }
+  ],
+  "missed": [],
+  "false_positives": [
+    {
+      "pattern_id": "PAT-007",
+      "pattern_type": "drift",
+      "start_time": "2024-01-15 06:22:07",
+      "confidence": 1.0
+    },
+    {
+      "pattern_id": "PAT-008",
+      "pattern_type": "drift",
+      "start_time": "2024-01-16 06:21:15",
+      "confidence": 1.0
+    },
+    {
+      "pattern_id": "PAT-009",
+      "pattern_type": "drift",
+      "start_time": "2024-01-18 22:47:35",
+      "confidence": 0.9574232321363809
+    },
+    {
+      "pattern_id": "PAT-010",
+      "pattern_type": "drift",
+      "start_time": "2024-01-19 06:43:59",
+      "confidence": 1.0
+    },
+    {
+      "pattern_id": "PAT-011",
+      "pattern_type": "drift",
+      "start_time": "2024-01-19 22:45:50",
+      "confidence": 0.9750758311199921
+    },
+    {
+      "pattern_id": "PAT-012",
+      "pattern_type": "drift",
+      "start_time": "2024-01-20 06:41:11",
+      "confidence": 1.0
+    },
+    {
+      "pattern_id": "PAT-013",
+      "pattern_type": "drift",
+      "start_time": "2024-01-20 22:49:21",
+      "confidence": 0.9540090506284992
+    },
+    {
+      "pattern_id": "PAT-015",
+      "pattern_type": "drift",
+      "start_time": "2024-01-21 11:55:03",
+      "confidence": 1.0
+    },
+    {
+      "pattern_id": "PAT-016",
+      "pattern_type": "drift",
+      "start_time": "2024-01-21 14:50:35",
+      "confidence": 1.0
+    },
+    {
+      "pattern_id": "PAT-017",
+      "pattern_type": "drift",
+      "start_time": "2024-01-21 22:45:53",
+      "confidence": 0.9517357950463763
+    }
+  ],
+  "precision": 0.4117647058823529,
+  "recall": 1.0,
+  "f1_score": 0.5833333333333334
+}

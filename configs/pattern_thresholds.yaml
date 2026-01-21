@@ -1,0 +1,105 @@
+# ============================================================
+# configs/pattern_thresholds.yaml - 패턴 감지 임계값 설정
+# ============================================================
+# Main-S2에서 구현
+# ============================================================
+
+# ============================================================
+# 충돌 감지 (Spike Detection)
+# ============================================================
+collision:
+  # 힘 임계값 (N) - 이 값 이상이면 충돌로 판정
+  threshold_N: 500
+
+  # 상승 시간 (ms) - 이 시간 내 급격히 증가하면 충돌
+  rise_time_ms: 100
+
+  # 최소 편차 (N) - baseline 대비 이 값 이상 변화해야 함
+  min_deviation: 300
+
+  # 관련 에러코드
+  related_errors:
+    - C153  # Safety Stop - Collision
+    - C119  # Safety Limit Violation
+
+# ============================================================
+# 진동 감지 (FFT Analysis / Rolling STD)
+# ============================================================
+vibration:
+  # 주파수 임계값 (Hz) - 이 주파수 이상 성분이 증가하면 진동
+  freq_threshold_hz: 50
+
+  # 진폭 임계값 - baseline 대비 N배 이상이면 진동
+  amplitude_threshold: 2.0
+
+  # 분석 윈도우 (초)
+  window_s: 5
+
+  # 최소 지속 시간 (초)
+  min_duration_s: 10
+
+  # 관련 에러코드
+  related_errors:
+    - C204  # Joint vibration warning
+
+# ============================================================
+# 과부하 감지 (Threshold Duration)
+# ============================================================
+overload:
+  # 힘 임계값 (N)
+  threshold_N: 300
+
+  # 최소 지속 시간 (초) - 이 시간 이상 지속되어야 과부하
+  duration_s: 5
+
+  # 감지 축
+  axis: "Fz"
+
+  # 관련 에러코드
+  related_errors:
+    - C189  # Payload overload
+
+# ============================================================
+# 드리프트 감지 (Baseline Deviation)
+# ============================================================
+drift:
+  # 분석 윈도우 (시간)
+  window_h: 1
+
+  # 편차 임계값 (%) - baseline 대비 이 % 이상 이동하면 드리프트
+  deviation_pct: 10
+
+  # 최소 지속 시간 (시간)
+  min_duration_h: 0.5
+
+  # 드리프트는 특정 에러코드와 매핑되지 않음
+  # 캘리브레이션 권고로 처리
+  related_errors: []
+
+# ============================================================
+# 에러코드 매핑
+# ============================================================
+error_code_mapping:
+  C153:
+    patterns:
+      - collision
+    description: "Safety Stop - 충돌 감지"
+    confidence_boost: 0.2
+
+  C119:
+    patterns:
+      - collision
+    description: "Safety Limit Violation"
+    confidence_boost: 0.1
+
+  C189:
+    patterns:
+      - overload
+    description: "Payload 과부하"
+    confidence_boost: 0.2
+
+  C204:
+    patterns:
+      - vibration
+    description: "Joint 진동 경고"
+    confidence_boost: 0.15
