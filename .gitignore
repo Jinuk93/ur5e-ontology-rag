@@ -87,3 +87,4 @@ logs/
 *.bak
 *.zip
 .claude/
+nul
