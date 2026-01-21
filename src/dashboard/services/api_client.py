@@ -97,6 +97,7 @@ class APIClient:
         top_k: int = 5,
         include_sources: bool = True,
         include_citation: bool = True,
+        strategy: str = "hybrid",
     ) -> QueryResult:
         """
         Execute RAG query
@@ -106,6 +107,7 @@ class APIClient:
             top_k: Number of results to retrieve
             include_sources: Whether to include source info
             include_citation: Whether to include citation
+            strategy: Search strategy (hybrid, graph_first, vector_first)
 
         Returns:
             QueryResult with answer, verification, sources
@@ -118,6 +120,7 @@ class APIClient:
                 "top_k": top_k,
                 "include_sources": include_sources,
                 "include_citation": include_citation,
+                "strategy": strategy,
             },
         )
 

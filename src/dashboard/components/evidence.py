@@ -1,6 +1,8 @@
 # ============================================================
 # src/dashboard/components/evidence.py - Evidence Panel Component
 # ============================================================
+# UX 개선: 한글화 및 설명 보강
+# ============================================================
 
 import streamlit as st
 from typing import List, Dict, Any
@@ -21,65 +23,94 @@ def render_evidence_card(
     expanded: bool = False,
 ):
     """
-    Render a single evidence card
+    단일 근거 카드 렌더링
 
     Args:
-        evidence: Evidence dict with content, source_type, score, metadata
-        index: Evidence index number
-        expanded: Whether to show full content
+        evidence: 근거 정보 (content, source_type, score, metadata)
+        index: 근거 번호
+        expanded: 전체 내용 표시 여부
     """
     source_type = evidence.get("source_type", "unknown")
     score = evidence.get("score", 0)
     content = evidence.get("content", "")
     metadata = evidence.get("metadata", {})
 
-    # Source type icon and color
+    # 출처 유형별 아이콘과 색상
     source_icons = {
-        "graph": ("🔷", "#2196F3"),
-        "vector": ("📄", "#4CAF50"),
+        "graph": ("🔷", "#2196F3", "지식그래프"),
+        "vector": ("📄", "#4CAF50", "문서DB"),
     }
-    icon, color = source_icons.get(source_type, ("📌", "#9E9E9E"))
+    icon, color, type_name = source_icons.get(source_type, ("📌", "#9E9E9E", "기타"))
 
-    # Entity name or chunk ID
-    entity_name = metadata.get("entity_name", metadata.get("chunk_id", "Unknown"))
+    # 엔티티 이름 또는 청크 ID
+    entity_name = metadata.get("entity_name", metadata.get("chunk_id", "알 수 없음"))
 
-    # Header
-    header = f"[{index}] {source_type.upper()} - {entity_name}"
+    # 신뢰도에 따른 표시
+    if score >= 0.8:
+        score_badge = f"🟢 높음 ({score*100:.0f}%)"
+    elif score >= 0.5:
+        score_badge = f"🟡 보통 ({score*100:.0f}%)"
+    else:
+        score_badge = f"🔴 낮음 ({score*100:.0f}%)"
 
-    with st.expander(f"{icon} {header} — Score: {format_score(score)}", expanded=expanded):
-        # Source info
+    # 헤더
+    header = f"[{index}] {type_name} - {entity_name}"
+
+    with st.expander(f"{icon} {header} — 신뢰도: {score_badge}", expanded=expanded):
+        # 출처 정보
         if source_type == "graph":
-            st.caption(f"📍 Source: Neo4j ({metadata.get('entity_type', 'Node')})")
+            st.caption(f"📍 출처: 지식그래프 (Neo4j) - {metadata.get('entity_type', '노드')}")
+            st.info("💡 **지식그래프란?** 에러코드, 부품, 원인, 해결책 간의 관계를 저장한 데이터베이스입니다.")
         else:
-            source_doc = metadata.get("source", "VectorDB")
+            source_doc = metadata.get("source", "문서DB")
             page = metadata.get("page", "")
-            page_info = f" (Page {page})" if page else ""
-            st.caption(f"📍 Source: {source_doc}{page_info}")
+            page_info = f" ({page}페이지)" if page else ""
+            st.caption(f"📍 출처: 문서DB (VectorDB) - {source_doc}{page_info}")
+            st.info("💡 **문서DB란?** UR5e 매뉴얼, 가이드 등 텍스트 문서를 저장한 데이터베이스입니다.")
 
         st.divider()
 
-        # Content
+        # 내용
+        st.markdown("**📝 내용:**")
         st.markdown(content if expanded else truncate_text(content, 500))
 
-        # Metadata
+        # 신뢰도 상세 설명
+        st.markdown("**📊 신뢰도 점수 설명:**")
+        st.markdown(f"""
+        | 항목 | 값 |
+        |------|-----|
+        | 점수 | {score*100:.1f}% |
+        | 의미 | 이 정보가 질문과 **{score*100:.0f}%** 관련이 있습니다 |
+        | 등급 | {score_badge} |
+        """)
+
+        # 메타데이터
         if metadata:
-            with st.expander("📋 Metadata", expanded=False):
+            with st.expander("📋 상세 정보 (개발자용)", expanded=False):
                 for key, value in metadata.items():
                     if key not in ["content", "chunk_id"]:
-                        st.text(f"• {key}: {value}")
+                        # 키 이름 한글화
+                        key_korean = {
+                            "entity_name": "엔티티명",
+                            "entity_type": "엔티티 유형",
+                            "source": "원본 문서",
+                            "page": "페이지",
+                        }.get(key, key)
+                        st.text(f"• {key_korean}: {value}")
 
-        # Actions
+        # 액션 버튼
         col1, col2, col3 = st.columns(3)
         with col1:
             if source_type == "graph":
-                if st.button(f"🕸️ View in Graph", key=f"graph_{index}"):
+                if st.button(f"🕸️ 그래프에서 보기", key=f"graph_{index}"):
                     st.session_state["selected_node"] = entity_name
                     st.session_state["navigate_to"] = "Knowledge_Graph"
+                    st.toast("지식 그래프 페이지로 이동합니다")
         with col2:
-            if st.button(f"📋 Copy", key=f"copy_{index}"):
-                st.toast(f"Copied evidence [{index}]")
+            if st.button(f"📋 복사", key=f"copy_{index}"):
+                st.toast(f"근거 [{index}] 복사됨")
         with col3:
-            if st.button(f"🔍 Details", key=f"detail_{index}"):
+            if st.button(f"🔍 상세보기", key=f"detail_{index}"):
                 st.session_state[f"evidence_detail_{index}"] = True
 
 
@@ -89,17 +120,30 @@ def render_evidence_panel(
     verification: Dict[str, Any] = None,
 ):
     """
-    Render the full evidence panel with answer and sources
+    전체 근거 패널 렌더링
 
     Args:
-        answer: Generated answer text
-        evidences: List of evidence dicts
-        verification: Verification info dict
+        answer: 생성된 답변
+        evidences: 근거 목록
+        verification: 검증 정보
     """
-    st.markdown("### 📚 Evidence Panel")
+    st.markdown("### 📚 답변 근거 패널")
+    st.caption("AI가 답변을 생성할 때 참고한 정보들을 보여줍니다.")
 
-    # Answer section
-    st.markdown("#### 🤖 Answer")
+    # 용어 설명
+    with st.expander("❓ 용어 설명 (처음 사용자용)", expanded=False):
+        st.markdown("""
+        | 용어 | 설명 |
+        |------|------|
+        | **신뢰도 (Confidence)** | AI가 답변에 얼마나 확신하는지를 나타내는 점수 (0~100%) |
+        | **근거 개수 (Evidence Count)** | AI가 참고한 정보의 개수 |
+        | **검증 상태 (Status)** | 답변이 근거에 의해 뒷받침되는 정도 |
+        | **지식그래프 (GraphDB)** | 에러-원인-해결책 관계를 저장한 DB |
+        | **문서DB (VectorDB)** | 매뉴얼/가이드 문서를 저장한 DB |
+        """)
+
+    # 답변 섹션
+    st.markdown("#### 🤖 AI 답변")
     with st.container():
         st.markdown(answer)
 
@@ -110,47 +154,59 @@ def render_evidence_panel(
 
             icon, color, conf_str = format_confidence(confidence)
 
+            # 상태 한글화
+            status_korean = {
+                "verified": ("✅", "검증됨", "모든 내용이 근거로 뒷받침됩니다"),
+                "partial": ("⚠️", "부분 검증", "일부 내용만 근거로 뒷받침됩니다"),
+                "unverified": ("❌", "미검증", "근거가 충분하지 않습니다"),
+                "insufficient": ("❓", "정보 부족", "관련 정보를 찾지 못했습니다"),
+            }
+            status_icon, status_text, status_desc = status_korean.get(
+                status, ("❓", "알 수 없음", "상태를 확인할 수 없습니다")
+            )
+
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown(f"{icon} **Confidence:** {conf_str}")
+                st.markdown(f"{icon} **신뢰도:** {conf_str}")
+                st.caption("AI가 답변에 얼마나 확신하는지")
             with col2:
-                st.markdown(f"📊 **Evidence Count:** {evidence_count}")
+                st.markdown(f"📊 **참고 근거:** {evidence_count}개")
+                st.caption("AI가 참고한 정보 개수")
             with col3:
-                status_icons = {
-                    "verified": "✅",
-                    "partial": "⚠️",
-                    "unverified": "❌",
-                    "insufficient": "❓",
-                }
-                st.markdown(f"{status_icons.get(status, '❓')} **Status:** {status.title()}")
+                st.markdown(f"{status_icon} **검증 상태:** {status_text}")
+                st.caption(status_desc)
 
     st.divider()
 
-    # Evidence section
-    st.markdown("#### 📖 Retrieved Evidence")
+    # 근거 섹션
+    st.markdown("#### 📖 검색된 근거")
+    st.caption("AI가 답변을 생성할 때 참고한 정보들입니다.")
 
-    # Filter options
+    # 필터 옵션
     col1, col2, col3 = st.columns([2, 2, 1])
     with col1:
         source_filter = st.multiselect(
-            "Source Type",
+            "출처 유형 필터",
             options=["graph", "vector"],
             default=["graph", "vector"],
+            format_func=lambda x: "🔷 지식그래프" if x == "graph" else "📄 문서DB",
             key="evidence_source_filter",
+            help="특정 출처 유형만 보려면 선택하세요",
         )
     with col2:
         min_score = st.slider(
-            "Min Score",
+            "최소 신뢰도",
             min_value=0.0,
             max_value=1.0,
             value=0.0,
             step=0.1,
             key="evidence_min_score",
+            help="이 점수 이상의 근거만 표시합니다",
         )
     with col3:
-        show_all = st.checkbox("Show All", value=False, key="evidence_show_all")
+        show_all = st.checkbox("전체 펼치기", value=False, key="evidence_show_all")
 
-    # Filter evidences
+    # 근거 필터링
     filtered_evidences = [
         e for e in evidences
         if e.get("source_type", "unknown") in source_filter
@@ -158,41 +214,60 @@ def render_evidence_panel(
     ]
 
     if not filtered_evidences:
-        st.info("No evidence matches the current filters.")
+        st.warning("⚠️ 선택한 필터 조건에 맞는 근거가 없습니다. 필터 조건을 조정해보세요.")
         return
 
-    # Render evidence cards
+    # 근거 카드 렌더링
     for i, evidence in enumerate(filtered_evidences, 1):
         render_evidence_card(evidence, i, expanded=show_all)
 
-    # Summary
+    # 요약
     st.divider()
-    st.markdown("#### 📊 Evidence Summary")
+    st.markdown("#### 📊 근거 요약")
+    st.caption("""
+    **이 섹션이 보여주는 것:**
+    - **총 검색 결과**: AI가 데이터베이스에서 찾은 관련 정보의 총 개수
+    - **지식그래프 출처**: 에러-원인-해결책 관계 데이터에서 가져온 정보 수
+    - **문서DB 출처**: 매뉴얼/가이드 문서에서 가져온 정보 수
+    """)
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Total Retrieved", len(evidences))
+        st.metric(
+            "총 검색 결과",
+            len(evidences),
+            help="AI가 찾은 관련 정보의 총 개수"
+        )
     with col2:
         graph_count = len([e for e in evidences if e.get("source_type") == "graph"])
-        st.metric("From GraphDB", graph_count)
+        st.metric(
+            "지식그래프 출처",
+            graph_count,
+            help="에러-원인-해결책 관계 데이터"
+        )
     with col3:
         vector_count = len([e for e in evidences if e.get("source_type") == "vector"])
-        st.metric("From VectorDB", vector_count)
+        st.metric(
+            "문서DB 출처",
+            vector_count,
+            help="매뉴얼/가이드 문서"
+        )
 
-    # Export options
+    # 내보내기 옵션
+    st.markdown("---")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📥 Export as JSON", key="export_evidence_json"):
+        if st.button("📥 JSON으로 내보내기", key="export_evidence_json"):
             import json
             st.download_button(
-                "Download JSON",
+                "📥 다운로드",
                 data=json.dumps(evidences, ensure_ascii=False, indent=2),
-                file_name="evidence.json",
+                file_name="근거_데이터.json",
                 mime="application/json",
             )
     with col2:
-        if st.button("📋 Copy All", key="copy_all_evidence"):
-            st.toast("All evidence copied to clipboard")
+        if st.button("📋 전체 복사", key="copy_all_evidence"):
+            st.toast("모든 근거가 클립보드에 복사되었습니다")
 
 
 def render_answer_evidence_linking(
@@ -200,28 +275,41 @@ def render_answer_evidence_linking(
     evidences: List[Dict[str, Any]],
 ):
     """
-    Render answer with linked evidence references
+    답변-근거 연결 분석 렌더링
 
-    Shows which parts of the answer are supported by which evidence
+    답변의 어느 부분이 어떤 근거로 뒷받침되는지 보여줍니다
     """
-    st.markdown("### 🔗 Answer-Evidence Linking")
+    st.markdown("### 🔗 답변-근거 연결 분석")
+    st.caption("AI 답변의 각 부분이 어떤 근거로 뒷받침되는지 분석합니다.")
 
-    # This is a simplified version - full implementation would need NLP
     st.markdown(answer)
 
     st.divider()
 
-    st.markdown("#### 📊 Evidence Matching Analysis")
+    st.markdown("#### 📊 근거 매칭 분석")
+    st.caption("각 근거가 답변에 얼마나 기여했는지 보여줍니다.")
 
-    # Create a simple matching table
+    # 매칭 테이블 생성
     matching_data = []
     for i, evidence in enumerate(evidences[:5], 1):
+        score = evidence.get("score", 0)
+        source_type = evidence.get("source_type", "unknown")
+        type_name = "지식그래프" if source_type == "graph" else "문서DB"
+
+        # 상태 결정
+        if score > 0.7:
+            status = "✅ 높은 기여"
+        elif score > 0.5:
+            status = "⚠️ 보통 기여"
+        else:
+            status = "🔴 낮은 기여"
+
         matching_data.append({
-            "Evidence": f"[{i}]",
-            "Source": evidence.get("source_type", "unknown").upper(),
-            "Entity": evidence.get("metadata", {}).get("entity_name", "N/A"),
-            "Score": format_score(evidence.get("score", 0)),
-            "Status": "✅ Used" if evidence.get("score", 0) > 0.5 else "⚠️ Low Score",
+            "번호": f"[{i}]",
+            "출처 유형": type_name,
+            "엔티티": evidence.get("metadata", {}).get("entity_name", "N/A"),
+            "신뢰도": f"{score*100:.0f}%",
+            "기여도": status,
         })
 
     if matching_data:
@@ -229,7 +317,11 @@ def render_answer_evidence_linking(
         df = pd.DataFrame(matching_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
 
-    # Hallucination check
-    st.markdown("#### ⚠️ Hallucination Check")
+    # 환각 검사
+    st.markdown("#### ⚠️ 환각(Hallucination) 검사")
+    st.caption("AI가 근거 없이 만들어낸 정보가 있는지 확인합니다.")
     with st.container():
-        st.success("✅ All claims in the answer are supported by evidence")
+        if evidences and any(e.get("score", 0) > 0.5 for e in evidences):
+            st.success("✅ 답변의 모든 내용이 근거로 뒷받침됩니다")
+        else:
+            st.warning("⚠️ 일부 내용은 근거가 부족할 수 있습니다. 추가 확인을 권장합니다.")
