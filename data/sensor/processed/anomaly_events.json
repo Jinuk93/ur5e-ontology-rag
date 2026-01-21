@@ -1,0 +1,155 @@
+[
+  {
+    "event_id": "EVT-001",
+    "scenario": "A",
+    "event_type": "collision",
+    "start_time": "2024-01-17T13:40:00",
+    "end_time": "2024-01-17T14:00:01",
+    "duration_s": 1201,
+    "error_code": "C153",
+    "description": "전조(진동 증가 20분) → 충돌(Fz 급증) → Safety Stop",
+    "context": {
+      "precursor_duration_min": 20,
+      "fz_peak_N": 824.2169202658007,
+      "shift": "B",
+      "product": ""
+    }
+  },
+  {
+    "event_id": "EVT-002",
+    "scenario": "A",
+    "event_type": "collision",
+    "start_time": "2024-01-20T09:40:00",
+    "end_time": "2024-01-20T10:00:01",
+    "duration_s": 1201,
+    "error_code": "C153",
+    "description": "전조(진동 증가 20분) → 충돌(Fz 급증) → Safety Stop",
+    "context": {
+      "precursor_duration_min": 20,
+      "fz_peak_N": 817.2069698141935,
+      "shift": "A",
+      "product": "PART-C"
+    }
+  },
+  {
+    "event_id": "EVT-003",
+    "scenario": "B",
+    "event_type": "overload",
+    "start_time": "2024-01-16T14:17:00",
+    "end_time": "2024-01-16T14:17:10",
+    "duration_s": 10,
+    "error_code": null,
+    "description": "반복 재발 (1/4일차) - 14시대 PART-C 과부하",
+    "context": {
+      "fz_value_N": 320.61629050329884,
+      "shift": "B",
+      "product": "PART-C",
+      "recurrence_day": 1
+    }
+  },
+  {
+    "event_id": "EVT-004",
+    "scenario": "B",
+    "event_type": "overload",
+    "start_time": "2024-01-17T14:32:00",
+    "end_time": "2024-01-17T14:32:23",
+    "duration_s": 23,
+    "error_code": null,
+    "description": "반복 재발 (2/4일차) - 14시대 PART-C 과부하",
+    "context": {
+      "fz_value_N": 363.9887311979701,
+      "shift": "B",
+      "product": "PART-C",
+      "recurrence_day": 2
+    }
+  },
+  {
+    "event_id": "EVT-005",
+    "scenario": "B",
+    "event_type": "overload",
+    "start_time": "2024-01-18T14:12:00",
+    "end_time": "2024-01-18T14:12:23",
+    "duration_s": 23,
+    "error_code": null,
+    "description": "반복 재발 (3/4일차) - 14시대 PART-C 과부하",
+    "context": {
+      "fz_value_N": 366.3237839953544,
+      "shift": "B",
+      "product": "PART-C",
+      "recurrence_day": 3
+    }
+  },
+  {
+    "event_id": "EVT-006",
+    "scenario": "B",
+    "event_type": "overload",
+    "start_time": "2024-01-19T14:30:00",
+    "end_time": "2024-01-19T14:30:24",
+    "duration_s": 24,
+    "error_code": "C189",
+    "description": "반복 재발 (4/4일차) - 14시대 PART-C 과부하",
+    "context": {
+      "fz_value_N": 396.55460064173656,
+      "shift": "B",
+      "product": "PART-C",
+      "recurrence_day": 4
+    }
+  },
+  {
+    "event_id": "EVT-007",
+    "scenario": "C",
+    "event_type": "tool_change",
+    "start_time": "2024-01-16T10:00:00",
+    "end_time": "2024-01-16T10:00:00",
+    "duration_s": 0,
+    "error_code": null,
+    "description": "툴 교체 (GRIPPER-02) - 정상 운영, Fz baseline 이동",
+    "context": {
+      "old_tool": "GRIPPER-01",
+      "new_tool": "GRIPPER-02",
+      "fz_shift_N": -7.0
+    }
+  },
+  {
+    "event_id": "EVT-008",
+    "scenario": "C",
+    "event_type": "tool_change",
+    "start_time": "2024-01-18T11:00:00",
+    "end_time": "2024-01-18T11:00:00",
+    "duration_s": 0,
+    "error_code": null,
+    "description": "툴 교체 (GRIPPER-01) - 정상 운영, Fz baseline 이동",
+    "context": {
+      "old_tool": "GRIPPER-02",
+      "new_tool": "GRIPPER-01",
+      "fz_shift_N": 7.0
+    }
+  },
+  {
+    "event_id": "EVT-009",
+    "scenario": "C",
+    "event_type": "recalibration",
+    "start_time": "2024-01-17T10:00:00",
+    "end_time": "2024-01-17T10:00:00",
+    "duration_s": 0,
+    "error_code": null,
+    "description": "센서 캘리브레이션 - 정상 운영, 값 점프",
+    "context": {
+      "offset_N": 1.978242808770391
+    }
+  },
+  {
+    "event_id": "EVT-010",
+    "scenario": "C",
+    "event_type": "drift_no_doc",
+    "start_time": "2024-01-21T10:00:00",
+    "end_time": "2024-01-21T14:00:00",
+    "duration_s": 14400,
+    "error_code": null,
+    "description": "드리프트 패턴 - 문서에 해당 조치 없음 (ABSTAIN 예상)",
+    "context": {
+      "drift_amount_N": 15,
+      "duration_hours": 4
+    }
+  }
+]

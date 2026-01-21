@@ -1,0 +1,141 @@
+# ATI Axia80 센서 데이터 생성 설정
+# 버전: v2.0 (데모 퍼포먼스 중심)
+
+sensor:
+  model: "ATI Axia80 M8"
+  sampling_rate_hz: 125      # 실제 측정
+  storage_rate_hz: 1         # 저장 (1초 평균)
+
+generation:
+  start_date: "2024-01-15"
+  days: 7
+  total_records: 604800      # 7 * 24 * 60 * 60
+
+# 센서 측정값 범위
+sensor_ranges:
+  Fx: [-500, 500]            # N
+  Fy: [-500, 500]            # N
+  Fz: [-1000, 1000]          # N
+  Tx: [-20, 20]              # Nm
+  Ty: [-20, 20]              # Nm
+  Tz: [-20, 20]              # Nm
+
+# 정상 운영 파라미터
+normal_params:
+  # 무부하 (idle, approach, retract)
+  idle:
+    Fx: { mean: 0, std: 2.0 }
+    Fy: { mean: 0, std: 2.0 }
+    Fz: { mean: -15, std: 3.0 }   # 그리퍼 자중
+    Tx: { mean: 0, std: 0.1 }
+    Ty: { mean: 0, std: 0.1 }
+    Tz: { mean: 0, std: 0.05 }
+
+  # 작업 중 (pick, place) - payload별
+  work:
+    light:    # 0.5-1.5kg
+      Fz: { mean: -30, std: 5.0 }
+    normal:   # 1.5-3.0kg
+      Fz: { mean: -50, std: 8.0 }
+    heavy:    # 3.0-5.0kg
+      Fz: { mean: -75, std: 10.0 }
+
+    # 공통 (수평축)
+    Fx: { mean: 0, std: 5.0 }
+    Fy: { mean: 0, std: 5.0 }
+    Tx: { mean: 0, std: 0.5 }
+    Ty: { mean: 0, std: 0.5 }
+    Tz: { mean: 0, std: 0.2 }
+
+# 작업 컨텍스트
+context:
+  task_modes:
+    - idle
+    - approach
+    - pick
+    - place
+    - retract
+    - stop
+
+  shifts:
+    A: { start: "06:00", end: "14:00" }
+    B: { start: "14:00", end: "22:00" }
+    C: { start: "22:00", end: "06:00" }
+
+  products:
+    - { id: "PART-A", payload_kg: 1.0, class: "light" }
+    - { id: "PART-B", payload_kg: 2.5, class: "normal" }
+    - { id: "PART-C", payload_kg: 4.2, class: "heavy" }
+
+  tools:
+    - { id: "GRIPPER-01", weight_kg: 1.5 }
+    - { id: "GRIPPER-02", weight_kg: 2.2 }
+
+  operators:
+    - "OP-001"
+    - "OP-002"
+    - "OP-003"
+
+# 작업 사이클 패턴
+work_cycle:
+  # 하루 중 작업 시간대
+  work_hours:
+    start: "06:00"
+    end: "22:00"
+
+  # 한 사이클 (초)
+  cycle_duration:
+    idle: 5
+    approach: 3
+    pick: 2
+    place: 2
+    retract: 3
+
+  # 사이클 사이 대기 (초)
+  inter_cycle_idle: { min: 3, max: 10 }
+
+# 이상 패턴 설정
+anomaly_patterns:
+  # 시나리오 A: 전조 → 이상 → 정지
+  scenario_a:
+    count_per_week: 2
+    precursor:
+      duration_min: 20
+      vibration_increase_pct: 30
+    collision:
+      Fz_peak: { min: 600, max: 900 }
+      duration_ms: { min: 50, max: 200 }
+    error_code: "C153"
+
+  # 시나리오 B: 반복 재발
+  scenario_b:
+    count_per_week: 1   # 1세트 (4일 연속)
+    time_window: { start: "14:00", end: "15:00" }
+    target_product: "PART-C"
+    overload:
+      Fz_value: { min: 320, max: 400 }
+      duration_s: { min: 10, max: 25 }
+    final_error_code: "C189"
+
+  # 시나리오 C: 오탐/유사 증상
+  scenario_c:
+    count_per_week: 4
+    types:
+      - tool_change      # 툴 교체 후 baseline 이동
+      - recalibration    # 캘리브레이션 후 값 점프
+      - no_doc_match     # 센서 이상인데 문서에 조치 없음
+
+# 데이터 품질 이슈
+data_quality:
+  good_ratio: 0.98
+  delayed_ratio: 0.01
+  interpolated_ratio: 0.005
+  missing_ratio: 0.005
+
+  clock_skew_ms: { min: -50, max: 50 }
+  drop_duration_s: { min: 5, max: 15 }
+
+# 특수 이벤트
+special_events:
+  tool_changes_per_week: 3
+  recalibrations_per_week: 2
