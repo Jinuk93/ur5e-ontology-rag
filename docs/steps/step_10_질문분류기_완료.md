@@ -87,6 +87,12 @@ class EntityExtractor:
 - `Shift`: 근무 교대 (주간, 야간, SHIFT_A 등)
 - `Product`: 제품 ID (PART-A 등)
 
+**알려진 제한사항:**
+- AXIS_PATTERN은 word boundary(`\b`)를 사용하므로, 한국어 조사가 붙은 경우 추출 실패 가능
+  - 예: "Fz가 -350N" → "Fz" 추출 실패 (조사 "가"가 붙어 있음)
+  - 예: "Fz 값이 -350N" → "Fz" 추출 성공 (공백으로 분리됨)
+- MeasurementAxis가 추출되지 않으면 OntologyEngine의 측정값 기반 추론 파이프라인이 작동하지 않음
+
 ### 3.4 QueryClassifier 클래스
 
 ```python
@@ -288,25 +294,31 @@ ur5e-ontology-rag/
 
 ## 9. 다음 단계 (Phase 11)
 
-### Phase 11 (쿼리 엔진)에서의 활용
+### Phase 11 (온톨로지 추론)에서의 활용
 
 ```python
 from src.rag import QueryClassifier, QueryType
-from src.ontology import OntologyEngine
+from src.ontology import OntologyEngine, create_ontology_engine
 
 classifier = QueryClassifier()
-engine = OntologyEngine(ontology)
+engine = create_ontology_engine()
 
 # 질문 분류
 result = classifier.classify(user_query)
 
+# 엔티티 변환
+entities = [
+    {"entity_id": e.entity_id, "entity_type": e.entity_type, "text": e.text}
+    for e in result.entities
+]
+
 # 분류 결과에 따른 처리
 if result.query_type == QueryType.ONTOLOGY:
-    # 온톨로지 그래프 탐색
-    answer = engine.traverse(result.entities)
+    # 온톨로지 기반 추론
+    reasoning = engine.reason(user_query, entities)
 elif result.query_type == QueryType.HYBRID:
     # 온톨로지 + 문서 조합
-    answer = engine.hybrid_query(result.entities)
+    reasoning = engine.hybrid_query(user_query, entities, document_results)
 else:  # RAG
     # 문서 검색만
     answer = rag_search(user_query)
@@ -314,7 +326,7 @@ else:  # RAG
 
 ### Phase 11 구현 예정 파일
 
-- `src/ontology/ontology_engine.py` - 쿼리 엔진 (통합 진입점)
+- `src/ontology/ontology_engine.py` - 온톨로지 추론 엔진
 - `src/ontology/graph_traverser.py` - 그래프 탐색기
 
 ---
@@ -326,4 +338,4 @@ else:  # RAG
 | 문서 버전 | v1.0 |
 | 작성일 | 2026-01-22 |
 | ROADMAP 섹션 | Stage 4, Phase 10 |
-| Spec 섹션 | 6.1 질문 분류기 |
+| Spec 섹션 | 7.1 질문 분류 |
