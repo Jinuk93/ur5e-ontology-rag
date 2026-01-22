@@ -705,6 +705,8 @@ Axia80:
   "trace_id": "uuid",
   "query_type": "ontology",
 
+  "answer": "Fz 값 350N은 CRITICAL 상태입니다. 정상 범위(-60~0N) 대비 약 6배 높은 수치이며, 과부하(PAT_OVERLOAD) 패턴이 감지되었습니다. 그립 위치를 확인해주세요.",
+
   "analysis": {
     "entity": "Fz",
     "value": 350,

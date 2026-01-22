@@ -114,6 +114,52 @@ class ResponseGenerator:
     ) -> GeneratedResponse
 ```
 
+### 3.4 Conclusions 스키마
+
+OntologyEngine이 생성하는 `conclusions` 리스트의 타입:
+
+| type | 설명 | 필드 |
+|------|------|------|
+| `state` | 센서 값의 상태 판정 | `entity`, `state`, `value`, `threshold` |
+| `cause` | 추론된 원인 | `cause`, `confidence` |
+| `triggered_error` | 예상 에러 코드 | `error`, `confidence`, `timeframe` |
+
+**예시**:
+```python
+conclusions = [
+    {"type": "state", "entity": "Fz", "state": "State_Warning", "value": -350.0},
+    {"type": "cause", "cause": "CAUSE_COLLISION", "confidence": 0.9},
+    {"type": "triggered_error", "error": "C189", "confidence": 0.85, "timeframe": "24시간 내"}
+]
+```
+
+### 3.5 그래프 노드 타입 매핑
+
+`_build_graph_data()`에서 conclusions을 그래프 노드/엣지로 변환하는 규칙:
+
+| conclusion.type | 노드 생성 | 엣지 relation |
+|-----------------|----------|---------------|
+| `state` | `entity` (MeasurementAxis), `state` (State) | `HAS_STATE` |
+| `cause` | `cause` (Cause) | `TRIGGERED_BY` |
+| `triggered_error` | `error` (Error) | `TRIGGERS` |
+
+**그래프 구조 예시**:
+```json
+{
+  "nodes": [
+    {"id": "Fz", "type": "MeasurementAxis", "label": "Fz"},
+    {"id": "State_Warning", "type": "State", "label": "State_Warning"},
+    {"id": "CAUSE_COLLISION", "type": "Cause", "label": "CAUSE_COLLISION"},
+    {"id": "C189", "type": "Error", "label": "C189"}
+  ],
+  "edges": [
+    {"source": "Fz", "target": "State_Warning", "relation": "HAS_STATE"},
+    {"source": "State_Warning", "target": "CAUSE_COLLISION", "relation": "TRIGGERED_BY"},
+    {"source": "CAUSE_COLLISION", "target": "C189", "relation": "TRIGGERS"}
+  ]
+}
+```
+
 ---
 
 ## 4. 테스트 결과

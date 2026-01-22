@@ -14,8 +14,6 @@ from .evidence_schema import (
     QueryType,
     ClassificationResult,
     DocumentReference,
-    OntologyPath as EvidenceOntologyPath,
-    Evidence,
 )
 from .confidence_gate import ConfidenceGate, GateResult
 from .prompt_builder import PromptBuilder
@@ -263,14 +261,18 @@ class ResponseGenerator:
             "confidence": reasoning.confidence,
         }
 
-        # 패턴 추출
+        pattern_id, pattern_conf = self._extract_primary_pattern(reasoning)
+        if pattern_id:
+            result["pattern"] = pattern_id
+            if pattern_conf is not None:
+                result["pattern_confidence"] = pattern_conf
+
+        # 원인 추출
         for conclusion in reasoning.conclusions:
-            if conclusion.get("type") == "pattern":
-                result["pattern"] = conclusion.get("pattern", "")
-                result["pattern_confidence"] = conclusion.get("confidence", 0)
-            elif conclusion.get("type") == "cause":
+            if conclusion.get("type") == "cause":
                 result["cause"] = conclusion.get("cause", "")
                 result["cause_confidence"] = conclusion.get("confidence", 0)
+                break
 
         # 유사 이벤트
         similar_events = reasoning.evidence.get("similar_events", [])
@@ -281,16 +283,28 @@ class ResponseGenerator:
 
     def _build_prediction(self, reasoning: Any) -> Optional[Dict[str, Any]]:
         """예측 구성"""
-        if not reasoning.predictions:
-            return None
+        # 1) predictions 우선 (OntologyEngine은 confidence를 쓰는 경우가 많음)
+        if reasoning.predictions:
+            pred = reasoning.predictions[0]
+            probability = pred.get("probability")
+            if probability is None:
+                probability = pred.get("confidence", 0)
+            return {
+                "error_code": pred.get("error_code", pred.get("error", "")),
+                "probability": probability,
+                "timeframe": pred.get("timeframe", ""),
+            }
 
-        # 첫 번째 예측 사용
-        pred = reasoning.predictions[0]
-        return {
-            "error_code": pred.get("error_code", pred.get("error", "")),
-            "probability": pred.get("probability", 0),
-            "timeframe": pred.get("timeframe", ""),
-        }
+        # 2) conclusions의 triggered_error도 예측으로 간주
+        for conclusion in reasoning.conclusions:
+            if conclusion.get("type") == "triggered_error":
+                return {
+                    "error_code": conclusion.get("error", ""),
+                    "probability": conclusion.get("confidence", 0),
+                    "timeframe": conclusion.get("timeframe", ""),
+                }
+
+        return None
 
     def _build_recommendation(self, reasoning: Any) -> Dict[str, Any]:
         """권장사항 구성"""
@@ -424,15 +438,43 @@ class ResponseGenerator:
             elif c_type == "cause":
                 cause = conclusion.get("cause", "")
                 pattern = conclusion.get("pattern", "")
+                error = conclusion.get("error", "")
+
+                # ErrorCode 질문 처리: C153 →[CAUSED_BY]→ CAUSE_*
+                if error and error not in seen_ids:
+                    nodes.append({"id": error, "type": "ErrorCode", "label": error})
+                    seen_ids.add(error)
+                if pattern and pattern not in seen_ids:
+                    nodes.append({"id": pattern, "type": "Pattern", "label": pattern})
+                    seen_ids.add(pattern)
                 if cause and cause not in seen_ids:
                     nodes.append({"id": cause, "type": "Cause", "label": cause})
                     seen_ids.add(cause)
+
+                if error and cause:
+                    edges.append({"source": error, "target": cause, "relation": "CAUSED_BY"})
                 if pattern and cause:
                     edges.append({"source": pattern, "target": cause, "relation": "INDICATES"})
 
             elif c_type == "triggered_error":
                 error = conclusion.get("error", "")
                 pattern = conclusion.get("pattern", "")
+                if pattern and pattern not in seen_ids:
+                    nodes.append({"id": pattern, "type": "Pattern", "label": pattern})
+                    seen_ids.add(pattern)
+                if error and error not in seen_ids:
+                    nodes.append({"id": error, "type": "ErrorCode", "label": error})
+                    seen_ids.add(error)
+                if pattern and error:
+                    edges.append({"source": pattern, "target": error, "relation": "TRIGGERS"})
+
+            elif c_type == "triggering_pattern":
+                # ErrorCode 질문 처리: PAT_* →[TRIGGERS]→ C153
+                error = conclusion.get("error", "")
+                pattern = conclusion.get("pattern", "")
+                if pattern and pattern not in seen_ids:
+                    nodes.append({"id": pattern, "type": "Pattern", "label": pattern})
+                    seen_ids.add(pattern)
                 if error and error not in seen_ids:
                     nodes.append({"id": error, "type": "ErrorCode", "label": error})
                     seen_ids.add(error)
@@ -440,6 +482,33 @@ class ResponseGenerator:
                     edges.append({"source": pattern, "target": error, "relation": "TRIGGERS"})
 
         return {"nodes": nodes, "edges": edges}
+
+    def _extract_primary_pattern(self, reasoning: Any) -> tuple[str, Optional[float]]:
+        """추론 결과에서 대표 패턴(PAT_*)을 추출
+
+        OntologyEngine은 conclusions에 pattern 타입을 항상 넣지 않고,
+        cause/triggered_error 결론에 pattern 필드를 포함하는 방식도 사용합니다.
+        """
+        # 1) pattern 타입 결론
+        for conclusion in reasoning.conclusions:
+            if conclusion.get("type") == "pattern":
+                return conclusion.get("pattern", ""), conclusion.get("confidence")
+
+        # 2) 다른 결론의 pattern 필드
+        for conclusion in reasoning.conclusions:
+            pattern = conclusion.get("pattern")
+            if pattern:
+                return pattern, conclusion.get("confidence")
+
+        # 3) reasoning_chain에서 패턴 매칭 결과
+        for step in getattr(reasoning, "reasoning_chain", []) or []:
+            if step.get("step") in ("pattern_matching", "pattern_analysis"):
+                result = step.get("result") or {}
+                pattern = result.get("pattern") or result.get("pattern_id")
+                if pattern:
+                    return pattern, None
+
+        return "", None
 
     def _generate_natural_response(
         self,

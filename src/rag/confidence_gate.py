@@ -203,7 +203,15 @@ class ConfidenceGate:
 
         # 추론 체인 검사
         if not reasoning.reasoning_chain:
-            return False, "no reasoning chain", warnings
+            has_other_signal = bool(
+                reasoning.conclusions
+                or reasoning.predictions
+                or reasoning.recommendations
+                or reasoning.ontology_paths
+            )
+            if not has_other_signal:
+                return False, "no reasoning chain", warnings
+            warnings.append("no reasoning chain")
 
         # 결론 검사
         if not reasoning.conclusions:
