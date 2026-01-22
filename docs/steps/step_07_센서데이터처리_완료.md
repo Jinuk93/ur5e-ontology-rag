@@ -16,10 +16,10 @@
 
 | 파일 | 라인 수 | 설명 |
 |------|---------|------|
-| `src/sensor/data_loader.py` | 125 | Parquet 데이터 로드 및 전처리 |
-| `src/sensor/sensor_store.py` | 251 | 센서 데이터 저장소 및 조회 API |
-| `src/sensor/__init__.py` | 42 | 모듈 노출 |
-| **합계** | **418** | |
+| `src/sensor/data_loader.py` | 138 | Parquet 데이터 로드 및 전처리 (path별 캐시) |
+| `src/sensor/sensor_store.py` | 265 | 센서 데이터 저장소 및 조회 API |
+| `src/sensor/__init__.py` | 73 | 모듈 노출 |
+| **합계** | **476** | |
 
 ---
 
@@ -46,10 +46,11 @@ class DataLoader:
 ```
 
 **주요 기능:**
-- Parquet 파일 로드 (캐시 지원)
+- Parquet 파일 로드 (path별 캐시 지원)
 - 타임스탬프 파싱 및 정렬
 - 결측치 처리 (선형 보간)
 - 컨텍스트 컬럼 지원 (task_mode, shift, product_id 등)
+- `load_data()` 호환 메서드 (기존 스크립트 지원)
 
 ### 3.2 SensorStore 클래스
 
@@ -238,9 +239,9 @@ ur5e-ontology-rag/
 │
 └── src/
     └── sensor/
-        ├── __init__.py      [42줄, 업데이트]
-        ├── data_loader.py   [126줄, 신규]
-        └── sensor_store.py  [252줄, 신규]
+        ├── __init__.py      [73줄, 업데이트]
+        ├── data_loader.py   [138줄, 신규]
+        └── sensor_store.py  [265줄, 신규]
 ```
 
 ---

@@ -244,11 +244,11 @@ ur5e-ontology-rag/
 │
 └── src/
     └── sensor/
-        ├── __init__.py          [55줄, 업데이트]
-        ├── data_loader.py       [126줄, Phase 7]
-        ├── sensor_store.py      [252줄, Phase 7]
-        ├── patterns.py          [85줄, 신규]
-        └── pattern_detector.py  [410줄, 신규]
+        ├── __init__.py          [73줄, 업데이트]
+        ├── data_loader.py       [138줄, Phase 7]
+        ├── sensor_store.py      [265줄, Phase 7]
+        ├── patterns.py          [92줄, 신규]
+        └── pattern_detector.py  [629줄, 신규]
 ```
 
 ---

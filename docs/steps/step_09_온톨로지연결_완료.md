@@ -201,8 +201,8 @@ ur5e-ontology-rag/
 └── src/
     └── sensor/
         ├── __init__.py              [73줄]
-        ├── data_loader.py           [125줄, Phase 7]
-        ├── sensor_store.py          [251줄, Phase 7]
+        ├── data_loader.py           [138줄, Phase 7]
+        ├── sensor_store.py          [265줄, Phase 7]
         ├── patterns.py              [92줄, Phase 8]
         ├── pattern_detector.py      [629줄, Phase 8]
         └── ontology_connector.py    [480줄, Phase 9]
