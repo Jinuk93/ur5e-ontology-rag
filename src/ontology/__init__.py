@@ -58,6 +58,19 @@ from .rule_engine import (
     InferenceResult,
     create_rule_engine,
 )
+from .graph_traverser import (
+    GraphTraverser,
+    PathStep,
+    OntologyPath,
+    TraversalResult,
+    create_graph_traverser,
+)
+from .ontology_engine import (
+    OntologyEngine,
+    EntityContext,
+    ReasoningResult,
+    create_ontology_engine,
+)
 
 __all__ = [
     # Enums
@@ -86,4 +99,15 @@ __all__ = [
     "RuleEngine",
     "InferenceResult",
     "create_rule_engine",
+    # GraphTraverser
+    "GraphTraverser",
+    "PathStep",
+    "OntologyPath",
+    "TraversalResult",
+    "create_graph_traverser",
+    # OntologyEngine
+    "OntologyEngine",
+    "EntityContext",
+    "ReasoningResult",
+    "create_ontology_engine",
 ]
