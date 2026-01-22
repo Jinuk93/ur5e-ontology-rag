@@ -341,7 +341,7 @@ document.chunk_overlap  →    청크 겹침 크기
 
 ---
 
-## 9. 온톨로지 스키마 연결 상세 (리팩토링 추가)
+## 9. 온톨로지 스키마 연결 상세
 
 ### 9.1 엔티티별 설정 연결
 
@@ -416,9 +416,3 @@ chunks_dir = settings.paths.chunks_dir  # data/processed/chunks/
 chunk_size = settings.document.chunk_size    # 512
 chunk_overlap = settings.document.chunk_overlap  # 50
 ```
-
----
-
-*작성일: 2026-01-22*
-*Phase: 01 - 환경 설정*
-*문서 버전: v2.0 (리팩토링)*

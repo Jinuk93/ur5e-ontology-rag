@@ -6,9 +6,6 @@
 |------|------|
 | Phase | 01 - 환경 설정 (Environment Setup) |
 | 상태 | **완료** |
-| 시작일 | 2026-01-22 |
-| 완료일 | 2026-01-22 |
-| 작업자 | Claude Code |
 
 ---
 
@@ -25,7 +22,7 @@
 | `.env.example` | 64 | 기존 완료 | 환경변수 템플릿 |
 | `docker-compose.yaml` | 88 | 기존 완료 | Neo4j 컨테이너 정의 |
 
-### 2.2 테스트 결과 (리팩토링 검증)
+### 2.2 테스트 결과
 
 #### 환경 검증
 ```
@@ -41,7 +38,7 @@ Neo4j: OK (패키지 import 확인 - DB 연결은 Phase 4~5에서 확인)
 #### 설정 로딩 검증
 ```
 === Settings Verification ===
-LLM Model: gpt-4o-mini
+LLM Model: (configs/settings.yaml의 llm.model 설정값)
 Chunk Size: 512
 Chunk Overlap: 50
 Top K: 5
@@ -115,7 +112,7 @@ __all__ = ["get_settings", "reload_settings", "Settings", "__version__"]
 | 환경 설정 | python-dotenv | >=1.0.0 | .env 로드 |
 | 환경 설정 | pyyaml | >=6.0 | YAML 파싱 |
 | PDF 처리 | pymupdf | >=1.23.0 | PDF 텍스트 추출 |
-| AI/LLM | openai | >=1.0.0 | GPT, Embedding |
+| AI/LLM | openai | >=1.0.0 | LLM, Embedding |
 | AI/LLM | tiktoken | >=0.5.0 | 토큰 계산 |
 | 벡터 DB | chromadb | >=0.4.0 | 벡터 검색 |
 | 그래프 DB | neo4j | >=5.0.0 | 온톨로지 저장 |
@@ -280,7 +277,7 @@ python -c "from src import get_settings; print(get_settings())"
 
 ---
 
-## 9. 리팩토링 수행 내역
+## 9. 문서 업데이트 내역
 
 ### 9.1 설계서 업데이트 (v1.0 → v2.0)
 
@@ -305,14 +302,13 @@ python -c "from src import get_settings; print(get_settings())"
 
 코드 변경 없음 - 기존 구현이 설계 요구사항을 모두 충족함.
 
-### 9.4 GPT 피드백 반영 (v2.1)
+### 9.4 문서 정리 사항
 
-| 피드백 항목 | 수정 내용 |
-|------------|----------|
-| ChromaDB 검증 수준 | "OK" → "OK (패키지 import 확인)" 명시 |
-| .env.example 미사용 키 | "(미사용) → settings.yaml xxx" 주석 추가 |
-| 포트 정합성 | run_dashboard.py 8000 → 8080 통일 |
-| 재현 커맨드 체크리스트 | Section 7 신규 추가 |
+| 항목 | 내용 |
+|------|------|
+| 검증 수준 명확화 | Phase 1에서는 패키지 import 가능 여부만 확인한다는 점을 명시 |
+| 포트/설정 표기 정리 | settings.yaml 기준 포트 표기를 기준으로 안내 문구를 정리 |
+| 재현 커맨드 체크리스트 추가 | 환경 재현/검증을 위한 최소 커맨드를 체크리스트로 제공 |
 
 ---
 
@@ -320,15 +316,9 @@ python -c "from src import get_settings; print(get_settings())"
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.1 (GPT 피드백 반영) |
+| 문서 버전 | v2.1 |
 | 작성일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
-| GPT 피드백 반영일 | 2026-01-22 |
+| 최종 갱신일 | 2026-01-22 |
 | 설계서 참조 | [step_01_환경설정_설계.md](step_01_환경설정_설계.md) |
-| ROADMAP 섹션 | A.1 Phase 1 |
-| Spec 섹션 | Section 3, 5, 6 |
-| 온톨로지 스키마 섹션 | Section 4, 5, 6, 7 |
-
----
-
-*Phase 01 완료. Step 02 (데이터 준비)로 진행합니다.*
+| ROADMAP 섹션 | A.2 Phase 1 |
+| Spec 섹션 | - |

@@ -8,8 +8,6 @@
 | 상태 | **완료** |
 | 시작일 | 2026-01-22 |
 | 완료일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
-| 작업자 | Claude Code |
 
 ---
 
@@ -271,12 +269,13 @@ from src.ontology import (
 # 온톨로지 로드
 schema = load_ontology()
 
-# 동의어 해석
-canonical_id = resolve_alias("컨트롤박스")  # "Control Box"
+# 동의어 해석 (표기 정규화/표시 용도)
+canonical = resolve_alias("컨트롤박스")  # 예: "Control Box"
+if canonical:
+  print(canonical)
 
-# 엔티티 조회
-if canonical_id:
-    entity = schema.get_entity(canonical_id)
+# 엔티티 조회는 ontology.json의 ID를 사용
+entity = schema.get_entity("ControlBox")
 ```
 
 ---
@@ -290,7 +289,15 @@ if canonical_id:
 
 ### 8.2 알려진 제한사항
 
-없음 - 모든 검증 통과
+1. **관계 검증 WARN 2개**: OCCURS_DURING/INVOLVES 관계가 Invalid로 표시됨
+   - `PAT_COLLISION → Shift_Day`, `PAT_OVERLOAD → Product_B`
+   - 원인: schema.py 제약이 `Event` 요구, 데이터는 `Pattern` 사용 (Step 04 참조)
+
+2. **resolve_alias → canonical ≠ entity ID 불일치**
+   - `resolve_alias("컨트롤 박스")` → `"Control Box"` (canonical 라벨)
+   - `ontology.json` 엔티티 ID는 `"ControlBox"`
+   - 따라서 `schema.get_entity(resolve_alias(...))` 사용 시 None 반환 가능
+   - **권장**: entity ID 직접 사용 또는 lexicon의 `node_id` 필드 활용
 
 ### 8.3 검증 명령어
 
@@ -309,7 +316,7 @@ print(f'Relationships: {len(schema.relationships)}')
 
 ---
 
-## 9. 리팩토링 수행 내역
+## 9. 문서 업데이트 내역
 
 ### 9.1 설계서 업데이트 (v1.0 → v2.0)
 
@@ -336,24 +343,28 @@ python scripts/build_ontology.py
 
   Total Entities: 54
   Total Relationships: 62
-  Validation: PASS
+  Validation: WARN (Invalid 2개 - 8.2 참조)
 ```
-
-모든 검증 테스트 통과 확인.
 
 ---
 
-## 10. 문서 정보
+### 9.4 문서 정리 사항 (v2.1)
+
+| 항목 | 내용 |
+|------|------|
+| 검증 결과 표기 정리 | 관계 검증 결과가 WARN일 수 있음을 8.2에 반영 |
+| resolve_alias 사용 주의 | canonical(표기)과 entity id(키)가 다를 수 있음을 8.2에 반영 |
+| 설계서/데이터 차이 명시 | ID 명명 규칙 차이를 문서에 명시 |
+
+---
+
+## 11. 문서 정보
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.0 (리팩토링 완료) |
+| 문서 버전 | v2.1 |
 | 작성일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
+| 최종 갱신일 | 2026-01-22 |
 | 설계서 참조 | [step_05_엔티티관계구축_설계.md](step_05_엔티티관계구축_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 5 |
 | Spec 섹션 | Section 6 |
-
----
-
-*Phase 05 완료. Phase 06 (동의어 사전)으로 진행합니다.*

@@ -70,6 +70,9 @@ class VectorStore:
             metadata={
                 "description": "UR5e 문서 벡터 인덱스",
                 "embedding_model": settings.embedding.model,
+                # Step03 설계서/완료보고서의 가정과 일치: cosine distance
+                # (Chroma의 HNSW 공간 설정)
+                "hnsw:space": "cosine",
             },
         )
 
@@ -159,10 +162,11 @@ class VectorStore:
         query_embedding = self.embedder.embed_query(query)
 
         # ChromaDB 검색
+        where = self._normalize_where(filter_metadata)
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
-            where=filter_metadata,
+            where=where,
             include=["documents", "metadatas", "distances"],
         )
 
@@ -207,10 +211,11 @@ class VectorStore:
         settings = get_settings()
         top_k = top_k or settings.retrieval.top_k
 
+        where = self._normalize_where(filter_metadata)
         results = self.collection.query(
             query_embeddings=[embedding],
             n_results=top_k,
-            where=filter_metadata,
+            where=where,
             include=["documents", "metadatas", "distances"],
         )
 
@@ -307,8 +312,28 @@ class VectorStore:
             metadata={
                 "description": "UR5e 문서 벡터 인덱스",
                 "embedding_model": settings.embedding.model,
+                "hnsw:space": "cosine",
             },
         )
+
+    @staticmethod
+    def _normalize_where(filter_metadata: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Chroma where 문법으로 정규화.
+
+        - 값이 리스트/튜플/셋이면 {"$in": [...]}로 변환
+        - None이면 None 반환
+        """
+        if not filter_metadata:
+            return None
+
+        normalized: Dict[str, Any] = {}
+        for key, value in filter_metadata.items():
+            if isinstance(value, (list, tuple, set)):
+                normalized[key] = {"$in": list(value)}
+            else:
+                normalized[key] = value
+
+        return normalized
 
     def clear(self) -> None:
         """컬렉션 내용 비우기"""

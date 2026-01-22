@@ -223,6 +223,7 @@ collection_config = {
         "description": "UR5e 문서 벡터 인덱스",
         "embedding_model": "text-embedding-3-small",
         "embedding_dimension": 1536,
+        "hnsw:space": "cosine",
     },
     "distance_function": "cosine"  # l2, ip, cosine
 }
@@ -285,7 +286,7 @@ Document:
     │
     ▼
 3. VectorStore에서 메타데이터 필터링
-    → filter: {"doc_type": ["user_manual", "service_manual"]}
+    → filter: {"doc_type": {"$in": ["user_manual", "service_manual"]}}
     │
     ▼
 4. 관련 청크 검색 + 순위화

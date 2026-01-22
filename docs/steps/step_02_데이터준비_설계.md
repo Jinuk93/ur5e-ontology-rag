@@ -372,9 +372,3 @@ Phase 2에서 생성한 청크가 Phase 3에서 사용되는 방식:
 |---------------|-----------------|
 | Document 메타데이터 | Knowledge Domain Document 엔티티 |
 | Chunk.doc_type | DOCUMENTED_IN 관계 생성 |
-
----
-
-*작성일: 2026-01-22*
-*Phase: 02 - 데이터 준비*
-*문서 버전: v1.0*

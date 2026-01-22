@@ -4,12 +4,9 @@
 
 | 항목 | 내용 |
 |------|------|
-| Phase | 04 - 온톨로지 스키마 설계 (Ontology Schema Design) |
+| Phase | 04 - 온톨로지 스키마 (Ontology Schema) |
 | 상태 | **완료** |
-| 시작일 | 2026-01-22 |
-| 완료일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
-| 작업자 | Claude Code |
+| 주요 산출물 | 4-Domain 스키마(Enum/모델) + schema.yaml 정의 |
 
 ---
 
@@ -310,7 +307,7 @@ print(f"관계 타입: {len(RelationType)}개")
 
 ---
 
-## 9. 리팩토링 수행 내역
+## 9. 문서 업데이트 내역
 
 ### 9.1 설계서 업데이트 (v1.0 → v2.0)
 
@@ -344,17 +341,50 @@ print(f"관계 타입: {len(RelationType)}개")
 
 ---
 
-## 10. 문서 정보
+## 10. 알려진 이슈 및 제약 (v2.1)
+
+### 10.1 알려진 이슈: Event 모델 불일치
+
+**현황**:
+- `schema.py`: `EntityType.EVENT`, `RelationType.INSTANCE_OF` 존재 (16개 엔티티/14개 관계)
+- `schema.yaml`/설계문서: Event 없음 (15개 엔티티/13개 관계)
+- `ontology.json`: Pattern → Shift/Product 직접 연결 (Event 미사용)
+
+**두 가지 철학 공존**:
+| 철학 | 구조 | 현재 위치 |
+|------|------|----------|
+| Event 기반 (정밀) | Event → Pattern (INSTANCE_OF) | schema.py 코드 |
+| Pattern 직접 (단순) | Pattern → Shift/Product | ontology.json 데이터 |
+
+### 10.2 validate_relationship 제약 충돌
+
+**코드 제약** (`schema.py:157-164`):
+```python
+OCCURS_DURING: {"source_types": [EntityType.EVENT], ...}
+INVOLVES: {"source_types": [EntityType.EVENT], ...}
+```
+
+**실제 데이터** (`ontology.json`):
+```json
+{"source": "PAT_COLLISION", "relation": "OCCURS_DURING", "target": "Shift_Day"}
+```
+
+**영향**: Step05/06 검증에서 관계 제약 경고 발생 가능
+
+### 10.3 schema.yaml 역할
+
+`loader.py`는 `ontology.json` + `lexicon.yaml`만 로드. `schema.yaml`은 참조 문서 역할.
+
+---
+
+## 11. 문서 정보
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.0 (리팩토링 완료) |
+| 문서 버전 | v2.1 |
 | 작성일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
+| 최종 갱신일 | 2026-01-22 |
 | 설계서 참조 | [step_04_온톨로지스키마_설계.md](step_04_온톨로지스키마_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 4 |
 | Spec 섹션 | Section 6 |
 
----
-
-*Phase 04 완료. Phase 05 (엔티티/관계 구축)로 진행합니다.*

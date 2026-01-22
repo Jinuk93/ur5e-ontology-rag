@@ -6,10 +6,7 @@
 |------|------|
 | Phase | 03 - 문서 인덱싱 (Document Indexing) |
 | 상태 | **완료** |
-| 시작일 | 2026-01-22 |
-| 완료일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
-| 작업자 | Claude Code |
+| 주요 산출물 | ChromaDB 영속 인덱스(stores/chroma), VectorStore/OpenAIEmbedder, 임베딩 실행 스크립트 |
 
 ---
 
@@ -232,6 +229,10 @@ ur5e-ontology-rag/
 1. **OpenAI API 키**: `.env` 파일에 `OPENAI_API_KEY` 설정 필요
 2. **임베딩 비용**: 722 청크 × ~200 토큰 = 약 $0.003 (4원)
 3. **Rate Limiting**: 배치 처리 + 자동 재시도로 대응
+4. **기존 컬렉션 distance 설정**: 기존 Chroma 컬렉션이 cosine이 아닌 L2로 생성됐을 수 있음. score 해석/threshold 정확성을 위해 `--force`로 재생성 권장:
+   ```bash
+   python scripts/run_embedding.py --force
+   ```
 
 ### 8.3 검증 명령어
 
@@ -250,7 +251,7 @@ assert stats["count"] == 722  # 청크 수 확인
 
 ---
 
-## 9. 리팩토링 수행 내역
+## 9. 문서 업데이트 내역
 
 ### 9.1 설계서 업데이트 (v1.0 → v2.0)
 
@@ -292,13 +293,9 @@ Model: text-embedding-3-small
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.0 (리팩토링 완료) |
+| 문서 버전 | v2.1 |
 | 작성일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
+| 최종 갱신일 | 2026-01-22 |
 | 설계서 참조 | [step_03_문서인덱싱_설계.md](step_03_문서인덱싱_설계.md) |
-| ROADMAP 섹션 | A.1 Phase 3 |
-| Spec 섹션 | Section 9 |
-
----
-
-*Phase 03 완료. Phase 04 (온톨로지 스키마)로 진행합니다.*
+| ROADMAP 섹션 | A.2 Phase 3 |
+| Spec 섹션 | - |
