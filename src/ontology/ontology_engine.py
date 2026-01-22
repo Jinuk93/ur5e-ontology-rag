@@ -221,7 +221,7 @@ class OntologyEngine:
 
             # Pattern 처리
             elif entity_type == "Pattern":
-                result = self._process_pattern(entity_text, context)
+                result = self._process_pattern(pattern_id=entity_id, pattern_text=entity_text, context=context)
                 if result:
                     reasoning_chain.extend(result.get("reasoning", []))
                     conclusions.extend(result.get("conclusions", []))
@@ -231,7 +231,7 @@ class OntologyEngine:
 
             # ErrorCode 처리
             elif entity_type == "ErrorCode":
-                result = self._process_error_code(entity_text, context)
+                result = self._process_error_code(entity_id, context)
                 if result:
                     reasoning_chain.extend(result.get("reasoning", []))
                     conclusions.extend(result.get("conclusions", []))
@@ -389,10 +389,18 @@ class OntologyEngine:
 
     def _process_pattern(
         self,
+        pattern_id: str,
         pattern_text: str,
         context: Dict
     ) -> Optional[Dict]:
-        """패턴 키워드 처리"""
+        """패턴 처리
+
+        EntityExtractor는 Pattern 엔티티를 보통 다음 형태로 제공합니다:
+        - entity_id: "PAT_COLLISION" 같은 정규화 ID
+        - text: "충돌" 같은 원문 키워드(동의어 포함 가능)
+
+        가능하면 pattern_id를 우선 사용하고, 없거나 비표준이면 text로 매핑합니다.
+        """
         # 패턴 텍스트 → 패턴 ID 매핑
         pattern_mapping = {
             "충돌": "PAT_COLLISION",
@@ -405,8 +413,10 @@ class OntologyEngine:
             "vibration": "PAT_VIBRATION",
         }
 
-        pattern_id = pattern_mapping.get(pattern_text.lower())
-        if not pattern_id:
+        resolved_pattern_id = pattern_id
+        if not resolved_pattern_id or not resolved_pattern_id.startswith("PAT_"):
+            resolved_pattern_id = pattern_mapping.get(pattern_text.lower(), "")
+        if not resolved_pattern_id:
             return None
 
         reasoning = []
@@ -415,12 +425,12 @@ class OntologyEngine:
         paths = []
 
         # 패턴 추론 경로 생성
-        pattern_reasoning = self.traverser.get_reasoning_path(pattern_id)
+        pattern_reasoning = self.traverser.get_reasoning_path(resolved_pattern_id)
 
         if pattern_reasoning:
             reasoning.append({
                 "step": "pattern_analysis",
-                "description": f"패턴 분석: {pattern_text} → {pattern_id}",
+                "description": f"패턴 분석: {pattern_text} → {resolved_pattern_id}",
                 "result": pattern_reasoning,
             })
 
@@ -428,7 +438,7 @@ class OntologyEngine:
             for cause_path in pattern_reasoning.get("cause_paths", []):
                 conclusions.append({
                     "type": "cause",
-                    "pattern": pattern_id,
+                    "pattern": resolved_pattern_id,
                     "cause": cause_path["cause_id"],
                     "confidence": cause_path["confidence"],
                 })
@@ -451,7 +461,7 @@ class OntologyEngine:
             for error_path in pattern_reasoning.get("error_paths", []):
                 conclusions.append({
                     "type": "triggered_error",
-                    "pattern": pattern_id,
+                    "pattern": resolved_pattern_id,
                     "error": error_path["error_id"],
                     "confidence": error_path["confidence"],
                 })

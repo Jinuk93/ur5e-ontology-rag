@@ -24,7 +24,8 @@ class EntityExtractor:
     """온톨로지 기반 엔티티 추출기"""
 
     # 한국어 조사 패턴 (축 이름 뒤에 붙을 수 있는 조사들)
-    KOREAN_PARTICLES = r'[가이를은는도에서의로]?'
+    # NOTE: 다문자 조사("에서", "으로")까지 고려해 alternation으로 정의
+    KOREAN_PARTICLES = r'(?:가|이|를|을|은|는|도|에서|의|로|으로)?'
 
     # 센서 축 패턴 (한국어 조사 지원)
     # 예: "Fz", "Fz가", "Fz는", "Fz를" 모두 매칭

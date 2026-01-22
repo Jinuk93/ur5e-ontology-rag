@@ -26,7 +26,7 @@ class QueryClassifier:
         # 센서 값 + 질문 패턴
         "sensor_value_question": {
             "patterns": [
-                r"(Fz|Fx|Fy|Tx|Ty|Tz).{0,20}(뭐야|뭘까|무엇|왜|이유|원인|문제)",
+                r"(Fz|Fx|Fy|Tx|Ty|Tz)(?:가|이|를|을|은|는|도|에서|의|로|으로)?.{0,20}(뭐야|뭘까|무엇|왜|이유|원인|문제)",
                 r"(-?\d+)\s*(N|Nm).{0,10}(뭐야|뭘까|무엇|왜|이유|원인|문제)",
             ],
             "weight": 0.9,
