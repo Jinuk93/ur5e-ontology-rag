@@ -252,6 +252,9 @@ class OntologyEngine:
         if conclusions:
             confidences = [c.get("confidence", 0.5) for c in conclusions]
             total_confidence = sum(confidences) / len(confidences)
+        else:
+            # 결론 없으면 낮은 신뢰도 (ABSTAIN 가능성)
+            total_confidence = 0.3
 
         # 3. 중복 제거
         ontology_paths = list(set(ontology_paths))

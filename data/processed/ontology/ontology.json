@@ -93,42 +93,42 @@
       "type": "MeasurementAxis",
       "domain": "measurement",
       "name": "Fx (X축 힘)",
-      "properties": {"axis": "x", "measurement_type": "force", "unit": "N", "range": [-500, 500]}
+      "properties": {"axis": "x", "measurement_type": "force", "unit": "N", "range": [-500, 500], "normal_range": [-10, 10]}
     },
     {
       "id": "Fy",
       "type": "MeasurementAxis",
       "domain": "measurement",
       "name": "Fy (Y축 힘)",
-      "properties": {"axis": "y", "measurement_type": "force", "unit": "N", "range": [-500, 500]}
+      "properties": {"axis": "y", "measurement_type": "force", "unit": "N", "range": [-500, 500], "normal_range": [-10, 10]}
     },
     {
       "id": "Fz",
       "type": "MeasurementAxis",
       "domain": "measurement",
       "name": "Fz (Z축 힘)",
-      "properties": {"axis": "z", "measurement_type": "force", "unit": "N", "range": [-1000, 1000]}
+      "properties": {"axis": "z", "measurement_type": "force", "unit": "N", "range": [-1000, 1000], "normal_range": [-60, 0]}
     },
     {
       "id": "Tx",
       "type": "MeasurementAxis",
       "domain": "measurement",
       "name": "Tx (X축 토크)",
-      "properties": {"axis": "x", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20]}
+      "properties": {"axis": "x", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20], "normal_range": [-0.5, 0.5]}
     },
     {
       "id": "Ty",
       "type": "MeasurementAxis",
       "domain": "measurement",
       "name": "Ty (Y축 토크)",
-      "properties": {"axis": "y", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20]}
+      "properties": {"axis": "y", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20], "normal_range": [-0.5, 0.5]}
     },
     {
       "id": "Tz",
       "type": "MeasurementAxis",
       "domain": "measurement",
       "name": "Tz (Z축 토크)",
-      "properties": {"axis": "z", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20]}
+      "properties": {"axis": "z", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20], "normal_range": [-0.5, 0.5]}
     },
 
     {

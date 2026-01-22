@@ -26,7 +26,7 @@ class PatternDetector:
     COLLISION_THRESHOLD = -350.0      # Fz 충돌 임계값 (N), 음수 피크
     OVERLOAD_THRESHOLD = 300.0        # Fz 과부하 임계값 (N), 절대값
     DRIFT_THRESHOLD_PCT = 10.0        # Baseline 대비 변화율 (%)
-    VIBRATION_STD_MULTIPLIER = 3.0    # 표준편차 증가 배수
+    VIBRATION_STD_MULTIPLIER = 2.0    # 표준편차 증가 배수 (2.0x = 민감, 3.0x = 엄격)
 
     # 최소 지속 시간
     OVERLOAD_MIN_DURATION_S = 5.0     # 과부하 최소 지속 시간 (초)

@@ -43,6 +43,12 @@ class OntologyLoader:
         path = path or cls.DEFAULT_PATH
         logger.info(f"온톨로지 로드: {path}")
 
+        if not path.exists():
+            raise FileNotFoundError(
+                f"온톨로지 파일을 찾을 수 없습니다: {path}\n"
+                f"먼저 'python scripts/build_ontology.py'를 실행하여 온톨로지를 생성하세요."
+            )
+
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -91,6 +97,12 @@ class OntologyLoader:
 
         path = path or cls.LEXICON_PATH
         logger.info(f"동의어 사전 로드: {path}")
+
+        if not path.exists():
+            raise FileNotFoundError(
+                f"동의어 사전 파일을 찾을 수 없습니다: {path}\n"
+                f"먼저 'python scripts/build_ontology.py'를 실행하여 동의어 사전을 생성하세요."
+            )
 
         with open(path, "r", encoding="utf-8") as f:
             lexicon = yaml.safe_load(f)

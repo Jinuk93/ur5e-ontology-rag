@@ -18,6 +18,17 @@ from .evidence_schema import (
 from .confidence_gate import ConfidenceGate, GateResult
 from .prompt_builder import PromptBuilder
 
+# 온톨로지 로더 (지연 임포트로 순환 참조 방지)
+_ontology_loader = None
+
+def _get_ontology_loader():
+    """OntologyLoader 지연 로딩"""
+    global _ontology_loader
+    if _ontology_loader is None:
+        from src.ontology import OntologyLoader
+        _ontology_loader = OntologyLoader
+    return _ontology_loader
+
 logger = logging.getLogger(__name__)
 
 
@@ -244,14 +255,31 @@ class ResponseGenerator:
                 if "entity" not in analysis:
                     analysis["entity"] = conclusion.get("entity", "")
 
-        # 정상 범위 정보 (하드코딩, 실제로는 온톨로지에서 가져와야 함)
-        if analysis.get("entity") == "Fz":
-            analysis["normal_range"] = [-60, 0]
-            if "value" in analysis:
-                value = analysis["value"]
-                if value < -60:
-                    deviation = abs(value) / 60
-                    analysis["deviation"] = f"정상 대비 약 {deviation:.1f}배"
+        # 정상 범위 정보 (온톨로지에서 조회)
+        entity_id = analysis.get("entity")
+        if entity_id:
+            try:
+                loader = _get_ontology_loader()
+                ontology = loader.load()
+                entity = ontology.get_entity(entity_id)
+                if entity and entity.properties:
+                    normal_range = entity.properties.get("normal_range")
+                    if normal_range:
+                        analysis["normal_range"] = normal_range
+                        if "value" in analysis:
+                            value = analysis["value"]
+                            # 정상 범위 벗어난 경우 편차 계산
+                            range_min, range_max = normal_range
+                            if value < range_min:
+                                # 음수 방향으로 벗어남
+                                deviation = abs(value) / abs(range_min) if range_min != 0 else abs(value)
+                                analysis["deviation"] = f"정상 대비 약 {deviation:.1f}배"
+                            elif value > range_max:
+                                # 양수 방향으로 벗어남
+                                deviation = abs(value) / abs(range_max) if range_max != 0 else abs(value)
+                                analysis["deviation"] = f"정상 대비 약 {deviation:.1f}배"
+            except Exception as e:
+                logger.debug(f"온톨로지에서 정상 범위 조회 실패: {e}")
 
         return analysis
 
