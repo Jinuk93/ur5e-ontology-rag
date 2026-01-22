@@ -25,7 +25,7 @@ class EntityExtractor:
 
     # 한국어 조사 패턴 (축 이름 뒤에 붙을 수 있는 조사들)
     # NOTE: 다문자 조사("에서", "으로")까지 고려해 alternation으로 정의
-    KOREAN_PARTICLES = r'(?:가|이|를|을|은|는|도|에서|의|로|으로)?'
+    KOREAN_PARTICLES = r'(?:으로|에서|가|이|를|을|은|는|도|의|로)?'
 
     # 센서 축 패턴 (한국어 조사 지원)
     # 예: "Fz", "Fz가", "Fz는", "Fz를" 모두 매칭
@@ -38,7 +38,11 @@ class EntityExtractor:
     VALUE_PATTERN = re.compile(r'(-?\d+(?:\.\d+)?)\s*(N|Nm|kg|mm|도|℃)?')
 
     # 에러코드 패턴 (예: C153, C189, C10)
-    ERROR_CODE_PATTERN = re.compile(r'\b(C\d{1,3})\b', re.IGNORECASE)
+    # NOTE: 한국어 조사 결합(예: "C153이")도 허용하기 위해 \b 대신 ASCII 경계 기반 제약 사용
+    ERROR_CODE_PATTERN = re.compile(
+        r'(?<![a-zA-Z0-9])(C\d{1,3})' + KOREAN_PARTICLES + r'(?![a-zA-Z0-9])',
+        re.IGNORECASE,
+    )
 
     # 시간 패턴 (예: 14시, 14:00, 어제, 오늘)
     TIME_PATTERN = re.compile(r'(\d{1,2}시|\d{1,2}:\d{2}|어제|오늘|내일|그제|모레)', re.IGNORECASE)
@@ -158,6 +162,10 @@ class EntityExtractor:
         """수치값 추출"""
         entities = []
         for match in self.VALUE_PATTERN.finditer(query):
+            # 에러 코드 "C153" 같은 토큰 내부 숫자(153)를 값으로 오인하지 않도록 필터링
+            if match.start() > 0 and query[match.start() - 1] in ("C", "c"):
+                continue
+
             value_str = match.group(1)
             unit = match.group(2) or ""
             try:
@@ -179,7 +187,7 @@ class EntityExtractor:
         for match in self.ERROR_CODE_PATTERN.finditer(query):
             code = match.group(1).upper()
             entities.append(ExtractedEntity(
-                text=match.group(0),
+                text=code,  # 조사 제외한 코드만 저장
                 entity_id=code,
                 entity_type="ErrorCode",
                 confidence=1.0,
