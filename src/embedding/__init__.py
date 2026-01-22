@@ -1,14 +1,28 @@
-# ============================================================
-# src/embedding/__init__.py
-# ============================================================
-# 임베딩 모듈 패키지
-# 텍스트를 벡터로 변환하고 ChromaDB에 저장합니다.
-# ============================================================
+"""
+임베딩 모듈
 
-from .embedder import Embedder
-from .vector_store import VectorStore
+OpenAI 임베딩 생성 및 ChromaDB 벡터 저장소를 제공합니다.
+
+사용 예시:
+    from src.embedding import VectorStore, OpenAIEmbedder
+
+    # 벡터 저장소 사용
+    vs = VectorStore()
+    results = vs.search("C153 에러 해결 방법", top_k=3)
+
+    # 임베딩 생성
+    embedder = OpenAIEmbedder()
+    embedding = embedder.embed_text("안녕하세요")
+"""
+
+from .embedder import OpenAIEmbedder, create_embeddings
+from .vector_store import VectorStore, SearchResult
 
 __all__ = [
-    "Embedder",
+    # 임베딩
+    "OpenAIEmbedder",
+    "create_embeddings",
+    # 벡터 저장소
     "VectorStore",
+    "SearchResult",
 ]

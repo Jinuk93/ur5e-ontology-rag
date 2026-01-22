@@ -1,0 +1,327 @@
+version: "1.0"
+created_at: "2026-01-22"
+description: "UR5e 온톨로지 스키마 정의"
+
+# 4-Domain 아키텍처
+domains:
+  equipment:
+    description: "물리적 장비 도메인"
+    entities:
+      - Robot
+      - Joint
+      - ControlBox
+      - ToolFlange
+
+  measurement:
+    description: "센서/측정 도메인"
+    entities:
+      - Sensor
+      - MeasurementAxis
+      - State
+      - Pattern
+
+  knowledge:
+    description: "문제해결 지식 도메인"
+    entities:
+      - ErrorCode
+      - Cause
+      - Resolution
+      - Document
+
+  context:
+    description: "운영 컨텍스트 도메인"
+    entities:
+      - Shift
+      - Product
+      - WorkCycle
+
+# 엔티티 타입 정의
+entity_types:
+  # Equipment Domain
+  Robot:
+    domain: equipment
+    description: "협동로봇"
+    properties:
+      payload_kg:
+        type: float
+        description: "가반하중 (kg)"
+      reach_mm:
+        type: float
+        description: "작업반경 (mm)"
+      dof:
+        type: int
+        description: "자유도"
+      weight_kg:
+        type: float
+        description: "로봇 무게 (kg)"
+
+  Joint:
+    domain: equipment
+    description: "로봇 관절"
+    properties:
+      index:
+        type: int
+        description: "관절 인덱스 (0-5)"
+      name:
+        type: string
+        description: "관절 이름 (Base, Shoulder, Elbow, Wrist1, Wrist2, Wrist3)"
+      max_torque_nm:
+        type: float
+        description: "최대 토크 (Nm)"
+      max_speed_deg_s:
+        type: float
+        description: "최대 속도 (deg/s)"
+
+  ControlBox:
+    domain: equipment
+    description: "제어박스"
+    properties:
+      model:
+        type: string
+        description: "모델명"
+
+  ToolFlange:
+    domain: equipment
+    description: "툴 플랜지"
+    properties:
+      diameter_mm:
+        type: float
+        description: "직경 (mm)"
+
+  # Measurement Domain
+  Sensor:
+    domain: measurement
+    description: "센서"
+    properties:
+      type:
+        type: string
+        description: "센서 타입 (force_torque, temperature, etc.)"
+      model:
+        type: string
+        description: "모델명"
+      manufacturer:
+        type: string
+        description: "제조사"
+      sampling_rate_hz:
+        type: int
+        description: "샘플링 레이트 (Hz)"
+
+  MeasurementAxis:
+    domain: measurement
+    description: "측정축"
+    properties:
+      direction:
+        type: string
+        description: "측정 방향 (X, Y, Z)"
+      unit:
+        type: string
+        description: "측정 단위 (N, Nm)"
+      range:
+        type: array
+        items: float
+        description: "측정 범위 [min, max]"
+      normal_range:
+        type: array
+        items: float
+        description: "정상 범위 [min, max]"
+
+  State:
+    domain: measurement
+    description: "센서 상태"
+    properties:
+      severity:
+        type: string
+        enum: [normal, low, medium, high, critical]
+        description: "심각도"
+      range:
+        type: array
+        items: float
+        description: "상태 범위 [min, max]"
+
+  Pattern:
+    domain: measurement
+    description: "이상 패턴"
+    properties:
+      type:
+        type: string
+        enum: [collision, overload, vibration, drift]
+        description: "패턴 타입"
+      severity:
+        type: string
+        enum: [low, medium, high, critical]
+        description: "심각도"
+      detection_condition:
+        type: string
+        description: "감지 조건"
+
+  # Knowledge Domain
+  ErrorCode:
+    domain: knowledge
+    description: "에러 코드"
+    properties:
+      code:
+        type: string
+        description: "에러 코드 (C153, C189 등)"
+      name:
+        type: string
+        description: "에러 이름"
+      category:
+        type: string
+        enum: [safety, overload, communication, system]
+        description: "에러 카테고리"
+      severity:
+        type: string
+        enum: [low, medium, high, critical]
+        description: "심각도"
+
+  Cause:
+    domain: knowledge
+    description: "에러 원인"
+    properties:
+      category:
+        type: string
+        enum: [physical, mechanical, operational, sensor, system]
+        description: "원인 카테고리"
+
+  Resolution:
+    domain: knowledge
+    description: "해결책"
+    properties:
+      steps:
+        type: array
+        items: string
+        description: "해결 단계"
+      reference:
+        type: string
+        description: "참조 문서"
+
+  Document:
+    domain: knowledge
+    description: "문서"
+    properties:
+      doc_type:
+        type: string
+        enum: [user_manual, service_manual, error_codes]
+        description: "문서 타입"
+      source:
+        type: string
+        description: "원본 파일명"
+      topics:
+        type: array
+        items: string
+        description: "문서 주제"
+
+  # Context Domain
+  Shift:
+    domain: context
+    description: "근무조"
+    properties:
+      name:
+        type: string
+        description: "조 이름 (A, B, C)"
+      hours:
+        type: string
+        description: "근무 시간 (06:00-14:00)"
+
+  Product:
+    domain: context
+    description: "제품"
+    properties:
+      name:
+        type: string
+        description: "제품명"
+      payload_kg:
+        type: float
+        description: "무게 (kg)"
+      class:
+        type: string
+        enum: [light, normal, heavy]
+        description: "무게 분류"
+
+  WorkCycle:
+    domain: context
+    description: "작업 주기"
+    properties:
+      phases:
+        type: array
+        items: string
+        description: "작업 단계 목록"
+
+# 관계 타입 정의
+relationship_types:
+  HAS_COMPONENT:
+    source_types: [Robot]
+    target_types: [Joint, ControlBox, ToolFlange]
+    description: "장비 계층 관계 (Robot → 구성요소)"
+
+  MOUNTED_ON:
+    source_types: [Sensor]
+    target_types: [ToolFlange]
+    description: "센서 장착 관계 (Sensor → ToolFlange)"
+
+  MEASURES:
+    source_types: [Sensor]
+    target_types: [MeasurementAxis]
+    description: "측정 대상 관계 (Sensor → Axis)"
+
+  HAS_STATE:
+    source_types: [MeasurementAxis]
+    target_types: [State]
+    description: "상태 보유 관계 (Axis → State)"
+
+  INDICATES:
+    source_types: [Pattern]
+    target_types: [Cause]
+    description: "패턴 → 원인 관계"
+    properties:
+      confidence:
+        type: float
+        description: "신뢰도 (0.0-1.0)"
+
+  TRIGGERS:
+    source_types: [Pattern]
+    target_types: [ErrorCode]
+    description: "패턴 → 에러 관계"
+    properties:
+      confidence:
+        type: float
+        description: "신뢰도 (0.0-1.0)"
+
+  CAUSED_BY:
+    source_types: [ErrorCode]
+    target_types: [Cause]
+    description: "에러 → 원인 관계"
+
+  RESOLVED_BY:
+    source_types: [Cause]
+    target_types: [Resolution]
+    description: "원인 → 해결 관계"
+
+  DOCUMENTED_IN:
+    source_types: [ErrorCode, Cause, Resolution]
+    target_types: [Document]
+    description: "문서 참조 관계"
+    properties:
+      page:
+        type: int
+        description: "문서 페이지"
+
+  PREVENTS:
+    source_types: [Resolution]
+    target_types: [ErrorCode]
+    description: "해결 → 예방 관계"
+
+  AFFECTS:
+    source_types: [ErrorCode]
+    target_types: [Joint]
+    description: "영향 컴포넌트 관계"
+
+  OCCURS_DURING:
+    source_types: [Pattern]
+    target_types: [Shift]
+    description: "발생 시간 관계"
+
+  INVOLVES:
+    source_types: [Pattern]
+    target_types: [Product]
+    description: "관련 제품 관계"

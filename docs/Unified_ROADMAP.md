@@ -1083,50 +1083,203 @@ def test_context_awareness():
 | Foundation_ROADMAP | Unified_ROADMAP | 통합 |
 | Main__ROADMAP | Unified_ROADMAP | 통합 |
 
-## B. 폴더 구조 요약
+## B. 폴더 구조 (완전판)
 
 ```
 ur5e-ontology-rag/
+│
+├── .env.example                     # Phase 1: 환경 변수 템플릿
+├── pyproject.toml                   # Phase 1: 프로젝트 설정 (uv/poetry)
+├── requirements.txt                 # Phase 1: pip 의존성
+│
 ├── data/
+│   ├── raw/
+│   │   └── pdf/                     # Phase 2: 원본 PDF 문서
+│   │       ├── user_manual.pdf
+│   │       ├── service_manual.pdf
+│   │       └── error_codes.pdf
+│   │
 │   ├── processed/
-│   │   ├── chunks/                 # Phase 2
-│   │   ├── ontology/               # Phase 4-5
-│   │   │   ├── schema.yaml
-│   │   │   ├── ontology.json
-│   │   │   └── lexicon.yaml
-│   │   └── metadata/
-│   └── sensor/
-│       ├── raw/                    # Phase 2
-│       └── processed/              # Phase 8
+│   │   ├── chunks/                  # Phase 2: 청킹된 문서
+│   │   │   ├── user_manual.json
+│   │   │   ├── service_manual.json
+│   │   │   └── error_codes.json
+│   │   │
+│   │   ├── ontology/                # Phase 4-5: 온톨로지 데이터
+│   │   │   ├── schema.yaml          # 4-Domain 스키마 정의
+│   │   │   ├── ontology.json        # 엔티티/관계 인스턴스
+│   │   │   └── lexicon.yaml         # 동의어 사전
+│   │   │
+│   │   └── metadata/                # Phase 2: 문서 메타데이터
+│   │       └── manifest.json
+│   │
+│   ├── sensor/
+│   │   ├── raw/                     # Phase 2: 원본 센서 데이터
+│   │   │   └── axia80_7days.csv
+│   │   └── processed/               # Phase 8: 처리된 패턴 데이터
+│   │       ├── patterns.parquet
+│   │       └── statistics.json
+│   │
+│   └── benchmark/                   # Phase 16: 평가용 QA 데이터
+│       ├── ontology_qa.json         # 온톨로지형 질문
+│       ├── hybrid_qa.json           # 하이브리드형 질문
+│       └── rag_qa.json              # RAG형 질문
 │
 ├── configs/
-│   ├── rules.yaml                  # Phase 6
-│   └── error_pattern_mapping.yaml  # Phase 9
+│   ├── settings.yaml                # Phase 1: 전역 설정
+│   ├── rules.yaml                   # Phase 6: 추론 규칙
+│   └── error_pattern_mapping.yaml   # Phase 9: 에러-패턴 매핑
+│
+├── prompts/
+│   ├── system.txt                   # Phase 12: 시스템 프롬프트
+│   ├── query_ontology.txt           # Phase 12: 온톨로지형 질의
+│   ├── query_hybrid.txt             # Phase 12: 하이브리드형 질의
+│   └── verification.txt             # Phase 12: 검증 프롬프트
 │
 ├── src/
-│   ├── ontology/                   # Phase 4-6, 11
-│   │   ├── schema.py
-│   │   ├── ontology_engine.py
-│   │   ├── rule_engine.py
-│   │   └── graph_traverser.py
-│   ├── sensor/                     # Phase 7-9
-│   │   ├── sensor_store.py
-│   │   ├── pattern_detector.py
-│   │   └── ontology_connector.py
-│   ├── rag/                        # Phase 10-12
-│   │   ├── query_classifier.py
-│   │   ├── entity_extractor.py
-│   │   └── response_generator.py
-│   └── dashboard/                  # Phase 13-15
-│       ├── app.py
+│   ├── __init__.py
+│   ├── config.py                    # Phase 1: 설정 로더
+│   │
+│   ├── ingestion/                   # Phase 2: 데이터 수집
+│   │   ├── __init__.py
+│   │   ├── pdf_parser.py            # PDF 텍스트 추출
+│   │   ├── chunker.py               # 문서 청킹
+│   │   └── models.py                # Document, Chunk 모델
+│   │
+│   ├── embedding/                   # Phase 3: 임베딩
+│   │   ├── __init__.py
+│   │   ├── embedder.py              # OpenAI 임베딩 생성
+│   │   └── vector_store.py          # ChromaDB 인터페이스
+│   │
+│   ├── ontology/                    # Phase 4-6, 11: 온톨로지 핵심
+│   │   ├── __init__.py
+│   │   ├── schema.py                # EntityType, RelationType 정의
+│   │   ├── graph_store.py           # Neo4j 인터페이스
+│   │   ├── ontology_engine.py       # 온톨로지 추론 엔진
+│   │   ├── graph_traverser.py       # 관계 경로 탐색
+│   │   └── rule_engine.py           # 추론 규칙 엔진
+│   │
+│   ├── sensor/                      # Phase 7-9: 센서 처리
+│   │   ├── __init__.py
+│   │   ├── sensor_store.py          # 센서 데이터 저장
+│   │   ├── data_loader.py           # CSV/Parquet 로딩
+│   │   ├── pattern_detector.py      # 이상 패턴 감지
+│   │   └── ontology_connector.py    # 패턴→온톨로지 연결
+│   │
+│   ├── rag/                         # Phase 10-12: 질의 엔진
+│   │   ├── __init__.py
+│   │   ├── query_classifier.py      # 질문 유형 분류
+│   │   ├── entity_extractor.py      # 엔티티 추출 (온톨로지 기반)
+│   │   ├── hybrid_retriever.py      # VectorDB + GraphDB 검색
+│   │   ├── response_generator.py    # LLM 응답 생성
+│   │   ├── prompt_builder.py        # 프롬프트 구성
+│   │   └── verifier.py              # 응답 검증 & 근거 추적
+│   │
+│   ├── api/                         # Phase 12: REST API
+│   │   ├── __init__.py
+│   │   ├── main.py                  # FastAPI 앱 진입점
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   ├── query.py             # POST /query
+│   │   │   ├── ontology.py          # GET /ontology/*
+│   │   │   ├── sensor.py            # GET /sensor/*
+│   │   │   └── health.py            # GET /health
+│   │   └── schemas/
+│   │       ├── __init__.py
+│   │       ├── request.py           # 요청 Pydantic 모델
+│   │       └── response.py          # 응답 Pydantic 모델
+│   │
+│   └── dashboard/                   # Phase 13-15: UI
+│       ├── __init__.py
+│       ├── app.py                   # Streamlit 메인 앱
 │       ├── pages/
-│       └── components/
+│       │   ├── __init__.py
+│       │   ├── 1_query.py           # 질의 인터페이스
+│       │   ├── 2_graph.py           # 관계 그래프
+│       │   └── 3_sensor.py          # 센서 모니터링
+│       ├── components/
+│       │   ├── __init__.py
+│       │   ├── chat.py              # 채팅 UI
+│       │   ├── graph.py             # 그래프 렌더러
+│       │   ├── sensor_chart.py      # 센서 차트
+│       │   └── evidence_panel.py    # 근거 패널
+│       └── static/
+│           ├── graph.js             # D3.js 온톨로지 그래프
+│           └── styles.css           # 커스텀 스타일
+│
+├── scripts/
+│   ├── run_api.py                   # API 서버 실행
+│   ├── run_dashboard.py             # 대시보드 실행
+│   ├── run_ingestion.py             # Phase 2: 데이터 수집
+│   ├── run_embedding.py             # Phase 3: 임베딩 생성
+│   ├── run_ontology.py              # Phase 4-5: 온톨로지 구축
+│   ├── run_sensor_process.py        # Phase 7-8: 센서 처리
+│   └── run_evaluation.py            # Phase 16: 평가 실행
+│
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py                  # pytest 설정 & fixtures
+│   ├── unit/
+│   │   ├── __init__.py
+│   │   ├── test_ingestion.py        # 수집 테스트
+│   │   ├── test_embedding.py        # 임베딩 테스트
+│   │   ├── test_ontology.py         # 온톨로지 테스트
+│   │   ├── test_sensor.py           # 센서 테스트
+│   │   └── test_rag.py              # RAG 테스트
+│   └── integration/
+│       ├── __init__.py
+│       ├── test_api.py              # API 통합 테스트
+│       └── test_e2e.py              # E2E 시나리오 테스트
 │
 ├── stores/
-│   └── chroma/                     # Phase 3
+│   ├── chroma/                      # Phase 3: ChromaDB 영속화
+│   │   └── .gitkeep
+│   └── neo4j/                       # Phase 4: Neo4j (Docker 볼륨)
+│       └── .gitkeep
 │
-└── tests/                          # Phase 16
+└── docs/
+    ├── Unified_Spec.md              # 통합 기술 명세
+    ├── Unified_ROADMAP.md           # 통합 개발 로드맵
+    ├── 온톨로지_스키마_설계.md       # 온톨로지 상세 설계
+    ├── Axia80_센서_분석_보고서.md    # 센서 분석
+    ├── UR5e_로봇_분석_보고서.md      # 로봇 분석
+    └── phases/                      # Phase별 완료 보고서
+        └── Phase_XX_완료.md
 ```
+
+### 폴더별 Phase 매핑
+
+| 폴더 | 관련 Phase | 핵심 역할 |
+|------|-----------|----------|
+| `data/raw/pdf/` | 2 | 원본 문서 저장 |
+| `data/processed/chunks/` | 2 | 청킹된 문서 |
+| `data/processed/ontology/` | 4-5 | 온톨로지 데이터 |
+| `data/sensor/` | 2, 8 | 센서 데이터 |
+| `data/benchmark/` | 16 | 평가 데이터 |
+| `configs/` | 1, 6, 9 | 설정 파일 |
+| `prompts/` | 12 | LLM 프롬프트 |
+| `src/ingestion/` | 2 | PDF 파싱 & 청킹 |
+| `src/embedding/` | 3 | 벡터 임베딩 |
+| `src/ontology/` | 4-6, 11 | **온톨로지 핵심** |
+| `src/sensor/` | 7-9 | 센서 처리 |
+| `src/rag/` | 10-12 | 질의 엔진 |
+| `src/api/` | 12 | REST API |
+| `src/dashboard/` | 13-15 | UI |
+| `scripts/` | 전체 | 실행 스크립트 |
+| `tests/` | 16 | 테스트 |
+| `stores/` | 3-4 | DB 영속화 |
+| `docs/` | 전체 | 문서화 |
+
+### 주요 파일 설명
+
+| 파일 | 역할 |
+|-----|------|
+| `src/config.py` | 환경변수, 설정 통합 로딩 |
+| `src/ontology/ontology_engine.py` | **핵심**: 온톨로지 추론 엔진 |
+| `src/ontology/graph_traverser.py` | 관계 경로 탐색 (Palantir-style) |
+| `src/rag/query_classifier.py` | 질문 유형 분류 (온톨로지/하이브리드/RAG) |
+| `src/rag/hybrid_retriever.py` | VectorDB + GraphDB 통합 검색 |
+| `src/dashboard/static/graph.js` | D3.js 인터랙티브 그래프 |
 
 ---
 

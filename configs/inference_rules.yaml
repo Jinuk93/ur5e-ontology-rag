@@ -1,0 +1,211 @@
+# ============================================================
+# inference_rules.yaml - 온톨로지 추론 규칙
+# ============================================================
+# Phase 6: 추론 규칙 정의
+# - state_rules: 센서 값 → 상태
+# - cause_rules: 패턴 → 원인
+# - prediction_rules: 패턴 반복 → 에러 예측
+# ============================================================
+
+version: "1.0"
+
+# ============================================================
+# 상태 추론 규칙 (State Rules)
+# ============================================================
+# 센서 값을 상태로 변환
+# 온톨로지의 State 엔티티와 연결
+# ============================================================
+
+state_rules:
+  # Fz (Z축 힘) 상태 매핑
+  - name: "FZ_STATE_MAPPING"
+    axis: "Fz"
+    unit: "N"
+    mappings:
+      - range: [-20, 0]
+        state: "State_Normal"
+        label: "유휴"
+        severity: "normal"
+      - range: [-50, -20]
+        state: "State_Normal"
+        label: "경부하"
+        severity: "normal"
+      - range: [-100, -50]
+        state: "State_Normal"
+        label: "정상 부하"
+        severity: "normal"
+      - range: [-200, -100]
+        state: "State_Warning"
+        label: "중부하"
+        severity: "warning"
+      - range: [-500, -200]
+        state: "State_Warning"
+        label: "과부하 경고"
+        severity: "warning"
+      - range: [-1000, -500]
+        state: "State_Critical"
+        label: "위험"
+        severity: "critical"
+
+  # Fx (X축 힘) 상태 매핑
+  - name: "FX_STATE_MAPPING"
+    axis: "Fx"
+    unit: "N"
+    mappings:
+      - range: [-75, 75]
+        state: "State_Normal"
+        label: "정상"
+        severity: "normal"
+      - range: [-150, -75]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+      - range: [75, 150]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+
+  # Fy (Y축 힘) 상태 매핑
+  - name: "FY_STATE_MAPPING"
+    axis: "Fy"
+    unit: "N"
+    mappings:
+      - range: [-75, 75]
+        state: "State_Normal"
+        label: "정상"
+        severity: "normal"
+      - range: [-150, -75]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+      - range: [75, 150]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+
+# ============================================================
+# 원인 추론 규칙 (Cause Rules)
+# ============================================================
+# 패턴에서 원인을 추론
+# 온톨로지의 INDICATES 관계를 활용
+# ============================================================
+
+cause_rules:
+  - pattern: "PAT_COLLISION"
+    causes:
+      - cause_id: "CAUSE_COLLISION"
+        base_confidence: 0.90
+        description: "물리적 충돌"
+        context_boost:
+          - condition: "workload == 'heavy'"
+            boost: 0.05
+      - cause_id: "CAUSE_PROGRAM_ERROR"
+        base_confidence: 0.70
+        description: "프로그램 경로 오류"
+
+  - pattern: "PAT_OVERLOAD"
+    causes:
+      - cause_id: "CAUSE_OVERLOAD"
+        base_confidence: 0.90
+        description: "하중 초과"
+        context_boost:
+          - condition: "product_weight > 4.0"
+            boost: 0.05
+      - cause_id: "CAUSE_GRIP_ERROR"
+        base_confidence: 0.60
+        description: "그립 위치 불량"
+
+  - pattern: "PAT_VIBRATION"
+    causes:
+      - cause_id: "CAUSE_JOINT_WEAR"
+        base_confidence: 0.70
+        description: "조인트 마모"
+      - cause_id: "CAUSE_LOOSE_BOLTS"
+        base_confidence: 0.65
+        description: "볼트 풀림"
+
+  - pattern: "PAT_DRIFT"
+    causes:
+      - cause_id: "CAUSE_CALIBRATION"
+        base_confidence: 0.80
+        description: "센서 캘리브레이션 필요"
+
+# ============================================================
+# 예측 추론 규칙 (Prediction Rules)
+# ============================================================
+# 패턴 반복에서 에러 발생을 예측
+# 온톨로지의 TRIGGERS 관계를 활용
+# ============================================================
+
+prediction_rules:
+  - name: "OVERLOAD_PREDICTION"
+    description: "과부하 패턴 반복 시 C189 예측"
+    pattern: "PAT_OVERLOAD"
+    condition:
+      type: "frequency"
+      count: 3
+      time_window_days: 3
+    prediction:
+      error_id: "C189"
+      probability: 0.85
+      time_horizon_days: 1
+      message: "지난 3일간 과부하 패턴이 3회 발생. 내일 C189 에러 발생 가능성 높음."
+
+  - name: "COLLISION_PREDICTION"
+    description: "충돌 패턴 반복 시 C153 예측"
+    pattern: "PAT_COLLISION"
+    condition:
+      type: "frequency"
+      count: 2
+      time_window_days: 1
+    prediction:
+      error_id: "C153"
+      probability: 0.90
+      time_horizon_days: 1
+      message: "지난 1일간 충돌 패턴이 2회 발생. 추가 충돌 발생 가능성 높음."
+
+  - name: "VIBRATION_PREDICTION"
+    description: "진동 패턴 증가 추세 시 C204 예측"
+    pattern: "PAT_VIBRATION"
+    condition:
+      type: "trend"
+      direction: "increasing"
+      threshold_pct: 20
+      time_window_days: 7
+    prediction:
+      error_id: "C204"
+      probability: 0.70
+      time_horizon_days: 3
+      message: "지난 7일간 진동 패턴 강도가 20% 이상 증가. C204 에러 발생 가능성 있음."
+
+# ============================================================
+# 패턴 → 에러 매핑 (TRIGGERS 관계)
+# ============================================================
+# 온톨로지의 TRIGGERS 관계 정의
+# pattern_thresholds.yaml과 연동
+# ============================================================
+
+pattern_error_mapping:
+  PAT_COLLISION:
+    triggers:
+      - error_id: "C153"
+        probability: 0.95
+        description: "Safety Stop"
+      - error_id: "C119"
+        probability: 0.80
+        description: "Safety Limit Violation"
+
+  PAT_OVERLOAD:
+    triggers:
+      - error_id: "C189"
+        probability: 0.90
+        description: "Payload Overload"
+
+  PAT_VIBRATION:
+    triggers:
+      - error_id: "C204"
+        probability: 0.75
+        description: "Joint Vibration Warning"
+
+  PAT_DRIFT:
+    triggers: []  # 드리프트는 에러보다 캘리브레이션 권고

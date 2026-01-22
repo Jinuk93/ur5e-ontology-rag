@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "created_at": "2026-01-22T14:04:35.049630",
+  "documents": {
+    "user_manual": {
+      "source": "710-965-00_UR5e_User_Manual_en_Global.pdf",
+      "chunks_file": "user_manual_chunks.json",
+      "total_pages": 248,
+      "topics": [
+        "safety",
+        "operation",
+        "installation"
+      ],
+      "chunk_count": 426,
+      "doc_type": "user_manual"
+    },
+    "service_manual": {
+      "source": "e-Series_Service_Manual_en.pdf",
+      "chunks_file": "service_manual_chunks.json",
+      "total_pages": 120,
+      "topics": [
+        "maintenance",
+        "repair",
+        "troubleshooting"
+      ],
+      "chunk_count": 197,
+      "doc_type": "service_manual"
+    },
+    "error_codes": {
+      "source": "ErrorCodes.pdf",
+      "chunks_file": "error_codes_chunks.json",
+      "total_pages": 45,
+      "topics": [
+        "error_codes",
+        "diagnostics"
+      ],
+      "chunk_count": 99,
+      "doc_type": "error_codes"
+    }
+  },
+  "totals": {
+    "documents": 3,
+    "chunks": 722
+  },
+  "settings": {
+    "chunk_size": 512,
+    "chunk_overlap": 50
+  }
+}

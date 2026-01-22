@@ -1,403 +1,184 @@
-# ============================================================
-# src/ontology/schema.py - 온톨로지 스키마 정의
-# ============================================================
-# UR5e 로봇 매뉴얼의 지식 구조를 정의합니다.
-#
-# Entity Types (노드 유형):
-#   - Component: 부품 (Control Box, Joint, Cable...)
-#   - ErrorCode: 에러 코드 (C4, C10, C17...)
-#   - Procedure: 절차 (케이블 점검, 조인트 교체...)
-#
-# Relation Types (관계 유형):
-#   - HAS_ERROR: 부품 → 에러코드
-#   - RESOLVED_BY: 에러코드 → 절차
-#   - CONTAINS: 부품 → 부품
-#   - DESCRIBES: 청크 → 엔티티
-# ============================================================
+"""
+온톨로지 스키마 정의
+
+4-Domain 온톨로지의 타입 정의를 제공합니다.
+"""
 
 from enum import Enum
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
 
 
-# ============================================================
-# [1] Entity Types (노드 유형)
-# ============================================================
+class Domain(str, Enum):
+    """온톨로지 도메인"""
+    EQUIPMENT = "equipment"
+    MEASUREMENT = "measurement"
+    KNOWLEDGE = "knowledge"
+    CONTEXT = "context"
+
 
 class EntityType(str, Enum):
-    """
-    엔티티 유형 정의
+    """엔티티 타입"""
+    # Equipment Domain
+    ROBOT = "Robot"
+    JOINT = "Joint"
+    CONTROL_BOX = "ControlBox"
+    TOOL_FLANGE = "ToolFlange"
 
-    예시:
-        EntityType.COMPONENT  # 부품
-        EntityType.ERROR_CODE  # 에러 코드
-    """
-    COMPONENT = "Component"      # 부품
-    ERROR_CODE = "ErrorCode"     # 에러 코드
-    PROCEDURE = "Procedure"      # 절차/해결책
-    DOCUMENT = "Document"        # 문서
-    CHUNK = "Chunk"              # 청크 (VectorDB 연결)
-    SENSOR_PATTERN = "SensorPattern"  # [Main-S4] 센서 패턴
-    CAUSE = "Cause"              # [Main-S4] 원인
+    # Measurement Domain
+    SENSOR = "Sensor"
+    MEASUREMENT_AXIS = "MeasurementAxis"
+    STATE = "State"
+    PATTERN = "Pattern"
 
+    # Knowledge Domain
+    ERROR_CODE = "ErrorCode"
+    CAUSE = "Cause"
+    RESOLUTION = "Resolution"
+    DOCUMENT = "Document"
 
-# ============================================================
-# [2] Relation Types (관계 유형)
-# ============================================================
+    # Context Domain
+    SHIFT = "Shift"
+    PRODUCT = "Product"
+    WORK_CYCLE = "WorkCycle"
+
 
 class RelationType(str, Enum):
-    """
-    관계 유형 정의
+    """관계 타입"""
+    # Equipment 관계
+    HAS_COMPONENT = "HAS_COMPONENT"     # Robot → Joint, ControlBox, ToolFlange
+    MOUNTED_ON = "MOUNTED_ON"           # Sensor → ToolFlange
 
-    예시:
-        RelationType.HAS_ERROR  # 부품 → 에러코드
-        RelationType.RESOLVED_BY  # 에러코드 → 절차
-    """
-    # Component 관련
-    HAS_ERROR = "HAS_ERROR"          # Component → ErrorCode
-    CONTAINS = "CONTAINS"            # Component → Component
-    CONNECTED_TO = "CONNECTED_TO"    # Component → Component
+    # Measurement 관계
+    MEASURES = "MEASURES"               # Sensor → Axis
+    HAS_STATE = "HAS_STATE"             # Axis → State
+    INDICATES = "INDICATES"             # Pattern → Cause
+    TRIGGERS = "TRIGGERS"               # Pattern → ErrorCode
 
-    # ErrorCode 관련
-    CAUSED_BY = "CAUSED_BY"          # ErrorCode → Component
-    RESOLVED_BY = "RESOLVED_BY"      # ErrorCode → Procedure
+    # Knowledge 관계
+    CAUSED_BY = "CAUSED_BY"             # ErrorCode → Cause
+    RESOLVED_BY = "RESOLVED_BY"         # Cause → Resolution
+    DOCUMENTED_IN = "DOCUMENTED_IN"     # ErrorCode → Document
+    PREVENTS = "PREVENTS"               # Resolution → ErrorCode
+    AFFECTS = "AFFECTS"                 # ErrorCode → Joint
 
-    # Document/Chunk 관련
-    MENTIONED_IN = "MENTIONED_IN"    # Entity → Document
-    HAS_CHUNK = "HAS_CHUNK"          # Document → Chunk
-    DESCRIBES = "DESCRIBES"          # Chunk → Entity
-
-    # [Main-S4] SensorPattern 관련
-    INDICATES = "INDICATES"          # SensorPattern → Cause
-    TRIGGERS = "TRIGGERS"            # SensorPattern → ErrorCode
+    # Context 관계
+    OCCURS_DURING = "OCCURS_DURING"     # Event → Shift
+    INVOLVES = "INVOLVES"               # Event → Product
 
 
-# ============================================================
-# [3] Entity 클래스
-# ============================================================
-
-@dataclass
-class Entity:
-    """
-    엔티티 (그래프의 노드)
-
-    Attributes:
-        id: 고유 식별자
-        type: 엔티티 유형 (Component, ErrorCode, Procedure...)
-        name: 이름
-        properties: 추가 속성
-
-    사용 예시:
-        entity = Entity(
-            id="component_control_box",
-            type=EntityType.COMPONENT,
-            name="Control Box",
-            properties={"location": "base"}
-        )
-    """
-    id: str
-    type: EntityType
-    name: str
-    properties: Dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> Dict[str, Any]:
-        """딕셔너리로 변환"""
-        return {
-            "id": self.id,
-            "type": self.type.value,
-            "name": self.name,
-            **self.properties,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Entity":
-        """딕셔너리에서 생성"""
-        entity_type = data.pop("type")
-        if isinstance(entity_type, str):
-            entity_type = EntityType(entity_type)
-
-        return cls(
-            id=data.pop("id"),
-            type=entity_type,
-            name=data.pop("name"),
-            properties=data,
-        )
-
-
-# ============================================================
-# [4] Relation 클래스
-# ============================================================
-
-@dataclass
-class Relation:
-    """
-    관계 (그래프의 엣지)
-
-    Attributes:
-        source_id: 시작 노드 ID
-        target_id: 끝 노드 ID
-        type: 관계 유형
-        properties: 추가 속성
-
-    사용 예시:
-        relation = Relation(
-            source_id="component_control_box",
-            target_id="error_code_c4",
-            type=RelationType.HAS_ERROR,
-            properties={"severity": "high"}
-        )
-    """
-    source_id: str
-    target_id: str
-    type: RelationType
-    properties: Dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> Dict[str, Any]:
-        """딕셔너리로 변환"""
-        return {
-            "source_id": self.source_id,
-            "target_id": self.target_id,
-            "type": self.type.value,
-            **self.properties,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Relation":
-        """딕셔너리에서 생성"""
-        relation_type = data.pop("type")
-        if isinstance(relation_type, str):
-            relation_type = RelationType(relation_type)
-
-        return cls(
-            source_id=data.pop("source_id"),
-            target_id=data.pop("target_id"),
-            type=relation_type,
-            properties=data,
-        )
-
-
-# ============================================================
-# [5] 스키마 검증 함수
-# ============================================================
-
-# 유효한 관계 정의 (source_type → relation → target_type)
-VALID_RELATIONS = {
-    RelationType.HAS_ERROR: (EntityType.COMPONENT, EntityType.ERROR_CODE),
-    RelationType.RESOLVED_BY: (EntityType.ERROR_CODE, EntityType.PROCEDURE),
-    RelationType.CAUSED_BY: (EntityType.ERROR_CODE, EntityType.COMPONENT),
-    RelationType.CONTAINS: (EntityType.COMPONENT, EntityType.COMPONENT),
-    RelationType.CONNECTED_TO: (EntityType.COMPONENT, EntityType.COMPONENT),
-    RelationType.MENTIONED_IN: (None, EntityType.DOCUMENT),  # Any → Document
-    RelationType.HAS_CHUNK: (EntityType.DOCUMENT, EntityType.CHUNK),
-    RelationType.DESCRIBES: (EntityType.CHUNK, None),  # Chunk → Any
-    # [Main-S4] SensorPattern 관련
-    RelationType.INDICATES: (EntityType.SENSOR_PATTERN, EntityType.CAUSE),
-    RelationType.TRIGGERS: (EntityType.SENSOR_PATTERN, EntityType.ERROR_CODE),
+# 도메인별 엔티티 타입 매핑
+DOMAIN_ENTITY_TYPES = {
+    Domain.EQUIPMENT: [
+        EntityType.ROBOT,
+        EntityType.JOINT,
+        EntityType.CONTROL_BOX,
+        EntityType.TOOL_FLANGE,
+    ],
+    Domain.MEASUREMENT: [
+        EntityType.SENSOR,
+        EntityType.MEASUREMENT_AXIS,
+        EntityType.STATE,
+        EntityType.PATTERN,
+    ],
+    Domain.KNOWLEDGE: [
+        EntityType.ERROR_CODE,
+        EntityType.CAUSE,
+        EntityType.RESOLUTION,
+        EntityType.DOCUMENT,
+    ],
+    Domain.CONTEXT: [
+        EntityType.SHIFT,
+        EntityType.PRODUCT,
+        EntityType.WORK_CYCLE,
+    ],
 }
 
 
-def validate_relation(
-    relation: Relation,
-    source_entity: Entity,
-    target_entity: Entity,
+# 엔티티 타입 → 도메인 역매핑
+ENTITY_TYPE_TO_DOMAIN = {
+    entity_type: domain
+    for domain, entity_types in DOMAIN_ENTITY_TYPES.items()
+    for entity_type in entity_types
+}
+
+
+# 관계 타입별 유효한 소스/타겟 타입
+RELATIONSHIP_CONSTRAINTS = {
+    RelationType.HAS_COMPONENT: {
+        "source_types": [EntityType.ROBOT],
+        "target_types": [EntityType.JOINT, EntityType.CONTROL_BOX, EntityType.TOOL_FLANGE],
+    },
+    RelationType.MOUNTED_ON: {
+        "source_types": [EntityType.SENSOR],
+        "target_types": [EntityType.TOOL_FLANGE],
+    },
+    RelationType.MEASURES: {
+        "source_types": [EntityType.SENSOR],
+        "target_types": [EntityType.MEASUREMENT_AXIS],
+    },
+    RelationType.HAS_STATE: {
+        "source_types": [EntityType.MEASUREMENT_AXIS],
+        "target_types": [EntityType.STATE],
+    },
+    RelationType.INDICATES: {
+        "source_types": [EntityType.PATTERN],
+        "target_types": [EntityType.CAUSE],
+    },
+    RelationType.TRIGGERS: {
+        "source_types": [EntityType.PATTERN],
+        "target_types": [EntityType.ERROR_CODE],
+    },
+    RelationType.CAUSED_BY: {
+        "source_types": [EntityType.ERROR_CODE],
+        "target_types": [EntityType.CAUSE],
+    },
+    RelationType.RESOLVED_BY: {
+        "source_types": [EntityType.CAUSE],
+        "target_types": [EntityType.RESOLUTION],
+    },
+    RelationType.DOCUMENTED_IN: {
+        "source_types": [EntityType.ERROR_CODE, EntityType.CAUSE, EntityType.RESOLUTION, EntityType.SENSOR],
+        "target_types": [EntityType.DOCUMENT],
+    },
+    RelationType.PREVENTS: {
+        "source_types": [EntityType.RESOLUTION],
+        "target_types": [EntityType.ERROR_CODE],
+    },
+    RelationType.AFFECTS: {
+        "source_types": [EntityType.ERROR_CODE],
+        "target_types": [EntityType.JOINT],
+    },
+    RelationType.OCCURS_DURING: {
+        "source_types": [EntityType.PATTERN],
+        "target_types": [EntityType.SHIFT],
+    },
+    RelationType.INVOLVES: {
+        "source_types": [EntityType.PATTERN],
+        "target_types": [EntityType.PRODUCT],
+    },
+}
+
+
+def get_domain_for_entity_type(entity_type: EntityType) -> Domain:
+    """엔티티 타입의 도메인 반환"""
+    return ENTITY_TYPE_TO_DOMAIN[entity_type]
+
+
+def get_entity_types_for_domain(domain: Domain) -> list[EntityType]:
+    """도메인의 엔티티 타입 목록 반환"""
+    return DOMAIN_ENTITY_TYPES[domain]
+
+
+def validate_relationship(
+    relation_type: RelationType,
+    source_type: EntityType,
+    target_type: EntityType,
 ) -> bool:
-    """
-    관계가 유효한지 검증
+    """관계의 소스/타겟 타입 유효성 검증"""
+    constraints = RELATIONSHIP_CONSTRAINTS.get(relation_type)
+    if not constraints:
+        return True
 
-    Args:
-        relation: 검증할 관계
-        source_entity: 시작 노드 엔티티
-        target_entity: 끝 노드 엔티티
+    source_valid = source_type in constraints["source_types"]
+    target_valid = target_type in constraints["target_types"]
 
-    Returns:
-        bool: 유효하면 True
-
-    Raises:
-        ValueError: 유효하지 않은 관계
-    """
-    if relation.type not in VALID_RELATIONS:
-        raise ValueError(f"Unknown relation type: {relation.type}")
-
-    valid_source, valid_target = VALID_RELATIONS[relation.type]
-
-    # None은 모든 타입 허용
-    if valid_source is not None and source_entity.type != valid_source:
-        raise ValueError(
-            f"Invalid source type for {relation.type}: "
-            f"expected {valid_source}, got {source_entity.type}"
-        )
-
-    if valid_target is not None and target_entity.type != valid_target:
-        raise ValueError(
-            f"Invalid target type for {relation.type}: "
-            f"expected {valid_target}, got {target_entity.type}"
-        )
-
-    return True
-
-
-# ============================================================
-# [6] 헬퍼 함수
-# ============================================================
-
-def create_component(
-    name: str,
-    component_type: str = "general",
-    location: str = "",
-    **kwargs
-) -> Entity:
-    """Component 엔티티 생성 헬퍼"""
-    entity_id = f"component_{name.lower().replace(' ', '_')}"
-    return Entity(
-        id=entity_id,
-        type=EntityType.COMPONENT,
-        name=name,
-        properties={
-            "component_type": component_type,
-            "location": location,
-            **kwargs,
-        }
-    )
-
-
-def create_error_code(
-    code: str,
-    title: str = "",
-    severity: str = "unknown",
-    description: str = "",
-    **kwargs
-) -> Entity:
-    """ErrorCode 엔티티 생성 헬퍼"""
-    entity_id = f"error_{code.lower()}"
-    return Entity(
-        id=entity_id,
-        type=EntityType.ERROR_CODE,
-        name=code,
-        properties={
-            "code": code,
-            "title": title,
-            "severity": severity,
-            "description": description,
-            **kwargs,
-        }
-    )
-
-
-def create_procedure(
-    name: str,
-    steps: List[str] = None,
-    tools_required: List[str] = None,
-    **kwargs
-) -> Entity:
-    """Procedure 엔티티 생성 헬퍼"""
-    entity_id = f"procedure_{name.lower().replace(' ', '_')}"
-    return Entity(
-        id=entity_id,
-        type=EntityType.PROCEDURE,
-        name=name,
-        properties={
-            "steps": steps or [],
-            "tools_required": tools_required or [],
-            **kwargs,
-        }
-    )
-
-
-def create_sensor_pattern(
-    pattern_id: str,
-    pattern_type: str,
-    description: str = "",
-    threshold: Dict[str, Any] = None,
-    severity: str = "medium",
-    **kwargs
-) -> Entity:
-    """
-    [Main-S4] SensorPattern 엔티티 생성 헬퍼
-
-    Args:
-        pattern_id: 패턴 고유 ID (PAT_COLLISION 등)
-        pattern_type: 패턴 유형 (collision, vibration, overload, drift)
-        description: 설명
-        threshold: 임계값 정보
-        severity: 심각도 (high, medium, low)
-    """
-    # ID는 ontology.json 관계 참조와 일치하도록 그대로 사용
-    return Entity(
-        id=pattern_id,
-        type=EntityType.SENSOR_PATTERN,
-        name=pattern_id,
-        properties={
-            "type": pattern_type,
-            "description": description,
-            "threshold": threshold or {},
-            "severity": severity,
-            **kwargs,
-        }
-    )
-
-
-def create_cause(
-    cause_id: str,
-    description: str,
-    category: str = "unknown",
-    **kwargs
-) -> Entity:
-    """
-    [Main-S4] Cause 엔티티 생성 헬퍼
-
-    Args:
-        cause_id: 원인 고유 ID
-        description: 원인 설명
-        category: 카테고리 (physical, electrical, software 등)
-    """
-    # ID는 ontology.json 관계 참조와 일치하도록 그대로 사용
-    return Entity(
-        id=cause_id,
-        type=EntityType.CAUSE,
-        name=description,
-        properties={
-            "description": description,
-            "category": category,
-            **kwargs,
-        }
-    )
-
-
-# ============================================================
-# 테스트 코드 (직접 실행 시)
-# ============================================================
-
-if __name__ == "__main__":
-    print("=" * 50)
-    print("[*] Schema Test")
-    print("=" * 50)
-
-    # 엔티티 생성 테스트
-    control_box = create_component("Control Box", component_type="main", location="base")
-    error_c4 = create_error_code("C4", title="Communication error", severity="high")
-    check_cable = create_procedure("Check Cable", steps=["Step 1", "Step 2"])
-
-    print(f"\n[Entity] {control_box.name}")
-    print(f"  Type: {control_box.type.value}")
-    print(f"  ID: {control_box.id}")
-    print(f"  Properties: {control_box.properties}")
-
-    print(f"\n[Entity] {error_c4.name}")
-    print(f"  Type: {error_c4.type.value}")
-    print(f"  ID: {error_c4.id}")
-
-    # 관계 생성 테스트
-    relation = Relation(
-        source_id=control_box.id,
-        target_id=error_c4.id,
-        type=RelationType.HAS_ERROR,
-    )
-    print(f"\n[Relation] {relation.source_id} -[{relation.type.value}]-> {relation.target_id}")
-
-    # 검증 테스트
-    is_valid = validate_relation(relation, control_box, error_c4)
-    print(f"  Valid: {is_valid}")
-
-    print("\n" + "=" * 50)
-    print("[OK] Schema test passed!")
-    print("=" * 50)
+    return source_valid and target_valid

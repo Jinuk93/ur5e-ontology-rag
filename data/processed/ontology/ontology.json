@@ -1,158 +1,501 @@
 {
   "version": "1.0",
-  "description": "UR5e Ontology - Sensor Patterns (Main-S4)",
+  "description": "UR5e 협동로봇 온톨로지 - 4-Domain Architecture",
 
-  "nodes": {
-    "SensorPattern": [
-      {
-        "pattern_id": "PAT_COLLISION",
-        "type": "collision",
-        "description": "Z축 급격한 힘 증가 (충돌)",
-        "threshold": {
-          "axis": "Fz",
-          "value": 500,
-          "rise_time_ms": 100
-        },
+  "entities": [
+    {
+      "id": "UR5e",
+      "type": "Robot",
+      "domain": "equipment",
+      "name": "UR5e 협동로봇",
+      "properties": {
+        "manufacturer": "Universal Robots",
+        "payload_kg": 5.0,
+        "reach_mm": 850,
+        "joints": 6
+      }
+    },
+    {
+      "id": "Joint_0",
+      "type": "Joint",
+      "domain": "equipment",
+      "name": "Joint 0 (Base)",
+      "properties": {"index": 0, "type": "revolute", "range_deg": [-360, 360]}
+    },
+    {
+      "id": "Joint_1",
+      "type": "Joint",
+      "domain": "equipment",
+      "name": "Joint 1 (Shoulder)",
+      "properties": {"index": 1, "type": "revolute", "range_deg": [-360, 360]}
+    },
+    {
+      "id": "Joint_2",
+      "type": "Joint",
+      "domain": "equipment",
+      "name": "Joint 2 (Elbow)",
+      "properties": {"index": 2, "type": "revolute", "range_deg": [-360, 360]}
+    },
+    {
+      "id": "Joint_3",
+      "type": "Joint",
+      "domain": "equipment",
+      "name": "Joint 3 (Wrist 1)",
+      "properties": {"index": 3, "type": "revolute", "range_deg": [-360, 360]}
+    },
+    {
+      "id": "Joint_4",
+      "type": "Joint",
+      "domain": "equipment",
+      "name": "Joint 4 (Wrist 2)",
+      "properties": {"index": 4, "type": "revolute", "range_deg": [-360, 360]}
+    },
+    {
+      "id": "Joint_5",
+      "type": "Joint",
+      "domain": "equipment",
+      "name": "Joint 5 (Wrist 3)",
+      "properties": {"index": 5, "type": "revolute", "range_deg": [-360, 360]}
+    },
+    {
+      "id": "ControlBox",
+      "type": "ControlBox",
+      "domain": "equipment",
+      "name": "UR5e 컨트롤 박스",
+      "properties": {"model": "CB3.1", "voltage": "100-240V AC"}
+    },
+    {
+      "id": "ToolFlange",
+      "type": "ToolFlange",
+      "domain": "equipment",
+      "name": "Tool Flange",
+      "properties": {"diameter_mm": 63, "bolt_pattern": "M6x6"}
+    },
+
+    {
+      "id": "Axia80",
+      "type": "Sensor",
+      "domain": "measurement",
+      "name": "ATI Axia80 Force/Torque Sensor",
+      "properties": {
+        "manufacturer": "ATI Industrial Automation",
+        "model": "Axia80-M20",
+        "axes": 6,
+        "force_range_N": 500,
+        "torque_range_Nm": 20,
+        "resolution_force_N": 0.25,
+        "resolution_torque_Nm": 0.00625,
+        "sampling_rate_Hz": 7000
+      }
+    },
+    {
+      "id": "Fx",
+      "type": "MeasurementAxis",
+      "domain": "measurement",
+      "name": "Fx (X축 힘)",
+      "properties": {"axis": "x", "measurement_type": "force", "unit": "N", "range": [-500, 500]}
+    },
+    {
+      "id": "Fy",
+      "type": "MeasurementAxis",
+      "domain": "measurement",
+      "name": "Fy (Y축 힘)",
+      "properties": {"axis": "y", "measurement_type": "force", "unit": "N", "range": [-500, 500]}
+    },
+    {
+      "id": "Fz",
+      "type": "MeasurementAxis",
+      "domain": "measurement",
+      "name": "Fz (Z축 힘)",
+      "properties": {"axis": "z", "measurement_type": "force", "unit": "N", "range": [-1000, 1000]}
+    },
+    {
+      "id": "Tx",
+      "type": "MeasurementAxis",
+      "domain": "measurement",
+      "name": "Tx (X축 토크)",
+      "properties": {"axis": "x", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20]}
+    },
+    {
+      "id": "Ty",
+      "type": "MeasurementAxis",
+      "domain": "measurement",
+      "name": "Ty (Y축 토크)",
+      "properties": {"axis": "y", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20]}
+    },
+    {
+      "id": "Tz",
+      "type": "MeasurementAxis",
+      "domain": "measurement",
+      "name": "Tz (Z축 토크)",
+      "properties": {"axis": "z", "measurement_type": "torque", "unit": "Nm", "range": [-20, 20]}
+    },
+
+    {
+      "id": "State_Normal",
+      "type": "State",
+      "domain": "measurement",
+      "name": "정상 상태",
+      "properties": {"severity": "normal", "color": "green"}
+    },
+    {
+      "id": "State_Warning",
+      "type": "State",
+      "domain": "measurement",
+      "name": "경고 상태",
+      "properties": {"severity": "warning", "color": "yellow"}
+    },
+    {
+      "id": "State_Critical",
+      "type": "State",
+      "domain": "measurement",
+      "name": "위험 상태",
+      "properties": {"severity": "critical", "color": "red"}
+    },
+
+    {
+      "id": "PAT_COLLISION",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "충돌 패턴",
+      "properties": {
+        "description": "Z축 급격한 힘 증가",
+        "threshold": {"axis": "Fz", "value": 500, "rise_time_ms": 100},
         "severity": "high"
-      },
-      {
-        "pattern_id": "PAT_VIBRATION",
-        "type": "vibration",
+      }
+    },
+    {
+      "id": "PAT_VIBRATION",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "진동 패턴",
+      "properties": {
         "description": "토크 축 고주파 진동",
-        "threshold": {
-          "axes": ["Tx", "Ty"],
-          "multiplier": 2.0,
-          "min_duration_s": 10
-        },
+        "threshold": {"axes": ["Tx", "Ty"], "multiplier": 2.0, "min_duration_s": 10},
         "severity": "medium"
-      },
-      {
-        "pattern_id": "PAT_OVERLOAD",
-        "type": "overload",
+      }
+    },
+    {
+      "id": "PAT_OVERLOAD",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "과부하 패턴",
+      "properties": {
         "description": "지속적 과부하",
-        "threshold": {
-          "axis": "Fz",
-          "value": 300,
-          "duration_s": 5
-        },
+        "threshold": {"axis": "Fz", "value": 300, "duration_s": 5},
         "severity": "high"
-      },
-      {
-        "pattern_id": "PAT_DRIFT",
-        "type": "drift",
+      }
+    },
+    {
+      "id": "PAT_DRIFT",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "드리프트 패턴",
+      "properties": {
         "description": "Baseline 점진적 이동",
-        "threshold": {
-          "deviation_pct": 10,
-          "min_duration_h": 0.5
-        },
+        "threshold": {"deviation_pct": 10, "min_duration_h": 0.5},
         "severity": "low"
       }
-    ],
-    "Cause": [
-      {
-        "cause_id": "CAUSE_PHYSICAL_CONTACT",
-        "description": "물리적 접촉 (장애물 충돌)",
-        "category": "physical"
-      },
-      {
-        "cause_id": "CAUSE_UNEXPECTED_OBSTACLE",
-        "description": "예상치 못한 장애물",
-        "category": "physical"
-      },
-      {
-        "cause_id": "CAUSE_PAYLOAD_EXCEEDED",
-        "description": "하중 초과",
-        "category": "mechanical"
-      },
-      {
-        "cause_id": "CAUSE_JOINT_WEAR",
-        "description": "조인트 마모",
-        "category": "mechanical"
-      },
-      {
-        "cause_id": "CAUSE_LOOSE_BOLTS",
-        "description": "볼트 풀림",
-        "category": "mechanical"
-      },
-      {
-        "cause_id": "CAUSE_CALIBRATION_NEEDED",
-        "description": "캘리브레이션 필요",
-        "category": "sensor"
-      },
-      {
-        "cause_id": "CAUSE_PROGRAM_ERROR",
-        "description": "프로그램 경로 오류",
-        "category": "software"
-      }
-    ]
-  },
+    },
+
+    {
+      "id": "C153",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C153 안전 정지",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true}
+    },
+    {
+      "id": "C119",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C119 충돌 감지",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true}
+    },
+    {
+      "id": "C189",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C189 과부하 감지",
+      "properties": {"category": "overload", "severity": "high", "recoverable": true}
+    },
+    {
+      "id": "C204",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C204 진동 이상",
+      "properties": {"category": "vibration", "severity": "medium", "recoverable": true}
+    },
+    {
+      "id": "C50",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C50 Joint 0 통신 오류",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 0}
+    },
+    {
+      "id": "C51",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C51 Joint 1 통신 오류",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 1}
+    },
+    {
+      "id": "C52",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C52 Joint 2 통신 오류",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 2}
+    },
+    {
+      "id": "C53",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C53 Joint 3 통신 오류",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 3}
+    },
+    {
+      "id": "C54",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C54 Joint 4 통신 오류",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 4}
+    },
+    {
+      "id": "C55",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C55 Joint 5 통신 오류",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 5}
+    },
+    {
+      "id": "C4",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C4 통신 오류",
+      "properties": {"category": "communication", "severity": "high"}
+    },
+    {
+      "id": "C10",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C10 전원 오류",
+      "properties": {"category": "power", "severity": "high"}
+    },
+
+    {
+      "id": "CAUSE_COLLISION",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "물리적 충돌",
+      "properties": {"category": "physical", "description": "장애물과의 물리적 접촉"}
+    },
+    {
+      "id": "CAUSE_OVERLOAD",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "하중 초과",
+      "properties": {"category": "mechanical", "description": "페이로드 초과 또는 외부 힘"}
+    },
+    {
+      "id": "CAUSE_JOINT_WEAR",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "조인트 마모",
+      "properties": {"category": "mechanical", "description": "조인트 베어링 또는 기어 마모"}
+    },
+    {
+      "id": "CAUSE_LOOSE_BOLTS",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "볼트 풀림",
+      "properties": {"category": "mechanical", "description": "체결 부위 풀림"}
+    },
+    {
+      "id": "CAUSE_CABLE_FAULT",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "케이블 불량",
+      "properties": {"category": "electrical", "description": "통신/전원 케이블 손상"}
+    },
+    {
+      "id": "CAUSE_CALIBRATION",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "캘리브레이션 필요",
+      "properties": {"category": "sensor", "description": "센서 캘리브레이션 이상"}
+    },
+
+    {
+      "id": "RES_CLEAR_PATH",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "경로 확보",
+      "properties": {"steps": ["로봇 주변 장애물 제거", "작업 영역 점검", "프로그램 재시작"]}
+    },
+    {
+      "id": "RES_REDUCE_PAYLOAD",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "페이로드 감소",
+      "properties": {"steps": ["페이로드 무게 확인", "페이로드 설정 조정", "속도 감소 고려"]}
+    },
+    {
+      "id": "RES_CHECK_BOLTS",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "볼트 점검",
+      "properties": {"steps": ["모든 조인트 볼트 토크 확인", "풀린 볼트 재체결", "정기 점검 일정 수립"]}
+    },
+    {
+      "id": "RES_CHECK_CABLE",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "케이블 점검",
+      "properties": {"steps": ["케이블 연결 상태 확인", "손상된 케이블 교체", "커넥터 청소"]}
+    },
+    {
+      "id": "RES_CALIBRATE_SENSOR",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "센서 캘리브레이션",
+      "properties": {"steps": ["센서 초기화", "제로 포인트 설정", "캘리브레이션 검증"]}
+    },
+
+    {
+      "id": "DOC_USER_MANUAL",
+      "type": "Document",
+      "domain": "knowledge",
+      "name": "UR5e 사용자 매뉴얼",
+      "properties": {"type": "manual", "language": "ko", "version": "5.0"}
+    },
+    {
+      "id": "DOC_SERVICE_MANUAL",
+      "type": "Document",
+      "domain": "knowledge",
+      "name": "UR5e 서비스 매뉴얼",
+      "properties": {"type": "service", "language": "ko", "version": "5.0"}
+    },
+    {
+      "id": "DOC_AXIA80_MANUAL",
+      "type": "Document",
+      "domain": "knowledge",
+      "name": "ATI Axia80 매뉴얼",
+      "properties": {"type": "manual", "language": "en", "version": "2.0"}
+    },
+
+    {
+      "id": "Shift_Day",
+      "type": "Shift",
+      "domain": "context",
+      "name": "주간 근무",
+      "properties": {"start_hour": 8, "end_hour": 16}
+    },
+    {
+      "id": "Shift_Night",
+      "type": "Shift",
+      "domain": "context",
+      "name": "야간 근무",
+      "properties": {"start_hour": 22, "end_hour": 6}
+    },
+    {
+      "id": "Product_A",
+      "type": "Product",
+      "domain": "context",
+      "name": "제품 A",
+      "properties": {"weight_kg": 2.5, "cycle_time_s": 45}
+    },
+    {
+      "id": "Product_B",
+      "type": "Product",
+      "domain": "context",
+      "name": "제품 B",
+      "properties": {"weight_kg": 4.0, "cycle_time_s": 60}
+    },
+    {
+      "id": "WorkCycle_Assembly",
+      "type": "WorkCycle",
+      "domain": "context",
+      "name": "조립 작업",
+      "properties": {"type": "assembly", "typical_force_N": 50}
+    }
+  ],
 
   "relationships": [
-    {
-      "type": "INDICATES",
-      "source": "PAT_COLLISION",
-      "target": "CAUSE_PHYSICAL_CONTACT",
-      "confidence": 0.9
-    },
-    {
-      "type": "INDICATES",
-      "source": "PAT_COLLISION",
-      "target": "CAUSE_UNEXPECTED_OBSTACLE",
-      "confidence": 0.85
-    },
-    {
-      "type": "INDICATES",
-      "source": "PAT_COLLISION",
-      "target": "CAUSE_PROGRAM_ERROR",
-      "confidence": 0.7
-    },
-    {
-      "type": "TRIGGERS",
-      "source": "PAT_COLLISION",
-      "target": "C153",
-      "probability": 0.95
-    },
-    {
-      "type": "TRIGGERS",
-      "source": "PAT_COLLISION",
-      "target": "C119",
-      "probability": 0.8
-    },
-    {
-      "type": "INDICATES",
-      "source": "PAT_OVERLOAD",
-      "target": "CAUSE_PAYLOAD_EXCEEDED",
-      "confidence": 0.9
-    },
-    {
-      "type": "TRIGGERS",
-      "source": "PAT_OVERLOAD",
-      "target": "C189",
-      "probability": 0.9
-    },
-    {
-      "type": "INDICATES",
-      "source": "PAT_VIBRATION",
-      "target": "CAUSE_JOINT_WEAR",
-      "confidence": 0.7
-    },
-    {
-      "type": "INDICATES",
-      "source": "PAT_VIBRATION",
-      "target": "CAUSE_LOOSE_BOLTS",
-      "confidence": 0.65
-    },
-    {
-      "type": "TRIGGERS",
-      "source": "PAT_VIBRATION",
-      "target": "C204",
-      "probability": 0.75
-    },
-    {
-      "type": "INDICATES",
-      "source": "PAT_DRIFT",
-      "target": "CAUSE_CALIBRATION_NEEDED",
-      "confidence": 0.8
-    }
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "Joint_0"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "Joint_1"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "Joint_2"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "Joint_3"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "Joint_4"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "Joint_5"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "ControlBox"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "ToolFlange"},
+
+    {"source": "Axia80", "relation": "MOUNTED_ON", "target": "ToolFlange"},
+
+    {"source": "Axia80", "relation": "MEASURES", "target": "Fx"},
+    {"source": "Axia80", "relation": "MEASURES", "target": "Fy"},
+    {"source": "Axia80", "relation": "MEASURES", "target": "Fz"},
+    {"source": "Axia80", "relation": "MEASURES", "target": "Tx"},
+    {"source": "Axia80", "relation": "MEASURES", "target": "Ty"},
+    {"source": "Axia80", "relation": "MEASURES", "target": "Tz"},
+
+    {"source": "Fx", "relation": "HAS_STATE", "target": "State_Normal"},
+    {"source": "Fy", "relation": "HAS_STATE", "target": "State_Normal"},
+    {"source": "Fz", "relation": "HAS_STATE", "target": "State_Normal"},
+    {"source": "Tx", "relation": "HAS_STATE", "target": "State_Normal"},
+    {"source": "Ty", "relation": "HAS_STATE", "target": "State_Normal"},
+    {"source": "Tz", "relation": "HAS_STATE", "target": "State_Normal"},
+
+    {"source": "PAT_COLLISION", "relation": "INDICATES", "target": "CAUSE_COLLISION", "properties": {"confidence": 0.9}},
+    {"source": "PAT_COLLISION", "relation": "TRIGGERS", "target": "C153", "properties": {"probability": 0.95}},
+    {"source": "PAT_COLLISION", "relation": "TRIGGERS", "target": "C119", "properties": {"probability": 0.8}},
+
+    {"source": "PAT_OVERLOAD", "relation": "INDICATES", "target": "CAUSE_OVERLOAD", "properties": {"confidence": 0.9}},
+    {"source": "PAT_OVERLOAD", "relation": "TRIGGERS", "target": "C189", "properties": {"probability": 0.9}},
+
+    {"source": "PAT_VIBRATION", "relation": "INDICATES", "target": "CAUSE_JOINT_WEAR", "properties": {"confidence": 0.7}},
+    {"source": "PAT_VIBRATION", "relation": "INDICATES", "target": "CAUSE_LOOSE_BOLTS", "properties": {"confidence": 0.65}},
+    {"source": "PAT_VIBRATION", "relation": "TRIGGERS", "target": "C204", "properties": {"probability": 0.75}},
+
+    {"source": "PAT_DRIFT", "relation": "INDICATES", "target": "CAUSE_CALIBRATION", "properties": {"confidence": 0.8}},
+
+    {"source": "C153", "relation": "CAUSED_BY", "target": "CAUSE_COLLISION"},
+    {"source": "C119", "relation": "CAUSED_BY", "target": "CAUSE_COLLISION"},
+    {"source": "C189", "relation": "CAUSED_BY", "target": "CAUSE_OVERLOAD"},
+    {"source": "C204", "relation": "CAUSED_BY", "target": "CAUSE_JOINT_WEAR"},
+    {"source": "C204", "relation": "CAUSED_BY", "target": "CAUSE_LOOSE_BOLTS"},
+    {"source": "C50", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C51", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C52", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C53", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C54", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C55", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+
+    {"source": "CAUSE_COLLISION", "relation": "RESOLVED_BY", "target": "RES_CLEAR_PATH"},
+    {"source": "CAUSE_OVERLOAD", "relation": "RESOLVED_BY", "target": "RES_REDUCE_PAYLOAD"},
+    {"source": "CAUSE_LOOSE_BOLTS", "relation": "RESOLVED_BY", "target": "RES_CHECK_BOLTS"},
+    {"source": "CAUSE_CABLE_FAULT", "relation": "RESOLVED_BY", "target": "RES_CHECK_CABLE"},
+    {"source": "CAUSE_CALIBRATION", "relation": "RESOLVED_BY", "target": "RES_CALIBRATE_SENSOR"},
+
+    {"source": "RES_CLEAR_PATH", "relation": "PREVENTS", "target": "C153"},
+    {"source": "RES_CLEAR_PATH", "relation": "PREVENTS", "target": "C119"},
+    {"source": "RES_REDUCE_PAYLOAD", "relation": "PREVENTS", "target": "C189"},
+    {"source": "RES_CHECK_BOLTS", "relation": "PREVENTS", "target": "C204"},
+
+    {"source": "C153", "relation": "DOCUMENTED_IN", "target": "DOC_USER_MANUAL"},
+    {"source": "C119", "relation": "DOCUMENTED_IN", "target": "DOC_USER_MANUAL"},
+    {"source": "C189", "relation": "DOCUMENTED_IN", "target": "DOC_USER_MANUAL"},
+    {"source": "Axia80", "relation": "DOCUMENTED_IN", "target": "DOC_AXIA80_MANUAL"},
+
+    {"source": "C50", "relation": "AFFECTS", "target": "Joint_0"},
+    {"source": "C51", "relation": "AFFECTS", "target": "Joint_1"},
+    {"source": "C52", "relation": "AFFECTS", "target": "Joint_2"},
+    {"source": "C53", "relation": "AFFECTS", "target": "Joint_3"},
+    {"source": "C54", "relation": "AFFECTS", "target": "Joint_4"},
+    {"source": "C55", "relation": "AFFECTS", "target": "Joint_5"},
+
+    {"source": "PAT_COLLISION", "relation": "OCCURS_DURING", "target": "Shift_Day", "properties": {"frequency": "occasional"}},
+    {"source": "PAT_OVERLOAD", "relation": "INVOLVES", "target": "Product_B", "properties": {"frequency": "rare"}}
   ]
 }
