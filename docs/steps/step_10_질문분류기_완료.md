@@ -87,11 +87,11 @@ class EntityExtractor:
 - `Shift`: 근무 교대 (주간, 야간, SHIFT_A 등)
 - `Product`: 제품 ID (PART-A 등)
 
-**알려진 제한사항:**
-- AXIS_PATTERN은 word boundary(`\b`)를 사용하므로, 한국어 조사가 붙은 경우 추출 실패 가능
-  - 예: "Fz가 -350N" → "Fz" 추출 실패 (조사 "가"가 붙어 있음)
-  - 예: "Fz 값이 -350N" → "Fz" 추출 성공 (공백으로 분리됨)
-- MeasurementAxis가 추출되지 않으면 OntologyEngine의 측정값 기반 추론 파이프라인이 작동하지 않음
+**한국어 조사 지원:**
+- AXIS_PATTERN이 한국어 조사(가/이/를/은/는/도/에서/의/로)를 지원
+  - 예: "Fz가 -350N" → "Fz" 추출 성공 ✅
+  - 예: "Fz는 정상" → "Fz" 추출 성공 ✅
+  - 예: "Tx도 확인" → "Tx" 추출 성공 ✅
 
 ### 3.4 QueryClassifier 클래스
 

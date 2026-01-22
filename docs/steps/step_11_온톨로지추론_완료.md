@@ -169,10 +169,11 @@ PAT_COLLISION errors: 2
 
 ```
 Q: Fz가 -350N인데 이게 뭐야?
-  Classification: ontology (90%)
-  Entities: ['-350.0N']
-  Reasoning steps: 0
-  Conclusions: 0
+  Classification: ontology (100%)
+  Entities: [('Fz', 'MeasurementAxis'), ('-350.0N', 'Value')]
+  Reasoning steps: 3
+  Conclusions: 2
+  Paths: ['Fz → State_Warning', 'PAT_COLLISION →[INDICATES]→ CAUSE_COLLISION', ...]
 
 Q: 충돌이 왜 발생했어?
   Classification: ontology (100%)
@@ -182,13 +183,10 @@ Q: 충돌이 왜 발생했어?
 ```
 
 ✅ QueryClassifier와 OntologyEngine 연동 성공
+✅ 센서 값 질문 → 상태/패턴/원인 추론 성공
 ✅ 패턴 질문 → 원인/에러/해결책 추론 성공
 
-**참고**: 첫 번째 질문("Fz가 -350N...")에서 Reasoning이 0인 이유:
-- EntityExtractor의 AXIS_PATTERN이 word boundary를 사용
-- "Fz가"에서 한국어 조사 "가"가 붙어 "Fz" 추출 실패
-- MeasurementAxis 없이 Value만 있으면 측정값 기반 추론 파이프라인 미작동
-- 개선 방안: 한국어 조사 패턴 추가 (예: `Fz[가이를은는]?`)
+**한국어 조사 지원**: EntityExtractor가 "Fz가", "Fz는", "Tx도" 등 한국어 조사가 붙은 축 이름을 정상 추출
 
 ### 4.3 엔진 요약
 

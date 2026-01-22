@@ -23,8 +23,15 @@ logger = logging.getLogger(__name__)
 class EntityExtractor:
     """온톨로지 기반 엔티티 추출기"""
 
-    # 센서 축 패턴
-    AXIS_PATTERN = re.compile(r'\b(Fz|Fx|Fy|Tx|Ty|Tz)\b', re.IGNORECASE)
+    # 한국어 조사 패턴 (축 이름 뒤에 붙을 수 있는 조사들)
+    KOREAN_PARTICLES = r'[가이를은는도에서의로]?'
+
+    # 센서 축 패턴 (한국어 조사 지원)
+    # 예: "Fz", "Fz가", "Fz는", "Fz를" 모두 매칭
+    AXIS_PATTERN = re.compile(
+        r'(?<![a-zA-Z])(Fz|Fx|Fy|Tx|Ty|Tz)' + KOREAN_PARTICLES + r'(?![a-zA-Z])',
+        re.IGNORECASE
+    )
 
     # 수치값 패턴 (예: -350N, 500N, -20.5N)
     VALUE_PATTERN = re.compile(r'(-?\d+(?:\.\d+)?)\s*(N|Nm|kg|mm|도|℃)?')
@@ -127,14 +134,19 @@ class EntityExtractor:
         return entities
 
     def _extract_axes(self, query: str) -> List[ExtractedEntity]:
-        """센서 축 추출"""
+        """센서 축 추출 (한국어 조사 지원)
+
+        "Fz가 -350N" → Fz 추출
+        "Fz는 정상" → Fz 추출
+        "Fz 값이" → Fz 추출
+        """
         entities = []
         for match in self.AXIS_PATTERN.finditer(query):
-            axis = match.group(1)
+            axis = match.group(1)  # 축 이름만 (조사 제외)
             # 표준화 (대문자 첫글자)
             axis_id = axis[0].upper() + axis[1:].lower()
             entities.append(ExtractedEntity(
-                text=match.group(0),
+                text=axis,  # 축 이름만 저장 (조사 제외)
                 entity_id=axis_id,
                 entity_type="MeasurementAxis",
                 confidence=1.0,
