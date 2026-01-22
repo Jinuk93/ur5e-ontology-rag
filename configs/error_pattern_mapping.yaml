@@ -126,3 +126,73 @@ time_windows:
   vibration: "2h"     # 진동은 긴 윈도우
   overload: "1h"
   drift: "4h"         # 드리프트는 더 긴 윈도우
+
+# ============================================================
+# Phase 9: 온톨로지 연결 설정
+# ============================================================
+
+# 패턴 타입 → 온톨로지 엔티티 ID
+pattern_entity_mapping:
+  collision: "PAT_COLLISION"
+  overload: "PAT_OVERLOAD"
+  drift: "PAT_DRIFT"
+  vibration: "PAT_VIBRATION"
+
+# Shift 시간대 매핑
+shift_mapping:
+  SHIFT_A:
+    start_hour: 6
+    end_hour: 14
+    name: "오전 근무"
+  SHIFT_B:
+    start_hour: 14
+    end_hour: 22
+    name: "오후 근무"
+  SHIFT_C:
+    start_hour: 22
+    end_hour: 6
+    name: "야간 근무"
+
+# 패턴 → 에러코드/원인 매핑 (온톨로지 관계 생성용)
+ontology_pattern_mapping:
+  collision:
+    severity: "critical"
+    triggers:
+      - code: "C153"
+        confidence: 0.95
+      - code: "C119"
+        confidence: 0.80
+    indicates:
+      - cause: "CAUSE_PHYSICAL_CONTACT"
+        confidence: 0.95
+      - cause: "CAUSE_PATH_OBSTRUCTION"
+        confidence: 0.70
+
+  overload:
+    severity: "high"
+    triggers:
+      - code: "C189"
+        confidence: 0.90
+    indicates:
+      - cause: "CAUSE_PAYLOAD_EXCEEDED"
+        confidence: 0.85
+      - cause: "CAUSE_GRIP_POSITION"
+        confidence: 0.70
+
+  drift:
+    severity: "medium"
+    triggers: []
+    indicates:
+      - cause: "CAUSE_SENSOR_DRIFT"
+        confidence: 0.80
+      - cause: "CAUSE_CALIBRATION_NEEDED"
+        confidence: 0.60
+
+  vibration:
+    severity: "medium"
+    triggers: []
+    indicates:
+      - cause: "CAUSE_MECHANICAL_WEAR"
+        confidence: 0.70
+      - cause: "CAUSE_LOOSE_MOUNTING"
+        confidence: 0.60
