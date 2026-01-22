@@ -1,0 +1,183 @@
+/**
+ * API Client with snake_case to camelCase adapter
+ * Backend uses snake_case (Python), Frontend uses camelCase (TypeScript)
+ */
+
+import type { ChatRequest, ChatResponse, GraphNode, GraphEdge, OntologyPath, DocumentRef } from '@/types/api';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002';
+
+// Helper functions
+function asArray<T = unknown>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  return [];
+}
+
+function mapOntologyPath(item: Record<string, unknown>): OntologyPath {
+  return {
+    path: Array.isArray(item?.path) ? item.path as string[] : [],
+    relations: Array.isArray(item?.relations) ? item.relations as string[] : [],
+    confidence: typeof item?.confidence === 'number' ? item.confidence : undefined,
+  };
+}
+
+function mapDocumentRef(item: Record<string, unknown>): DocumentRef {
+  const docId = (item?.doc_id ?? item?.docId) as string | undefined;
+  const chunkId = (item?.chunk_id ?? item?.chunkId) as string | undefined;
+  const relevance = (item?.relevance ?? item?.score) as number | undefined;
+
+  return {
+    docId: typeof docId === 'string' ? docId : undefined,
+    chunkId: typeof chunkId === 'string' ? chunkId : undefined,
+    page: typeof item?.page === 'number' ? item.page : undefined,
+    relevance: typeof relevance === 'number' ? relevance : undefined,
+  };
+}
+
+function mapGraphNode(item: Record<string, unknown>): GraphNode {
+  return {
+    id: String(item?.id ?? ''),
+    type: String(item?.type ?? ''),
+    label: String(item?.label ?? ''),
+    state: item?.state as GraphNode['state'],
+  };
+}
+
+function mapGraphEdge(item: Record<string, unknown>): GraphEdge {
+  return {
+    source: String(item?.source ?? ''),
+    target: String(item?.target ?? ''),
+    relation: String(item?.relation ?? ''),
+  };
+}
+
+/**
+ * Normalize backend response (snake_case) to frontend (camelCase)
+ */
+export function normalizeChatResponse(raw: Record<string, unknown>): ChatResponse {
+  const r = raw ?? {};
+
+  const traceId = (r.trace_id ?? r.traceId) as string;
+  const queryType = (r.query_type ?? r.queryType) as ChatResponse['queryType'];
+  const abstainReason = (r.abstain_reason ?? r.abstainReason) as string | undefined;
+
+  const evidence = (r.evidence ?? {}) as Record<string, unknown>;
+  const ontologyPathsRaw = evidence.ontology_paths ?? evidence.ontologyPathObjects;
+  const documentRefsRaw = evidence.document_refs ?? evidence.documentRefs;
+  const similarEventsRaw = evidence.similar_events ?? evidence.similarEvents;
+
+  const graph = (r.graph ?? {}) as Record<string, unknown>;
+  const nodesRaw = graph.nodes;
+  const edgesRaw = graph.edges;
+
+  // Map analysis (snake_case to camelCase)
+  const analysisRaw = r.analysis as Record<string, unknown> | undefined;
+  const analysis = analysisRaw ? {
+    entity: analysisRaw.entity as string | undefined,
+    value: analysisRaw.value as number | undefined,
+    unit: analysisRaw.unit as string | undefined,
+    state: analysisRaw.state as string | undefined,
+    normalRange: analysisRaw.normal_range as number[] | undefined,
+    deviation: analysisRaw.deviation as string | undefined,
+  } : undefined;
+
+  // Map reasoning
+  const reasoningRaw = r.reasoning as Record<string, unknown> | undefined;
+  const reasoning = reasoningRaw ? {
+    confidence: (reasoningRaw.confidence as number) ?? 0,
+    pattern: reasoningRaw.pattern as string | undefined,
+    patternConfidence: (reasoningRaw.pattern_confidence ?? reasoningRaw.patternConfidence) as number | undefined,
+    cause: reasoningRaw.cause as string | undefined,
+    causeConfidence: (reasoningRaw.cause_confidence ?? reasoningRaw.causeConfidence) as number | undefined,
+  } : undefined;
+
+  // Map prediction
+  const predictionRaw = r.prediction as Record<string, unknown> | undefined;
+  const prediction = predictionRaw ? {
+    errorCode: (predictionRaw.error_code ?? predictionRaw.errorCode) as string | undefined,
+    probability: predictionRaw.probability as number | undefined,
+    timeframe: predictionRaw.timeframe as string | undefined,
+  } : undefined;
+
+  // Map recommendation
+  const recommendationRaw = r.recommendation as Record<string, unknown> | undefined;
+  const recommendation = recommendationRaw ? {
+    immediate: recommendationRaw.immediate as string | undefined,
+    reference: recommendationRaw.reference as string | undefined,
+  } : undefined;
+
+  return {
+    traceId: String(traceId ?? ''),
+    queryType: queryType ?? 'rag',
+    answer: String(r.answer ?? ''),
+    abstain: Boolean(r.abstain),
+    abstainReason: typeof abstainReason === 'string' ? abstainReason : undefined,
+    analysis,
+    reasoning,
+    prediction,
+    recommendation,
+    evidence: {
+      ontologyPathObjects: asArray(ontologyPathsRaw).map(mapOntologyPath),
+      documentRefs: asArray(documentRefsRaw).map(mapDocumentRef),
+      similarEvents: asArray(similarEventsRaw).map((x) => String(x)),
+    },
+    graph: {
+      nodes: asArray(nodesRaw).map(mapGraphNode),
+      edges: asArray(edgesRaw).map(mapGraphEdge),
+    },
+    timestamp: typeof r.timestamp === 'string' ? r.timestamp : undefined,
+  };
+}
+
+/**
+ * Build chat request for backend
+ */
+export function buildChatRequest(req: ChatRequest): Record<string, unknown> {
+  const message = typeof req.message === 'string' ? req.message : undefined;
+  const query = typeof req.query === 'string' ? req.query : undefined;
+
+  return {
+    ...(message ? { message } : {}),
+    ...(!message && query ? { query } : {}),
+    ...(query && !message ? { query } : {}),
+    context: req.context ?? undefined,
+  };
+}
+
+// API Functions
+export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(buildChatRequest(request)),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+
+  const raw = await response.json();
+  return normalizeChatResponse(raw);
+}
+
+export async function getEvidence(traceId: string) {
+  const response = await fetch(`${API_BASE_URL}/api/evidence/${traceId}`);
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getHealth() {
+  const response = await fetch(`${API_BASE_URL}/health`);
+  return response.json();
+}
+
+export async function getOntologySummary() {
+  const response = await fetch(`${API_BASE_URL}/api/ontology/summary`);
+  return response.json();
+}
