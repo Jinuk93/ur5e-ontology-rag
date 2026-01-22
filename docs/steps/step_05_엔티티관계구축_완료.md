@@ -6,9 +6,6 @@
 |------|------|
 | Phase | 05 - 엔티티/관계 구축 (Entity/Relationship Population) |
 | 상태 | **완료** |
-| 시작일 | 2026-01-22 |
-| 완료일 | 2026-01-22 |
-
 ---
 
 ## 2. 완료된 작업
@@ -17,11 +14,11 @@
 
 | 파일 | 라인 수 | 상태 | 설명 |
 |------|--------|------|------|
-| `src/ontology/loader.py` | 184 | 신규 작성 | OntologyLoader 클래스 |
+| `src/ontology/loader.py` | 204 | 신규 작성 | OntologyLoader 클래스 |
 | `data/processed/ontology/ontology.json` | 501 | 업데이트 | 전체 온톨로지 인스턴스 |
 | `data/processed/ontology/lexicon.yaml` | 402 | 기존 유지 | 동의어 사전 |
-| `scripts/build_ontology.py` | 178 | 신규 작성 | 빌드/검증 스크립트 |
-| `src/ontology/__init__.py` | 77 | 업데이트 | loader 모듈 노출 |
+| `scripts/build_ontology.py` | 215 | 신규 작성 | 빌드/검증 스크립트 |
+| `src/ontology/__init__.py` | 89 | 업데이트 | loader 모듈 노출 |
 
 ### 2.2 온톨로지 통계
 
@@ -184,10 +181,11 @@ has_component = schema.get_relationships_by_type(RelationType.HAS_COMPONENT)
 ```python
 from src.ontology import resolve_alias
 
-# 다양한 표현을 표준 ID로 변환
+# 다양한 표현을 표준 ID로 변환 (ontology.json entity ID와 일치)
 resolve_alias("c153")        # "C153"
-resolve_alias("컨트롤 박스")   # "Control Box"
-resolve_alias("joint 0")     # "Joint 0"
+resolve_alias("컨트롤 박스")   # "ControlBox"
+resolve_alias("joint 0")     # "Joint_0"
+resolve_alias("axia80")      # "Axia80"
 ```
 
 ### 4.4 빌드 스크립트 실행
@@ -247,35 +245,30 @@ ur5e-ontology-rag/
 
 ## 7. 다음 단계 준비
 
-### Phase 6 (동의어 사전)와의 연결
+### Phase 6 (추론 규칙)와의 연결
 
 | Phase 5 산출물 | Phase 6 사용처 |
 |---------------|---------------|
-| ontology.json | EntityLinker 엔티티 참조 |
-| lexicon.yaml | 동의어 확장 기반 |
-| resolve_alias() | EntityLinker 핵심 함수 |
-| OntologyLoader | 통합 로딩 인터페이스 |
+| ontology.json | RuleEngine 엔티티/관계 참조 |
+| State 엔티티 | infer_state() 결과 매핑 |
+| Pattern 엔티티 | detect_patterns() 결과 |
+| INDICATES/TRIGGERS 관계 | cause_rules, pattern_error_mapping |
 
 ### 준비 사항
 
 ```python
 # Phase 6에서 사용할 코드
-from src.ontology import (
-    load_ontology,
-    load_lexicon,
-    resolve_alias,
-)
+from src.ontology import create_rule_engine, load_ontology
 
 # 온톨로지 로드
 schema = load_ontology()
 
-# 동의어 해석 (표기 정규화/표시 용도)
-canonical = resolve_alias("컨트롤박스")  # 예: "Control Box"
-if canonical:
-  print(canonical)
+# 규칙 엔진 초기화
+engine = create_rule_engine()
 
-# 엔티티 조회는 ontology.json의 ID를 사용
-entity = schema.get_entity("ControlBox")
+# 상태 추론
+state = engine.infer_state("Fz", -180.0)
+print(f"State: {state.result_id}")  # State_Warning
 ```
 
 ---
@@ -287,17 +280,16 @@ entity = schema.get_entity("ControlBox")
 1. **Lexicon 형식 호환성**: 기존 lexicon.yaml의 `synonyms` 키와 새 형식의 `aliases` 키 모두 지원하도록 수정
 2. **Sensor→Document 관계 검증**: DOCUMENTED_IN 제약 조건에 Sensor를 추가하여 검증 통과
 
-### 8.2 알려진 제한사항
+### 8.2 해결된 이슈 (v2.2)
 
-1. **관계 검증 WARN 2개**: OCCURS_DURING/INVOLVES 관계가 Invalid로 표시됨
-   - `PAT_COLLISION → Shift_Day`, `PAT_OVERLOAD → Product_B`
-   - 원인: schema.py 제약이 `Event` 요구, 데이터는 `Pattern` 사용 (Step 04 참조)
+1. **관계 검증 PASS**: OCCURS_DURING/INVOLVES 제약 수정됨
+   - `schema.py`: Pattern도 source로 허용하도록 수정
+   - 검증 결과: Valid 62개, Invalid 0개
 
-2. **resolve_alias → canonical ≠ entity ID 불일치**
-   - `resolve_alias("컨트롤 박스")` → `"Control Box"` (canonical 라벨)
-   - `ontology.json` 엔티티 ID는 `"ControlBox"`
-   - 따라서 `schema.get_entity(resolve_alias(...))` 사용 시 None 반환 가능
-   - **권장**: entity ID 직접 사용 또는 lexicon의 `node_id` 필드 활용
+2. **resolve_alias → entity ID 일치**: lexicon.yaml canonical 수정됨
+   - `resolve_alias("컨트롤 박스")` → `"ControlBox"` (ontology ID와 일치)
+   - `resolve_alias("joint 0")` → `"Joint_0"` (ontology ID와 일치)
+   - `schema.get_entity(resolve_alias(...))` 정상 동작
 
 ### 8.3 검증 명령어
 
@@ -332,7 +324,7 @@ print(f'Relationships: {len(schema.relationships)}')
 |------|----------|
 | `src/ontology/schema.py` | DOCUMENTED_IN 제약 조건에 Sensor 추가 |
 
-### 9.3 검증 결과
+### 9.3 검증 결과 (v2.2)
 
 ```bash
 python scripts/build_ontology.py
@@ -343,28 +335,35 @@ python scripts/build_ontology.py
 
   Total Entities: 54
   Total Relationships: 62
-  Validation: WARN (Invalid 2개 - 8.2 참조)
+  Validation: PASS
+
+  Alias Resolution Test:
+    'control box' -> 'ControlBox'
+    'joint 0' -> 'Joint_0'
 ```
 
 ---
 
-### 9.4 문서 정리 사항 (v2.1)
+### 9.4 코드/데이터 수정 내역 (v2.2)
 
-| 항목 | 내용 |
-|------|------|
-| 검증 결과 표기 정리 | 관계 검증 결과가 WARN일 수 있음을 8.2에 반영 |
-| resolve_alias 사용 주의 | canonical(표기)과 entity id(키)가 다를 수 있음을 8.2에 반영 |
-| 설계서/데이터 차이 명시 | ID 명명 규칙 차이를 문서에 명시 |
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/ontology/schema.py` | OCCURS_DURING/INVOLVES에 Pattern 추가 |
+| `data/processed/ontology/lexicon.yaml` | canonical을 ontology entity ID와 일치시킴 |
 
 ---
 
-## 11. 문서 정보
+## 10. 문서 정보
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.1 |
+| 문서 버전 | v2.2 |
 | 작성일 | 2026-01-22 |
 | 최종 갱신일 | 2026-01-22 |
 | 설계서 참조 | [step_05_엔티티관계구축_설계.md](step_05_엔티티관계구축_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 5 |
 | Spec 섹션 | Section 6 |
+
+---
+
+*Phase 05 완료. Phase 06 (추론규칙)으로 진행합니다.*

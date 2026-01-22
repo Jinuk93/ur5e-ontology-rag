@@ -46,8 +46,8 @@ vibration:
 # 과부하 감지 (Threshold Duration)
 # ============================================================
 overload:
-  # 힘 임계값 (N)
-  threshold_N: 300
+  # 힘 임계값 (N) - 설계서 기준 150N
+  threshold_N: 150
 
   # 최소 지속 시간 (초) - 이 시간 이상 지속되어야 과부하
   duration_s: 5

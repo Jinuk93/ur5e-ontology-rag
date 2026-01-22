@@ -15,8 +15,11 @@
 - 예측 규칙 (Pattern 반복 → Error 예측)
 
 ### 1.3 핵심 산출물
-- `configs/rules.yaml` (추론 규칙 정의)
+- `configs/inference_rules.yaml` (추론 규칙 정의)
+- `configs/pattern_thresholds.yaml` (패턴 감지 임계값)
 - `src/ontology/rule_engine.py` (규칙 엔진)
+
+> 참고: `configs/rules.yaml`은 EntityLinker 규칙(정규화/링킹)으로 별도 용도입니다.
 
 ---
 
@@ -27,7 +30,9 @@
 | 파일 경로 | 역할 | 상태 |
 |-----------|------|------|
 | `src/ontology/rule_engine.py` | 규칙 엔진 클래스 | 완료됨 (340줄) |
-| `configs/inference_rules.yaml` | 추론 규칙 정의 | 완료됨 (180줄) |
+| `configs/inference_rules.yaml` | 추론 규칙 정의 | 완료됨 |
+
+> 참고: `configs/rules.yaml`은 EntityLinker용 규칙 파일로 별도 용도입니다.
 
 ### 2.2 Phase 5 산출물 (사용)
 
@@ -57,7 +62,7 @@
 │                                                                          │
 │  3. Cause Rules (원인 추론)                                             │
 │     패턴 + 컨텍스트 → 원인                                               │
-│     예: PAT_COLLISION + Shift_Day → CAUSE_COLLISION                     │
+│     예: PAT_OVERLOAD + SHIFT_B + PART-C → CAUSE_GRIP_POSITION            │
 │                                                                          │
 │  4. Prediction Rules (예측 추론)                                         │
 │     패턴 반복 → 에러 예측                                                │
@@ -173,7 +178,7 @@ cause_rules:
       - cause: "CAUSE_COLLISION"
         confidence: 0.90
         context_boost:
-          - condition: "shift == 'Day'"
+          - condition: "shift == 'B'"
             boost: 0.05
       - cause: "CAUSE_PROGRAM_ERROR"
         confidence: 0.70
@@ -199,7 +204,7 @@ prediction_rules:
     condition:
       type: "frequency"
       count: 3
-      time_window_days: 3
+      time_window_days: 4
     prediction:
       error: "C189"
       probability: 0.85
@@ -288,7 +293,7 @@ patterns = engine.detect_pattern(data)
 #                  result_id="PAT_COLLISION", confidence=0.95)]
 
 # 3. 원인 추론
-context = {"shift": "Day", "product": {"id": "Product_B", "weight_kg": 4.0}}
+context = {"shift": "B", "product": {"id": "PART-C", "weight_kg": 4.2}}
 causes = engine.infer_cause("PAT_COLLISION", context)
 # [InferenceResult(rule_name="COLLISION_CAUSE", result_type="cause",
 #                  result_id="CAUSE_COLLISION", confidence=0.95)]
@@ -357,7 +362,7 @@ pattern_rules:
     condition:
       type: "sustained"
       axis: "Fz"
-      threshold: 300
+      threshold: 150
       duration_s: 5
     confidence: 0.90
     triggers:
@@ -422,10 +427,23 @@ prediction_rules:
     pattern: "PAT_OVERLOAD"
     condition:
       count: 3
-      time_window_days: 3
+      time_window_days: 4
     prediction:
       error: "C189"
       probability: 0.85
+
+  - name: "PREDICT_C189"
+    pattern: "PAT_OVERLOAD"
+    condition:
+      count: 3
+      time_window_days: 4
+      same_time_window: true
+      same_product: true
+      trend: "increasing"
+    prediction:
+      error: "C189"
+      probability: 0.85
+      timeframe: "24h"
 
   - name: "COLLISION_PREDICTION"
     pattern: "PAT_COLLISION"
@@ -508,7 +526,7 @@ prediction_rules:
 ### 8.1 코드 구현
 
 - [x] `src/ontology/rule_engine.py` - RuleEngine 클래스 (340줄)
-- [x] `configs/inference_rules.yaml` - 추론 규칙 정의 (180줄)
+- [x] `configs/rules.yaml` - 추론 규칙 정의
 - [x] `src/ontology/__init__.py` - RuleEngine 모듈 노출
 
 ### 8.2 검증 명령어
@@ -563,7 +581,7 @@ print(f"Causes: {[c.result_id for c in causes]}")
 
 ---
 
-## 11. 실제 구현 결과 (리팩토링)
+## 11. 현재 구현 현황 (참고)
 
 ### 11.1 최종 파일 목록
 
@@ -586,7 +604,13 @@ causes = engine.infer_cause("PAT_COLLISION", {})
 
 ---
 
-*작성일: 2026-01-22*
-*리팩토링일: 2026-01-22*
-*Phase: 06 - 추론 규칙*
-*문서 버전: v2.0*
+## 12. 문서 정보
+
+| 항목 | 값 |
+|------|---|
+| 문서 버전 | v2.0 |
+| 작성일 | 2026-01-22 |
+| 최종 갱신일 | 2026-01-22 |
+| 완료 보고서 | [step_06_추론규칙_완료.md](step_06_추론규칙_완료.md) |
+| ROADMAP 섹션 | A.2 Phase 6 |
+| Spec 섹션 | 2.2, 12.3 |

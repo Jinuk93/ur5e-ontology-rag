@@ -415,10 +415,3 @@ assert stats["count"] == 722
 |---------------|-------------------|
 | VectorStore.search() | HybridRetriever의 벡터 검색 |
 | SearchResult | ResponseGenerator의 문서 근거 |
-
----
-
-*작성일: 2026-01-22*
-*리팩토링일: 2026-01-22*
-*Phase: 03 - 문서 인덱싱*
-*문서 버전: v2.0*

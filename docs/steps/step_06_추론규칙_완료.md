@@ -8,8 +8,7 @@
 | 상태 | **완료** |
 | 시작일 | 2026-01-22 |
 | 완료일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
-| 작업자 | Claude Code |
+| 최종 갱신일 | 2026-01-22 |
 
 ---
 
@@ -19,16 +18,15 @@
 
 | 파일 | 라인 수 | 상태 | 설명 |
 |------|--------|------|------|
-| `src/ontology/rule_engine.py` | 340 | 신규 작성 | RuleEngine 클래스 |
-| `configs/inference_rules.yaml` | 180 | 신규 작성 | 추론 규칙 정의 |
-| `src/ontology/__init__.py` | 90 | 업데이트 | RuleEngine 노출 |
+| `src/ontology/rule_engine.py` | 503 | 신규 작성 | RuleEngine 클래스 |
+| `configs/inference_rules.yaml` | 211 | 신규 작성 | 추론 규칙 정의 |
+| `src/ontology/__init__.py` | 89 | 업데이트 | RuleEngine 노출 |
 
 ### 2.2 기존 설정 파일 (활용)
 
 | 파일 | 역할 |
 |------|------|
 | `configs/pattern_thresholds.yaml` | 패턴 감지 임계값 |
-| `configs/rules.yaml` | EntityLinker 정규화 규칙 (별도) |
 
 ---
 
@@ -86,12 +84,15 @@ state_rules:
   - name: "FZ_STATE_MAPPING"
     axis: "Fz"
     mappings:
-      - range: [-20, 0]
+      - range: [-20, -10]
         state: "State_Normal"
+        label: "유휴"
       - range: [-200, -100]
         state: "State_Warning"
+        label: "경고"
       - range: [-1000, -500]
         state: "State_Critical"
+        label: "위험"
 
 # 원인 추론 규칙
 cause_rules:
@@ -106,10 +107,11 @@ prediction_rules:
     pattern: "PAT_OVERLOAD"
     condition:
       count: 3
-      time_window_days: 3
+      time_window_days: 4
     prediction:
       error_id: "C189"
       probability: 0.85
+      time_horizon: "24h"
 ```
 
 ---
@@ -216,9 +218,8 @@ predictions = engine.predict_error(history)
 ```
 ur5e-ontology-rag/
 ├── configs/
-│   ├── inference_rules.yaml [신규]    # 추론 규칙
-│   ├── pattern_thresholds.yaml       # 패턴 임계값 (기존)
-│   └── rules.yaml                    # EntityLinker 규칙 (별도)
+│   ├── inference_rules.yaml          # Phase 6: 추론 규칙
+│   └── pattern_thresholds.yaml       # 패턴 임계값 (선택)
 │
 └── src/
     └── ontology/
@@ -259,7 +260,7 @@ ur5e-ontology-rag/
 
 ### 9.2 설계 결정
 
-1. **규칙 파일 분리**: inference_rules.yaml (추론) vs rules.yaml (정규화) 분리
+1. **규칙 파일 기준**: Phase 6 추론 규칙은 `configs/inference_rules.yaml`에 정의
 2. **기존 설정 활용**: pattern_thresholds.yaml 재사용
 3. **YAML 형식**: 가독성과 유지보수 용이
 
@@ -295,12 +296,12 @@ print(f"State: {state.result_id}")  # State_Warning
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.0 (리팩토링 완료) |
+| 문서 버전 | v2.0 |
 | 작성일 | 2026-01-22 |
-| 리팩토링일 | 2026-01-22 |
+| 최종 갱신일 | 2026-01-22 |
 | 설계서 참조 | [step_06_추론규칙_설계.md](step_06_추론규칙_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 6 |
-| Spec 섹션 | Section 7 |
+| Spec 섹션 | 2.2, 12.3 |
 
 ---
 

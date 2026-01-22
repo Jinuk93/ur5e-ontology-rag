@@ -153,9 +153,10 @@ error_codes:
 components:
   # 메인 컴포넌트
   control_box:
-    canonical: "Control Box"
+    canonical: "ControlBox"
     synonyms:
       - "control box"
+      - "Control Box"
       - "컨트롤 박스"
       - "컨트롤박스"
       - "controller"
@@ -223,9 +224,10 @@ components:
 
   # 조인트
   joint_0:
-    canonical: "Joint 0"
+    canonical: "Joint_0"
     synonyms:
       - "joint 0"
+      - "Joint 0"
       - "joint0"
       - "조인트 0"
       - "조인트0"
@@ -236,9 +238,10 @@ components:
     node_id: "COMP_JOINT_0"
 
   joint_1:
-    canonical: "Joint 1"
+    canonical: "Joint_1"
     synonyms:
       - "joint 1"
+      - "Joint 1"
       - "joint1"
       - "조인트 1"
       - "조인트1"
@@ -249,9 +252,10 @@ components:
     node_id: "COMP_JOINT_1"
 
   joint_2:
-    canonical: "Joint 2"
+    canonical: "Joint_2"
     synonyms:
       - "joint 2"
+      - "Joint 2"
       - "joint2"
       - "조인트 2"
       - "조인트2"
@@ -262,9 +266,10 @@ components:
     node_id: "COMP_JOINT_2"
 
   joint_3:
-    canonical: "Joint 3"
+    canonical: "Joint_3"
     synonyms:
       - "joint 3"
+      - "Joint 3"
       - "joint3"
       - "조인트 3"
       - "조인트3"
@@ -275,9 +280,10 @@ components:
     node_id: "COMP_JOINT_3"
 
   joint_4:
-    canonical: "Joint 4"
+    canonical: "Joint_4"
     synonyms:
       - "joint 4"
+      - "Joint 4"
       - "joint4"
       - "조인트 4"
       - "조인트4"
@@ -288,9 +294,10 @@ components:
     node_id: "COMP_JOINT_4"
 
   joint_5:
-    canonical: "Joint 5"
+    canonical: "Joint_5"
     synonyms:
       - "joint 5"
+      - "Joint 5"
       - "joint5"
       - "조인트 5"
       - "조인트5"
@@ -387,15 +394,27 @@ components:
 
   # 센서 (Main 추가)
   force_torque_sensor:
-    canonical: "Force/Torque Sensor"
+    canonical: "Axia80"
     synonyms:
       - "force torque sensor"
+      - "Force/Torque Sensor"
       - "ft sensor"
       - "FT 센서"
       - "힘토크 센서"
       - "힘/토크 센서"
       - "axia80"
       - "ATI Axia80"
-      - "Axia80"
       - "힘 토크 센서"
     node_id: "COMP_FT_SENSOR"
+
+  # 툴 플랜지
+  tool_flange:
+    canonical: "ToolFlange"
+    synonyms:
+      - "tool flange"
+      - "Tool Flange"
+      - "툴 플랜지"
+      - "툴플랜지"
+      - "플랜지"
+      - "flange"
+    node_id: "COMP_TOOL_FLANGE"

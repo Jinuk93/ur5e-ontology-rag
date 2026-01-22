@@ -1,7 +1,6 @@
 # UR5e Ontology-based Manufacturing AX System - 개발 로드맵
 
 > **Version**: 2.0
-> **최종 수정**: 2026-01-22
 > **문서 목적**: 온톨로지 기반 제조 AX 시스템 개발 로드맵
 > **참고 문서**: Unified_Spec.md, 온톨로지_스키마_설계.md
 
@@ -148,7 +147,7 @@
 | | 3 | 문서 인덱싱 | ChromaDB 인덱스 |
 | **2. Ontology** | 4 | 온톨로지 스키마 | 4-Domain 정의 |
 | | 5 | 엔티티/관계 구축 | ontology.json |
-| | 6 | 추론 규칙 | rules.yaml |
+| | 6 | 추론 규칙 | inference_rules.yaml |
 | **3. Sensor** | 7 | 센서 데이터 처리 | Parquet 저장소 |
 | | 8 | 패턴 감지 | PatternDetector |
 | | 9 | 온톨로지 연결 | 패턴→에러 매핑 |
@@ -300,7 +299,7 @@ print(results)
 - [ ] Measurement Domain 정의 (Axia80, Axes, States, Patterns)
 - [ ] Knowledge Domain 정의 (ErrorCodes, Causes, Resolutions)
 - [ ] Context Domain 정의 (Shifts, Products, WorkCycles)
-- [ ] 관계 타입 정의 (13개)
+- [ ] 관계 타입 정의 (14개)
 
 **산출물**:
 - `data/processed/ontology/schema.yaml` (스키마 정의)
@@ -318,9 +317,9 @@ domains:
   knowledge:
     entities: [ErrorCode, Cause, Resolution, Document]
   context:
-    entities: [Shift, Product, WorkCycle]
+    entities: [Shift, Product, WorkCycle, Event]
 
-relationships:
+relationships:  # 14개
   - HAS_COMPONENT
   - MOUNTED_ON
   - MEASURES
@@ -330,8 +329,11 @@ relationships:
   - CAUSED_BY
   - RESOLVED_BY
   - DOCUMENTED_IN
+  - PREVENTS
+  - AFFECTS
   - OCCURS_DURING
   - INVOLVES
+  - INSTANCE_OF
 ```
 
 ---
@@ -391,12 +393,12 @@ relationships:
 - [ ] 예측 규칙 (Pattern 반복 → Error 예측)
 
 **산출물**:
-- `configs/rules.yaml`
+- `configs/inference_rules.yaml`
 - `src/ontology/rule_engine.py`
 
 **온톨로지 연결**: 추론 규칙이 온톨로지 관계를 활용
 
-**rules.yaml 예시**:
+**inference_rules.yaml 예시**:
 ```yaml
 state_rules:
   - name: "FZ_STATE"
@@ -581,7 +583,7 @@ class QueryClassifier:
 class EntityExtractor:
     def extract(self, query: str) -> List[Entity]:
         """질문에서 엔티티 추출"""
-        # "Fz가 350N" → [("Fz", "MeasurementAxis"), ("350N", "Value")]
+        # "Fz가 -350N" → [("Fz", "MeasurementAxis"), ("-350N", "Value")]
 ```
 
 **분류 기준**:
@@ -636,16 +638,16 @@ class OntologyEngine:
 
 **추론 파이프라인**:
 ```
-입력: "Fz가 350N인데 이게 뭐야?"
+입력: "Fz가 -350N인데 이게 뭐야?"
     │
     ▼
-1. 엔티티 인식 → Fz, 350N
+1. 엔티티 인식 → Fz, -350N
     │
     ▼
 2. 컨텍스트 로딩 → Fz.normal_range, Fz.states
     │
     ▼
-3. 상태 추론 → 350N → CRITICAL
+3. 상태 추론 → -350N → CRITICAL
     │
     ▼
 4. 패턴 매칭 → PAT_OVERLOAD
@@ -847,7 +849,7 @@ class OntologyEngine:
 ```python
 # 온톨로지성 질문 테스트
 def test_ontology_query():
-    query = "Fz가 350N인데 이게 뭐야?"
+    query = "Fz가 -350N인데 이게 뭐야?"
     result = engine.process(query)
 
     assert result.query_type == "ONTOLOGY"
@@ -889,10 +891,10 @@ def test_context_awareness():
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  [시연 내용]                                                            │
-│  질문: "Fz가 350N인데 이게 뭐야?"                                       │
+│  질문: "Fz가 -350N인데 이게 뭐야?"                                       │
 │                                                                          │
 │  [보여줄 것]                                                            │
-│  1. 엔티티 인식 (Fz, 350N)                                              │
+│  1. 엔티티 인식 (Fz, -350N)                                              │
 │  2. 상태 추론 (CRITICAL)                                                │
 │  3. 패턴 연결 (PAT_OVERLOAD)                                            │
 │  4. 원인 추론 (CAUSE_GRIP_POSITION)                                     │
@@ -980,7 +982,7 @@ def test_context_awareness():
 │                                                                          │
 │  M4: 추론 엔진                                                          │
 │  ─────────────                                                          │
-│  "Fz가 350N인데?" → 전체 온톨로지 추론 + 예측                           │
+│  "Fz가 -350N인데?" → 전체 온톨로지 추론 + 예측                           │
 │                                                                          │
 │  M5: UI 완료                                                            │
 │  ───────────                                                            │
@@ -1146,7 +1148,8 @@ ur5e-ontology-rag/
 │
 ├── configs/
 │   ├── settings.yaml                # Phase 1: 전역 설정
-│   ├── rules.yaml                   # Phase 6: 추론 규칙
+│   ├── inference_rules.yaml         # Phase 6: 추론 규칙
+│   ├── rules.yaml                   # Phase 7+: EntityLinker용 규칙
 │   └── error_pattern_mapping.yaml   # Phase 9: 에러-패턴 매핑
 │
 ├── prompts/
@@ -1300,8 +1303,3 @@ ur5e-ontology-rag/
 | `src/rag/hybrid_retriever.py` | VectorDB + GraphDB 통합 검색 |
 | `src/dashboard/static/graph.js` | D3.js 인터랙티브 그래프 |
 
----
-
-**문서 버전**: 2.0
-**작성일**: 2026-01-22
-**핵심 변경**: 온톨로지 중심 개발 순서로 재구성, 팔란티어 스타일 UI 강조

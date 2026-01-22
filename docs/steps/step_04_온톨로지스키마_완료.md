@@ -16,9 +16,9 @@
 
 | 파일 | 라인 수 | 상태 | 설명 |
 |------|--------|------|------|
-| `src/ontology/__init__.py` | 60 | 신규 작성 | 패키지 초기화 및 모듈 노출 |
-| `src/ontology/schema.py` | 130 | 신규 작성 | Domain, EntityType, RelationType 정의 |
-| `src/ontology/models.py` | 180 | 신규 작성 | Entity, Relationship, OntologySchema 모델 |
+| `src/ontology/__init__.py` | 89 | 신규 작성 | 패키지 초기화 및 모듈 노출 |
+| `src/ontology/schema.py` | 191 | 신규 작성 | Domain, EntityType, RelationType 정의 |
+| `src/ontology/models.py` | 175 | 신규 작성 | Entity, Relationship, OntologySchema 모델 |
 | `data/processed/ontology/schema.yaml` | 280 | 신규 작성 | 스키마 정의 파일 |
 
 ### 2.2 스키마 통계
@@ -26,8 +26,8 @@
 | 항목 | 수량 |
 |------|------|
 | 도메인 (Domain) | 4개 |
-| 엔티티 타입 (EntityType) | 15개 |
-| 관계 타입 (RelationType) | 13개 |
+| 엔티티 타입 (EntityType) | 16개 |
+| 관계 타입 (RelationType) | 14개 |
 
 ---
 
@@ -42,7 +42,7 @@
 │ • Robot       │  │ • Sensor      │  │ • ErrorCode   │  │ • Shift       │
 │ • Joint       │  │ • Axis        │  │ • Cause       │  │ • Product     │
 │ • ControlBox  │  │ • State       │  │ • Resolution  │  │ • WorkCycle   │
-│ • ToolFlange  │  │ • Pattern     │  │ • Document    │  │               │
+│ • ToolFlange  │  │ • Pattern     │  │ • Document    │  │ • Event       │
 └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘
 ```
 
@@ -56,16 +56,16 @@ class Domain(str, Enum):
     CONTEXT = "context"
 ```
 
-### 3.3 EntityType Enum (15개)
+### 3.3 EntityType Enum (16개)
 
 | 도메인 | 엔티티 타입 |
 |--------|------------|
 | Equipment | Robot, Joint, ControlBox, ToolFlange |
 | Measurement | Sensor, MeasurementAxis, State, Pattern |
 | Knowledge | ErrorCode, Cause, Resolution, Document |
-| Context | Shift, Product, WorkCycle |
+| Context | Shift, Product, WorkCycle, Event |
 
-### 3.4 RelationType Enum (13개)
+### 3.4 RelationType Enum (14개)
 
 | 관계 | 설명 | Source → Target |
 |------|------|-----------------|
@@ -80,8 +80,9 @@ class Domain(str, Enum):
 | DOCUMENTED_IN | 문서 참조 | ErrorCode → Document |
 | PREVENTS | 해결→예방 | Resolution → ErrorCode |
 | AFFECTS | 영향 컴포넌트 | ErrorCode → Joint |
-| OCCURS_DURING | 발생 시간 | Pattern → Shift |
-| INVOLVES | 관련 제품 | Pattern → Product |
+| OCCURS_DURING | 발생 시간 | Event/Pattern → Shift |
+| INVOLVES | 관련 제품 | Event/Pattern → Product |
+| INSTANCE_OF | 이벤트-패턴 연결 | Event → Pattern |
 
 ### 3.5 데이터 모델
 
@@ -188,16 +189,16 @@ valid = validate_relationship(
 | Equipment Domain 정의 | Robot, Joint, ControlBox, ToolFlange | O |
 | Measurement Domain 정의 | Sensor, MeasurementAxis, State, Pattern | O |
 | Knowledge Domain 정의 | ErrorCode, Cause, Resolution, Document | O |
-| Context Domain 정의 | Shift, Product, WorkCycle | O |
-| 13개 관계 타입 | RelationType Enum | O |
+| Context Domain 정의 | Shift, Product, WorkCycle, Event | O |
+| 14개 관계 타입 | RelationType Enum | O |
 
 ### 5.2 Unified_Spec.md 충족 사항
 
 | Spec 요구사항 | 구현 내용 | 상태 |
 |--------------|----------|------|
 | 4-Domain 아키텍처 | Domain Enum | O |
-| 엔티티 타입 정의 | EntityType Enum (15개) | O |
-| 관계 타입 정의 | RelationType Enum (13개) | O |
+| 엔티티 타입 정의 | EntityType Enum (16개) | O |
+| 관계 타입 정의 | RelationType Enum (14개) | O |
 | 관계 제약 조건 | RELATIONSHIP_CONSTRAINTS | O |
 
 ### 5.3 온톨로지 스키마 연결점
@@ -332,59 +333,43 @@ print(f"관계 타입: {len(RelationType)}개")
 >>> print(f'도메인: {len(Domain)}개')
 도메인: 4개
 >>> print(f'엔티티 타입: {len(EntityType)}개')
-엔티티 타입: 15개
+엔티티 타입: 16개
 >>> print(f'관계 타입: {len(RelationType)}개')
-관계 타입: 13개
+관계 타입: 14개
 ```
 
 모든 검증 테스트 통과 확인.
 
 ---
 
-## 10. 알려진 이슈 및 제약 (v2.1)
+## 10. 설계 정리 (v3.0)
 
-### 10.1 알려진 이슈: Event 모델 불일치
+### 10.1 통합된 스키마 기준
 
-**현황**:
-- `schema.py`: `EntityType.EVENT`, `RelationType.INSTANCE_OF` 존재 (16개 엔티티/14개 관계)
-- `schema.yaml`/설계문서: Event 없음 (15개 엔티티/13개 관계)
-- `ontology.json`: Pattern → Shift/Product 직접 연결 (Event 미사용)
-
-**두 가지 철학 공존**:
-| 철학 | 구조 | 현재 위치 |
-|------|------|----------|
-| Event 기반 (정밀) | Event → Pattern (INSTANCE_OF) | schema.py 코드 |
-| Pattern 직접 (단순) | Pattern → Shift/Product | ontology.json 데이터 |
-
-### 10.2 validate_relationship 제약 충돌
-
-**코드 제약** (`schema.py:157-164`):
-```python
-OCCURS_DURING: {"source_types": [EntityType.EVENT], ...}
-INVOLVES: {"source_types": [EntityType.EVENT], ...}
-```
-
-**실제 데이터** (`ontology.json`):
-```json
-{"source": "PAT_COLLISION", "relation": "OCCURS_DURING", "target": "Shift_Day"}
-```
-
-**영향**: Step05/06 검증에서 관계 제약 경고 발생 가능
-
-### 10.3 schema.yaml 역할
-
-`loader.py`는 `ontology.json` + `lexicon.yaml`만 로드. `schema.yaml`은 참조 문서 역할.
-
----
-
-## 11. 문서 정보
+**기준**: `schema.py` 코드 구현을 기준으로 모든 문서 통일 (2026-01-22)
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.1 |
-| 작성일 | 2026-01-22 |
-| 최종 갱신일 | 2026-01-22 |
-| 설계서 참조 | [step_04_온톨로지스키마_설계.md](step_04_온톨로지스키마_설계.md) |
-| ROADMAP 섹션 | A.2 Phase 4 |
-| Spec 섹션 | Section 6 |
+| EntityType | 16개 (Event 포함) |
+| RelationType | 14개 (INSTANCE_OF 포함) |
+
+### 10.2 Event 엔티티 역할
+
+- **목적**: 이벤트 추적 및 정밀한 원인 분석을 위한 선택적 사용
+- **관계**: `INSTANCE_OF` (Event → Pattern), `OCCURS_DURING`, `INVOLVES`
+- **사용 방식**: Pattern에 직접 연결하거나, Event를 통해 세부 추적 가능 (두 방식 모두 유효)
+
+### 10.3 validate_relationship 제약
+
+```python
+# Pattern과 Event 모두 허용
+OCCURS_DURING: {"source_types": [EntityType.EVENT, EntityType.PATTERN], ...}
+INVOLVES: {"source_types": [EntityType.EVENT, EntityType.PATTERN], ...}
+```
+
+**검증 결과**: `Validation: PASS`
+
+### 10.4 schema.yaml 역할
+
+`loader.py`는 `ontology.json` + `lexicon.yaml`만 로드. `schema.yaml`은 참조 문서 역할.
 

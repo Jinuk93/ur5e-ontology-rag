@@ -5,15 +5,15 @@
 ### 1.1 Phase 정보
 - **Phase 번호**: 04
 - **Phase 명**: 온톨로지 스키마 설계 (Ontology Schema Design)
-- **Stage**: Stage 2 - 온톨로지 핵심 (Ontology Core) ★
+- **Stage**: Stage 2 - 온톨로지 핵심 (Ontology Core)
 - **목표**: 4-Domain 온톨로지 스키마 정의
 
 ### 1.2 Phase 목표 (Unified_ROADMAP.md 기준)
 - Equipment Domain 정의 (UR5e, Joints, ControlBox)
 - Measurement Domain 정의 (Axia80, Axes, States, Patterns)
 - Knowledge Domain 정의 (ErrorCodes, Causes, Resolutions)
-- Context Domain 정의 (Shifts, Products, WorkCycles)
-- 관계 타입 정의 (13개)
+- Context Domain 정의 (Shifts, Products, WorkCycles, Events)
+- 관계 타입 정의 (14개)
 
 ### 1.3 핵심 산출물
 - `data/processed/ontology/schema.yaml` (스키마 정의)
@@ -76,7 +76,7 @@
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │                    Context Domain (운영 컨텍스트)                  │  │
 │  │                                                                   │  │
-│  │   • Shift (A/B/C조)  • Product (PART-A/B/C)  • WorkCycle         │  │
+│  │   • Shift (A/B/C조)  • Product (PART-A/B/C)  • WorkCycle • Event │  │
 │  └───────────────────────────────────────────────────────────────────┘  │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -118,6 +118,7 @@ class EntityType(str, Enum):
     SHIFT = "Shift"
     PRODUCT = "Product"
     WORK_CYCLE = "WorkCycle"
+    EVENT = "Event"  # 패턴 발생 인스턴스 (traceability)
 ```
 
 ### 3.3 Relationship Type 정의
@@ -143,8 +144,9 @@ class RelationType(str, Enum):
     AFFECTS = "AFFECTS"                 # ErrorCode → Joint
 
     # Context 관계
-    OCCURS_DURING = "OCCURS_DURING"     # Event → Shift
-    INVOLVES = "INVOLVES"               # Event → Product
+    INSTANCE_OF = "INSTANCE_OF"         # Event → Pattern (발생 인스턴스 → 정의)
+    OCCURS_DURING = "OCCURS_DURING"     # Event/Pattern → Shift
+    INVOLVES = "INVOLVES"               # Event/Pattern → Product
 ```
 
 ### 3.4 Entity 데이터 모델
@@ -229,6 +231,7 @@ domains:
       - Shift
       - Product
       - WorkCycle
+      - Event
 
 entity_types:
   Robot:
@@ -322,6 +325,14 @@ entity_types:
     properties:
       - phases: [string]
 
+  Event:
+    domain: context
+    description: "패턴 발생 인스턴스 (traceability)"
+    properties:
+      - timestamp: datetime
+      - pattern_id: string
+      - severity: string
+
 relationship_types:
   HAS_COMPONENT:
     source_types: [Robot]
@@ -384,13 +395,18 @@ relationship_types:
     target_types: [Joint]
     description: "영향 컴포넌트 관계"
 
+  INSTANCE_OF:
+    source_types: [Event]
+    target_types: [Pattern]
+    description: "패턴 발생 인스턴스 → 패턴 정의"
+
   OCCURS_DURING:
-    source_types: [Pattern]
+    source_types: [Event, Pattern]
     target_types: [Shift]
     description: "발생 시간 관계"
 
   INVOLVES:
-    source_types: [Pattern]
+    source_types: [Event, Pattern]
     target_types: [Product]
     description: "관련 제품 관계"
 ```
@@ -431,8 +447,8 @@ RelationType.HAS_COMPONENT →       Relationship("UR5e", HAS_COMPONENT, "Joint_
 | Equipment 엔티티 | Robot, Joint, ControlBox, ToolFlange | O |
 | Measurement 엔티티 | Sensor, MeasurementAxis, State, Pattern | O |
 | Knowledge 엔티티 | ErrorCode, Cause, Resolution, Document | O |
-| Context 엔티티 | Shift, Product, WorkCycle | O |
-| 13개 관계 타입 | RelationType Enum 정의 | O |
+| Context 엔티티 | Shift, Product, WorkCycle, Event | O |
+| 14개 관계 타입 | RelationType Enum 정의 | O |
 
 ### 5.2 API 명세 연결
 
@@ -535,11 +551,6 @@ print(ur5e.to_dict())
 |---------------|---------------|
 | State 엔티티 타입 | 상태 추론 규칙 |
 | Pattern 엔티티 타입 | 패턴 매칭 규칙 |
+| Event 엔티티 타입 | 패턴 발생 추적 (traceability) |
 | INDICATES, TRIGGERS 관계 | 원인/에러 추론 |
-
----
-
-*작성일: 2026-01-22*
-*리팩토링일: 2026-01-22*
-*Phase: 04 - 온톨로지 스키마*
-*문서 버전: v2.0*
+| INSTANCE_OF 관계 | Event → Pattern 추적 |

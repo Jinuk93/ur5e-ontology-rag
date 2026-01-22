@@ -155,11 +155,11 @@ RELATIONSHIP_CONSTRAINTS = {
         "target_types": [EntityType.PATTERN],
     },
     RelationType.OCCURS_DURING: {
-        "source_types": [EntityType.EVENT],
+        "source_types": [EntityType.EVENT, EntityType.PATTERN],
         "target_types": [EntityType.SHIFT],
     },
     RelationType.INVOLVES: {
-        "source_types": [EntityType.EVENT],
+        "source_types": [EntityType.EVENT, EntityType.PATTERN],
         "target_types": [EntityType.PRODUCT],
     },
 }

@@ -5,7 +5,7 @@
 ### 1.1 Phase 정보
 - **Phase 번호**: 05
 - **Phase 명**: 엔티티/관계 구축 (Entity & Relationship Building)
-- **Stage**: Stage 2 - 온톨로지 핵심 (Ontology Core) ★
+- **Stage**: Stage 2 - 온톨로지 핵심 (Ontology Core)
 - **목표**: 온톨로지 인스턴스 데이터 생성
 
 ### 1.2 Phase 목표 (Unified_ROADMAP.md 기준)

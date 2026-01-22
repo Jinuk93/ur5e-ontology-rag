@@ -144,7 +144,7 @@ prediction_rules:
     condition:
       type: "frequency"
       count: 3
-      time_window_days: 3
+      time_window_days: 4
     prediction:
       error_id: "C189"
       probability: 0.85
