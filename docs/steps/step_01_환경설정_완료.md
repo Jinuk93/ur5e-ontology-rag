@@ -30,10 +30,13 @@
 #### 환경 검증
 ```
 Python Version: 3.11.9
-ChromaDB: OK
-OpenAI: OK
-Neo4j: OK
+ChromaDB: OK (패키지 import 확인 - 서버/퍼시스트 동작은 Phase 2~3에서 확인)
+OpenAI: OK (패키지 import 확인 - 실제 API 호출은 Phase 2~3에서 확인)
+Neo4j: OK (패키지 import 확인 - DB 연결은 Phase 4~5에서 확인)
 ```
+
+> **검증 수준 안내**: Phase 1에서는 패키지 import 가능 여부만 확인합니다.
+> 실제 서비스 연결(ChromaDB persist, Neo4j 연결, OpenAI API 호출)은 해당 Phase에서 검증합니다.
 
 #### 설정 로딩 검증
 ```
@@ -43,7 +46,7 @@ Chunk Size: 512
 Chunk Overlap: 50
 Top K: 5
 Similarity Threshold: 0.7
-API Port: 8080
+API Port: 8080  # FastAPI 서버 포트 (settings.yaml 기준)
 Verifier Max Hops: 3
 Project Root: C:\Users\nugikim\Desktop\ur5e-ontology-rag
 Data Raw Dir: C:\Users\nugikim\Desktop\ur5e-ontology-rag\data\raw\pdf
@@ -225,13 +228,51 @@ Phase 1에서 설정한 내용이 Phase 2에서 사용되는 방식:
 
 ---
 
-## 7. 이슈 및 참고사항
+## 7. 재현 커맨드 체크리스트
 
-### 7.1 현재 이슈
+환경 설정 재현을 위한 단계별 명령어입니다:
+
+```bash
+# 1. 가상환경 생성 및 활성화
+python -m venv venv
+.\venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Mac/Linux
+
+# 2. 의존성 설치
+pip install -r requirements.txt
+
+# 3. 환경변수 파일 생성
+copy .env.example .env  # Windows
+# cp .env.example .env  # Mac/Linux
+
+# 4. .env 파일 편집 (필수)
+# - OPENAI_API_KEY 설정
+
+# 5. Neo4j 컨테이너 시작 (선택)
+docker-compose up -d
+
+# 6. 환경 검증
+python -c "from src import get_settings; print(get_settings())"
+```
+
+### 검증 체크리스트
+
+| 단계 | 명령어 | 기대 결과 |
+|------|--------|----------|
+| Python 버전 | `python --version` | 3.10 이상 |
+| 패키지 import | `python -c "import chromadb, openai, neo4j"` | 에러 없음 |
+| 설정 로드 | `python -c "from src import get_settings; get_settings()"` | 설정 객체 반환 |
+| Neo4j 상태 | `docker ps \| grep neo4j` | 컨테이너 Running |
+
+---
+
+## 8. 이슈 및 참고사항
+
+### 8.1 현재 이슈
 
 - 없음
 
-### 7.2 권장 사항
+### 8.2 권장 사항
 
 1. **API 키 설정**: `.env` 파일에 실제 OpenAI API 키 입력 필요
 2. **Neo4j 실행**: `docker-compose up -d`로 Neo4j 컨테이너 시작
@@ -239,9 +280,9 @@ Phase 1에서 설정한 내용이 Phase 2에서 사용되는 방식:
 
 ---
 
-## 8. 리팩토링 수행 내역
+## 9. 리팩토링 수행 내역
 
-### 8.1 설계서 업데이트 (v1.0 → v2.0)
+### 9.1 설계서 업데이트 (v1.0 → v2.0)
 
 | 추가 섹션 | 내용 |
 |----------|------|
@@ -251,7 +292,7 @@ Phase 1에서 설정한 내용이 Phase 2에서 사용되는 방식:
 | 추론 규칙과 설정 연결 | StateRules, PatternRules 등 규칙→설정 매핑 |
 | Phase 2 준비 사항 상세 | 필수 선행 조건, 사용 설정값 명시 |
 
-### 8.2 코드 검증 수행
+### 9.2 코드 검증 수행
 
 | 검증 항목 | 결과 |
 |----------|------|
@@ -260,19 +301,29 @@ Phase 1에서 설정한 내용이 Phase 2에서 사용되는 방식:
 | 설정 로딩 | 모든 Settings 필드 정상 로드 |
 | 모듈 Export | `from src import` 정상 작동 |
 
-### 8.3 코드 변경 사항
+### 9.3 코드 변경 사항
 
 코드 변경 없음 - 기존 구현이 설계 요구사항을 모두 충족함.
 
+### 9.4 GPT 피드백 반영 (v2.1)
+
+| 피드백 항목 | 수정 내용 |
+|------------|----------|
+| ChromaDB 검증 수준 | "OK" → "OK (패키지 import 확인)" 명시 |
+| .env.example 미사용 키 | "(미사용) → settings.yaml xxx" 주석 추가 |
+| 포트 정합성 | run_dashboard.py 8000 → 8080 통일 |
+| 재현 커맨드 체크리스트 | Section 7 신규 추가 |
+
 ---
 
-## 9. 문서 정보
+## 10. 문서 정보
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.0 (리팩토링 완료) |
+| 문서 버전 | v2.1 (GPT 피드백 반영) |
 | 작성일 | 2026-01-22 |
 | 리팩토링일 | 2026-01-22 |
+| GPT 피드백 반영일 | 2026-01-22 |
 | 설계서 참조 | [step_01_환경설정_설계.md](step_01_환경설정_설계.md) |
 | ROADMAP 섹션 | A.1 Phase 1 |
 | Spec 섹션 | Section 3, 5, 6 |

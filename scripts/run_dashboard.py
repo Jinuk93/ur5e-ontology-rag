@@ -8,7 +8,7 @@
 #
 # 옵션:
 #   --port PORT    포트 번호 (기본: 8501)
-#   --api-url URL  API 서버 URL (기본: http://localhost:8000)
+#   --api-url URL  API 서버 URL (기본: http://localhost:8080)
 # ============================================================
 
 import os
@@ -35,7 +35,7 @@ def main():
   python scripts/run_dashboard.py --port 8502
 
   # API URL 지정
-  python scripts/run_dashboard.py --api-url http://192.168.1.100:8000
+  python scripts/run_dashboard.py --api-url http://192.168.1.100:8080
         """
     )
 
@@ -48,8 +48,8 @@ def main():
     parser.add_argument(
         "--api-url",
         type=str,
-        default="http://localhost:8000",
-        help="API 서버 URL (기본: http://localhost:8000)"
+        default="http://localhost:8080",
+        help="API 서버 URL (기본: http://localhost:8080, settings.yaml api.port 기준)"
     )
     parser.add_argument(
         "--debug",

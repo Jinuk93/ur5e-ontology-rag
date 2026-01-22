@@ -561,10 +561,12 @@ pattern_error_mapping:
 - [ ] 하이브리드 질문 감지 (온톨로지 + 문서)
 - [ ] 일반 RAG 질문 감지 (문서 검색만)
 - [ ] 엔티티 추출
+- [ ] **Evidence Schema 형식 정의** (doc_id, page, chunk_id)
 
 **산출물**:
 - `src/rag/query_classifier.py`
 - `src/rag/entity_extractor.py`
+- `src/rag/evidence_schema.py` (Evidence 데이터 모델)
 
 **온톨로지 연결**:
 - 질문에서 온톨로지 엔티티 식별
@@ -672,10 +674,13 @@ class OntologyEngine:
 - [ ] LLM 기반 자연어 생성
 - [ ] 근거 첨부 (온톨로지 경로 + 문서)
 - [ ] 그래프 데이터 생성
+- [ ] **ABSTAIN 케이스 처리** (신뢰도 < 임계값 시 "증거 부족" 응답)
+- [ ] **Evidence Schema 출력** (doc_id/page/chunk_id 포함)
 
 **산출물**:
 - `src/rag/response_generator.py`
 - `src/rag/prompt_builder.py`
+- `src/rag/confidence_gate.py` (신뢰도 기반 응답 검증)
 
 **온톨로지 연결**:
 - 온톨로지 경로를 응답 근거로 포함
@@ -690,9 +695,23 @@ class OntologyEngine:
   "recommendation": { "immediate": "...", "reference": "..." },
   "evidence": {
     "ontology_path": "Fz → CRITICAL → PAT_OVERLOAD → C189",
-    "document_refs": [...]
+    "document_refs": [
+      { "doc_id": "service_manual", "page": 45, "chunk_id": "SM-045-01" }
+    ]
   },
+  "abstain": false,
+  "abstain_reason": null,
   "graph": { "nodes": [...], "edges": [...] }
+}
+```
+
+**ABSTAIN 응답 예시** (신뢰도 < 0.5):
+```json
+{
+  "answer": "해당 질문에 대한 충분한 근거를 찾지 못했습니다.",
+  "abstain": true,
+  "abstain_reason": "confidence below threshold (0.35 < 0.5)",
+  "evidence": { "document_refs": [] }
 }
 ```
 

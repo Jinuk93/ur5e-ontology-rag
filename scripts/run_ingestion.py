@@ -1,185 +1,184 @@
-# ============================================================
-# scripts/run_ingestion.py - 데이터 수집 파이프라인 실행
-# ============================================================
-# 실행 방법: python scripts/run_ingestion.py
-#
-# 전체 파이프라인:
-#   1. data/raw/pdf/ 의 PDF 파일 파싱
-#   2. 문서 유형별 청킹
-#   3. data/processed/chunks/ 에 JSON 저장
-#
-# 출력 파일:
-#   - error_codes_chunks.json
-#   - service_manual_chunks.json
-#   - user_manual_chunks.json
-# ============================================================
+"""데이터 수집(ingestion) 파이프라인 실행 스크립트.
 
-import sys
-import os
-from datetime import datetime
+Step02(데이터 준비)의 재현성을 위해 다음 두 모드를 제공합니다.
 
-# 프로젝트 루트를 Python 경로에 추가
-# 이렇게 하면 src.ingestion 모듈을 import 할 수 있음
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
+1) validate: 현재 저장된 청크/매니페스트가 기대값(722 chunks 등)을 충족하는지 검증
+2) generate: data/raw/pdf의 PDF를 파싱/청킹하여 data/processed/chunks에 저장하고
+            data/processed/metadata/manifest.json을 생성
 
-# Windows 콘솔 인코딩 설정
-if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8')
+주의: generate는 기존 산출물과 동일한 청크 ID/경계를 1:1로 재현하는 것을 목표로 하지 않습니다.
+      (특히 ErrorCodes 문서는 구조적 청킹 로직이 별도 필요할 수 있습니다.)
+"""
 
-from src.ingestion import PDFParser, Chunker, ChunkingConfig
-from src.ingestion.models import save_chunks_to_json
+from __future__ import annotations
 
+import argparse
+import logging
+from pathlib import Path
+from typing import Dict, List
 
-# ============================================================
-# [1] 설정
-# ============================================================
-
-# 경로 설정
-PDF_DIR = os.path.join(project_root, "data", "raw", "pdf")
-OUTPUT_DIR = os.path.join(project_root, "data", "processed", "chunks")
-
-# 출력 파일명 매핑
-OUTPUT_FILES = {
-    "error_code": "error_codes_chunks.json",
-    "service_manual": "service_manual_chunks.json",
-    "user_manual": "user_manual_chunks.json",
-    "unknown": "unknown_chunks.json",
-}
+from src.config import get_settings
+from src.ingestion import (
+    Chunk,
+    Manifest,
+    chunk_pages,
+    load_chunks_from_file,
+    load_all_chunks,
+    load_manifest,
+    parse_pdf,
+    save_chunks_to_file,
+    save_manifest,
+)
 
 
-# ============================================================
-# [2] 메인 함수
-# ============================================================
+logger = logging.getLogger(__name__)
 
-def run_ingestion():
-    """
-    데이터 수집 파이프라인 실행
 
-    처리 흐름:
-        1. 출력 폴더 생성
-        2. PDF 파일 파싱
-        3. 각 문서 청킹
-        4. JSON 파일로 저장
-        5. 결과 요약 출력
-    """
-    print("=" * 60)
-    print("[*] UR5e Ontology RAG - Data Ingestion Pipeline")
-    print(f"    Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
+def _iter_pdfs(pdf_dir: Path) -> List[Path]:
+    return sorted([p for p in pdf_dir.glob("*.pdf") if p.is_file()])
 
-    # --------------------------------------------------------
-    # Step 1: 출력 폴더 생성
-    # --------------------------------------------------------
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    print(f"\n[Step 1] Output directory: {OUTPUT_DIR}")
 
-    # --------------------------------------------------------
-    # Step 2: PDF 파싱
-    # --------------------------------------------------------
-    print(f"\n[Step 2] Parsing PDF files from: {PDF_DIR}")
-    print("-" * 40)
+def run_validate(check_sensor: bool = True) -> int:
+    settings = get_settings()
 
-    parser = PDFParser()
-    documents = []
+    chunks = load_all_chunks()
+    manifest = load_manifest()
 
-    # PDF 파일 목록
-    pdf_files = [f for f in os.listdir(PDF_DIR) if f.endswith('.pdf')]
+    print(f"Chunks loaded: {len(chunks)}")
+    if manifest.totals:
+        print(f"Manifest totals: {manifest.totals}")
+    else:
+        print("Manifest totals: <empty>")
 
+    if check_sensor:
+        sensor_path = settings.paths.sensor_dir / "raw" / "axia80_week_01.parquet"
+        if sensor_path.exists():
+            try:
+                import pandas as pd  # type: ignore
+            except ImportError:
+                print("[WARN] pandas not installed; skipping sensor parquet check")
+            else:
+                df = pd.read_parquet(sensor_path)
+                print(f"Sensor records: {len(df)} ({sensor_path})")
+        else:
+            print(f"Sensor file not found: {sensor_path}")
+
+    # 기대값(문서 기준)
+    expected_chunks = 722
+    if len(chunks) != expected_chunks:
+        print(f"[WARN] Expected {expected_chunks} chunks, got {len(chunks)}")
+        return 2
+
+    if manifest.totals.get("chunks") not in (0, expected_chunks):
+        print(f"[WARN] Manifest totals mismatch: {manifest.totals}")
+        return 2
+
+    print("[OK] Validation passed")
+    return 0
+
+
+def run_generate(force: bool = False) -> int:
+    settings = get_settings()
+
+    pdf_dir = settings.paths.data_raw_dir
+    chunks_dir = settings.paths.chunks_dir
+    manifest_path = settings.paths.data_processed_dir / "metadata" / "manifest.json"
+
+    pdf_files = _iter_pdfs(pdf_dir)
     if not pdf_files:
-        print("[ERROR] No PDF files found!")
-        return
+        print(f"[ERROR] No PDF files found in: {pdf_dir}")
+        return 2
 
-    # 각 PDF 파싱
-    for pdf_file in pdf_files:
-        pdf_path = os.path.join(PDF_DIR, pdf_file)
-        try:
-            doc = parser.parse(pdf_path)
-            documents.append(doc)
-        except Exception as e:
-            print(f"[ERROR] Failed to parse {pdf_file}: {e}")
+    chunks_dir.mkdir(parents=True, exist_ok=True)
 
-    # --------------------------------------------------------
-    # Step 3: 청킹
-    # --------------------------------------------------------
-    print(f"\n[Step 3] Chunking documents")
-    print("-" * 40)
-
-    # 청킹 설정
-    config = ChunkingConfig(
-        chunk_size=1000,      # 기본 청크 크기
-        chunk_overlap=200,    # 오버랩
-        min_chunk_size=100,   # 최소 크기
-    )
-
-    chunker = Chunker(config=config)
-
-    # 문서 유형별 청크 저장
-    chunks_by_type = {}
-
-    for doc in documents:
-        chunks = chunker.chunk_document(doc)
-        doc_type = doc.doc_type
-
-        if doc_type not in chunks_by_type:
-            chunks_by_type[doc_type] = []
-
-        chunks_by_type[doc_type].extend(chunks)
-
-    # --------------------------------------------------------
-    # Step 4: JSON 저장
-    # --------------------------------------------------------
-    print(f"\n[Step 4] Saving chunks to JSON")
-    print("-" * 40)
-
-    saved_files = []
-
-    for doc_type, chunks in chunks_by_type.items():
-        # 출력 파일명
-        filename = OUTPUT_FILES.get(doc_type, f"{doc_type}_chunks.json")
-        filepath = os.path.join(OUTPUT_DIR, filename)
-
-        # 저장
-        save_chunks_to_json(chunks, filepath)
-        saved_files.append((filename, len(chunks)))
-
-    # --------------------------------------------------------
-    # Step 5: 결과 요약
-    # --------------------------------------------------------
-    print(f"\n[Step 5] Summary")
-    print("=" * 60)
+    manifest = Manifest()
+    manifest.settings = {
+        "chunk_size": settings.document.chunk_size,
+        "chunk_overlap": settings.document.chunk_overlap,
+    }
 
     total_chunks = 0
-    total_chars = 0
+    for pdf_path in pdf_files:
+        meta, pages = parse_pdf(pdf_path)
 
-    print("\n{:<35} {:>10} {:>15}".format("File", "Chunks", "Characters"))
-    print("-" * 60)
+        # doc_id는 pipeline 전체에서 사용되는 식별자. 기본은 doc_type.
+        doc_id = meta.doc_type
+        out_file = chunks_dir / f"{doc_id}_chunks.json"
 
-    for doc_type, chunks in chunks_by_type.items():
-        filename = OUTPUT_FILES.get(doc_type, f"{doc_type}_chunks.json")
-        chunk_count = len(chunks)
-        char_count = sum(len(c) for c in chunks)
-        total_chunks += chunk_count
-        total_chars += char_count
+        if out_file.exists() and not force:
+            existing = load_chunks_from_file(out_file)
+            print(f"[SKIP] {out_file.name} exists (use --force to overwrite)")
+            # manifest에는 파일 기준 정보만 추가
+            # chunk_count는 파일 기반으로 세는게 더 정확하지만, 여기선 최소 정보만
+            manifest.add_document(
+                doc_id,
+                {
+                    "source": meta.source,
+                    "chunks_file": out_file.name,
+                    "total_pages": meta.total_pages,
+                    "topics": meta.topics,
+                    "doc_type": meta.doc_type,
+                    "chunk_count": len(existing),
+                },
+            )
+            continue
 
-        print("{:<35} {:>10,} {:>15,}".format(filename, chunk_count, char_count))
+        chunks: List[Chunk] = chunk_pages(
+            pages,
+            doc_id=doc_id,
+            doc_type=meta.doc_type,
+            source=meta.source,
+        )
+        save_chunks_to_file(chunks, out_file)
 
-    print("-" * 60)
-    print("{:<35} {:>10,} {:>15,}".format("TOTAL", total_chunks, total_chars))
+        manifest.add_document(
+            doc_id,
+            {
+                "source": meta.source,
+                "chunks_file": out_file.name,
+                "total_pages": meta.total_pages,
+                "topics": meta.topics,
+                "doc_type": meta.doc_type,
+                "chunk_count": len(chunks),
+            },
+        )
+        total_chunks += len(chunks)
 
-    print("\n" + "=" * 60)
-    print(f"[OK] Ingestion complete!")
-    print(f"     Output: {OUTPUT_DIR}")
-    print(f"     Total chunks: {total_chunks:,}")
-    print(f"     Finished at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
+        print(f"[OK] {pdf_path.name} -> {out_file.name} ({len(chunks)} chunks)")
 
-    return chunks_by_type
+    manifest.update_totals()
+    save_manifest(manifest, manifest_path=manifest_path)
+    print(f"[OK] Manifest saved: {manifest_path}")
+    print(f"[OK] Total chunks (generated this run): {total_chunks}")
+    return 0
 
 
-# ============================================================
-# [3] 실행
-# ============================================================
+def main() -> int:
+    parser = argparse.ArgumentParser(description="UR5e Ontology RAG - Ingestion")
+    parser.add_argument(
+        "--mode",
+        choices=["validate", "generate"],
+        default="validate",
+        help="실행 모드 (기본: validate)",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="(generate) 기존 청크 파일을 덮어씀",
+    )
+    parser.add_argument(
+        "--no-sensor-check",
+        action="store_true",
+        help="(validate) 센서 parquet 검증을 건너뜀",
+    )
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
+
+    if args.mode == "validate":
+        return run_validate(check_sensor=not args.no_sensor_check)
+    return run_generate(force=args.force)
+
 
 if __name__ == "__main__":
-    run_ingestion()
+    raise SystemExit(main())

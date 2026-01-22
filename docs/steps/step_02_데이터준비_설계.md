@@ -274,7 +274,7 @@ Phase 10-12 RAG 검색에서 활용
 |--------------|------------------|----------|
 | 7일 데이터 | 604,800 records | O |
 | Parquet 형식 | axia80_week_01.parquet | O |
-| 125Hz 샘플링 | 1초 평균으로 저장 | O |
+| 125Hz 샘플링 | 원본 125Hz 미포함(1Hz 다운샘플/요약만 저장) | △ |
 
 ---
 
@@ -315,6 +315,9 @@ assert manifest.totals['chunks'] == 722
 import pandas as pd
 df = pd.read_parquet('data/sensor/raw/axia80_week_01.parquet')
 assert len(df) == 604800
+
+# (선택) 통합 검증 스크립트
+# python scripts/run_ingestion.py --mode validate
 ```
 
 ---

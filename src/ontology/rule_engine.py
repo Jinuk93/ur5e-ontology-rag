@@ -152,10 +152,16 @@ class RuleEngine:
                     result_id="PAT_COLLISION",
                     confidence=0.95,
                     evidence={
-                        "delta": delta,
-                        "time_diff_ms": time_diff,
-                        "threshold": threshold,
-                        "index": i
+                        "features": {
+                            "delta_Fz_N": round(delta, 1),
+                            "rise_time_ms": time_diff
+                        },
+                        "thresholds": {
+                            "delta_threshold_N": threshold,
+                            "rise_time_max_ms": rise_time_ms
+                        },
+                        "judgment": f"delta_Fz_N({delta:.1f}) > threshold({threshold}) within {time_diff}ms",
+                        "data_index": i
                     },
                     message=f"충돌 감지: {delta:.1f}N 변화 ({time_diff}ms 내)"
                 )
@@ -190,17 +196,26 @@ class RuleEngine:
                 if overload_start is None:
                     overload_start = i
                 elif ts - timestamps_s[overload_start] >= duration_s:
+                    actual_duration = ts - timestamps_s[overload_start]
+                    max_fz = max(abs(v) for v in fz_values[overload_start:i+1])
                     return InferenceResult(
                         rule_name="OVERLOAD_DETECTION",
                         result_type="pattern",
                         result_id="PAT_OVERLOAD",
                         confidence=0.90,
                         evidence={
-                            "max_value": max(abs(v) for v in fz_values[overload_start:i+1]),
-                            "duration_s": ts - timestamps_s[overload_start],
-                            "threshold": threshold
+                            "features": {
+                                "max_Fz_N": round(max_fz, 1),
+                                "overload_duration_s": round(actual_duration, 2)
+                            },
+                            "thresholds": {
+                                "force_threshold_N": threshold,
+                                "duration_threshold_s": duration_s
+                            },
+                            "judgment": f"max_Fz_N({max_fz:.1f}) > threshold({threshold}) for {actual_duration:.1f}s",
+                            "data_range": {"start_idx": overload_start, "end_idx": i}
                         },
-                        message=f"과부하 감지: {duration_s}초 이상 {threshold}N 초과"
+                        message=f"과부하 감지: {actual_duration:.1f}초 동안 {threshold}N 초과 (최대 {max_fz:.1f}N)"
                     )
             else:
                 overload_start = None

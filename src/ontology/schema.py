@@ -39,6 +39,7 @@ class EntityType(str, Enum):
     SHIFT = "Shift"
     PRODUCT = "Product"
     WORK_CYCLE = "WorkCycle"
+    EVENT = "Event"  # 패턴 발생 인스턴스 (traceability)
 
 
 class RelationType(str, Enum):
@@ -61,6 +62,7 @@ class RelationType(str, Enum):
     AFFECTS = "AFFECTS"                 # ErrorCode → Joint
 
     # Context 관계
+    INSTANCE_OF = "INSTANCE_OF"         # Event → Pattern (발생 인스턴스 → 정의)
     OCCURS_DURING = "OCCURS_DURING"     # Event → Shift
     INVOLVES = "INVOLVES"               # Event → Product
 
@@ -89,6 +91,7 @@ DOMAIN_ENTITY_TYPES = {
         EntityType.SHIFT,
         EntityType.PRODUCT,
         EntityType.WORK_CYCLE,
+        EntityType.EVENT,
     ],
 }
 
@@ -147,12 +150,16 @@ RELATIONSHIP_CONSTRAINTS = {
         "source_types": [EntityType.ERROR_CODE],
         "target_types": [EntityType.JOINT],
     },
+    RelationType.INSTANCE_OF: {
+        "source_types": [EntityType.EVENT],
+        "target_types": [EntityType.PATTERN],
+    },
     RelationType.OCCURS_DURING: {
-        "source_types": [EntityType.PATTERN],
+        "source_types": [EntityType.EVENT],
         "target_types": [EntityType.SHIFT],
     },
     RelationType.INVOLVES: {
-        "source_types": [EntityType.PATTERN],
+        "source_types": [EntityType.EVENT],
         "target_types": [EntityType.PRODUCT],
     },
 }

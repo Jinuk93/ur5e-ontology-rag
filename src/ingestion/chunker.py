@@ -37,6 +37,7 @@ class TextChunker:
         text: str,
         doc_id: str,
         doc_type: str,
+        source: str,
         page: int,
         section: Optional[str] = None,
         chapter: Optional[str] = None,
@@ -79,7 +80,7 @@ class TextChunker:
             if chunk_text:
                 chunk_id = f"{doc_id}_{chunk_idx:03d}"
                 metadata = ChunkMetadata(
-                    source=f"{doc_id}.pdf",
+                    source=source,
                     page=page,
                     doc_type=doc_type,
                     section=section,
@@ -134,6 +135,7 @@ class TextChunker:
         pages: List[Dict[str, Any]],
         doc_id: str,
         doc_type: str,
+        source: Optional[str] = None,
     ) -> List[Chunk]:
         """
         문서 전체를 청크로 분할
@@ -149,11 +151,14 @@ class TextChunker:
         all_chunks = []
         chunk_idx = 0
 
+        effective_source = source or f"{doc_id}.pdf"
+
         for page_info in pages:
             page_chunks = self.chunk_text(
                 text=page_info["text"],
                 doc_id=doc_id,
                 doc_type=doc_type,
+                source=effective_source,
                 page=page_info["page"],
                 section=page_info.get("section"),
                 chapter=page_info.get("chapter"),
@@ -170,6 +175,7 @@ def chunk_pages(
     pages: List[Dict[str, Any]],
     doc_id: str,
     doc_type: str,
+    source: Optional[str] = None,
     chunk_size: Optional[int] = None,
     chunk_overlap: Optional[int] = None,
 ) -> List[Chunk]:
@@ -187,4 +193,4 @@ def chunk_pages(
         Chunk 리스트
     """
     chunker = TextChunker(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    return chunker.chunk_document(pages, doc_id, doc_type)
+    return chunker.chunk_document(pages, doc_id, doc_type, source=source)

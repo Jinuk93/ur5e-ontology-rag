@@ -26,8 +26,18 @@ from typing import List, Dict, Any
 
 from src.config import get_settings
 from .models import Chunk, ChunkMetadata, Document, DocumentMetadata, Manifest
-from .pdf_parser import PDFParser, parse_pdf
 from .chunker import TextChunker, chunk_pages
+
+try:
+    from .pdf_parser import PDFParser, parse_pdf
+except ModuleNotFoundError as exc:
+    PDFParser = None  # type: ignore
+
+    def parse_pdf(*args, **kwargs):  # type: ignore
+        raise ModuleNotFoundError(
+            "PDF 파싱 기능을 사용하려면 PyMuPDF가 필요합니다. "
+            "`pip install pymupdf` 설치 후 다시 시도하세요."
+        ) from exc
 
 logger = logging.getLogger(__name__)
 

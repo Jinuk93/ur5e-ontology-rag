@@ -249,8 +249,10 @@ for chunk in chunks:
 
 ### 8.2 권장 사항
 
-1. **재처리 시**: `scripts/run_ingestion.py --force` 옵션으로 기존 청크 덮어쓰기 가능
-2. **청크 설정 변경 시**: `configs/settings.yaml`의 `document.chunk_size/overlap` 수정 후 재처리
+1. **검증만 수행**: `python scripts/run_ingestion.py --mode validate`
+2. **재처리(생성) 시**: `python scripts/run_ingestion.py --mode generate --force`로 기존 청크 덮어쓰기 가능
+3. **청크 설정 변경 시**: `configs/settings.yaml`의 `document.chunk_size/overlap` 수정 후 재처리
+4. **참고**: `--mode generate`는 PDF 파싱을 위해 PyMuPDF(`pymupdf`) 설치가 필요
 
 ---
 
@@ -290,13 +292,45 @@ Totals: {'documents': 3, 'chunks': 722}
 
 ---
 
-## 10. 문서 정보
+## 10. GPT 피드백 반영 (v2.1)
+
+### 10.1 반영된 수정 사항
+
+| 항목 | 수정 내용 | 상태 |
+|------|----------|------|
+| PyMuPDF optional import | `__init__.py`에서 `try/except`로 graceful degradation | 반영됨 |
+| run_ingestion.py API | `--mode validate\|generate` 두 모드 지원 | 반영됨 |
+| doc_type 불일치 | 아래 10.2 참조 | 알려진 이슈 |
+
+### 10.2 알려진 이슈: doc_type 불일치
+
+**현황**:
+- `pdf_parser.py`: `error_codes` (복수) 반환
+- `manifest.json`: `doc_type: "error_codes"` (복수)
+- `error_codes_chunks.json`: `doc_type: "error_code"` (단수) ← 불일치
+
+**원인**: 기존 청크 데이터가 현재 pdf_parser 코드 이전에 생성됨
+
+**해결 방안**:
+```bash
+# 옵션 1: 청크 재생성 (PyMuPDF 필요)
+python scripts/run_ingestion.py --mode generate --force
+
+# 옵션 2: 현 상태 유지 (검색 시 단/복수 모두 매칭 처리)
+```
+
+**영향도**: 낮음 (검색/RAG 동작에는 영향 없음, 메타데이터 일관성 이슈)
+
+---
+
+## 11. 문서 정보
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.0 (리팩토링 완료) |
+| 문서 버전 | v2.1 (GPT 피드백 반영) |
 | 작성일 | 2026-01-22 |
 | 리팩토링일 | 2026-01-22 |
+| GPT 피드백 반영일 | 2026-01-22 |
 | 설계서 참조 | [step_02_데이터준비_설계.md](step_02_데이터준비_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 2 |
 | Spec 섹션 | Section 8 |

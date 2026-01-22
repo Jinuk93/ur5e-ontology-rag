@@ -320,7 +320,7 @@ UR5e:
 | 측정축 | 6축 (Fx, Fy, Fz, Tx, Ty, Tz) |
 | 힘 범위 | Fz: ±235N, Fx/Fy: ±75N |
 | 토크 범위 | ±4 Nm |
-| 샘플링 레이트 | 8,000 Hz |
+| 샘플링 레이트 | 최대 7,200 Hz (운영: 125 Hz) |
 | 장착 위치 | UR5e Tool Flange |
 
 ### 온톨로지 관점
@@ -740,9 +740,12 @@ Axia80:
   "evidence": {
     "ontology_path": "Fz → CRITICAL → PAT_OVERLOAD → C189",
     "document_refs": [
-      {"doc": "service_manual", "page": 45}
+      {"doc_id": "service_manual", "page": 45, "chunk_id": "SM-045-01"}
     ]
   },
+
+  "abstain": false,
+  "abstain_reason": null,
 
   "graph": {
     "nodes": [...],
@@ -794,10 +797,20 @@ Document:
 | 항목 | 값 |
 |------|-----|
 | 기간 | 7일 (2024-01-15 ~ 2024-01-21) |
-| 샘플링 | 125 Hz → 1초 평균 (저장) |
+| 샘플링 | 125 Hz (Axia80 최대 7.2kHz, 운영 주파수 사용) |
 | 레코드 수 | 604,800개 |
 | 파일 크기 | 34.15 MB |
 | 저장 형식 | Parquet |
+
+### 데이터 저장 전략 (관측가능성 확보)
+
+| 계층 | 샘플링 | 용도 | 비고 |
+|------|--------|------|------|
+| **Baseline** | 1Hz 평균 | 장기 트렌드, 대시보드 | 604,800 레코드/7일 |
+| **Event Snippet** | 125Hz 원본 | 패턴 근거 제시 | 이벤트 구간 ±5초 |
+| **Feature Summary** | 이벤트별 | 추론 근거 (trace) | delta_Fz, rise_time 등 |
+
+**설계 근거**: 100ms 패턴(충돌)을 "관측 가능한 근거"로 제시하려면 1Hz 평균만으로는 불가능. 이벤트 구간에 125Hz 스니펫 또는 feature summary를 저장해야 "왜 collision인지" 숫자로 설명 가능.
 
 ### 감지된 이벤트/패턴
 | 이벤트 유형 | 개수 | 예시 |
@@ -963,10 +976,13 @@ plotly>=5.18.0
 
   "evidence": {
     "document_refs": [
-      {"doc": "service_manual", "page": 45, "chunk_id": "SM-045-01"}
+      {"doc_id": "service_manual", "page": 45, "chunk_id": "SM-045-01"}
     ],
     "similar_events": ["EVT-003", "EVT-004", "EVT-005"]
   },
+
+  "abstain": false,
+  "abstain_reason": null,
 
   "graph": {
     "nodes": [

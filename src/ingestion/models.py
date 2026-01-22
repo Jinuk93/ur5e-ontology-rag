@@ -10,6 +10,13 @@ from datetime import datetime
 import json
 
 
+DOC_TYPE_ALIASES: Dict[str, str] = {
+    # Historical / legacy values
+    "error_code": "error_codes",
+    "errorcodes": "error_codes",
+}
+
+
 @dataclass
 class ChunkMetadata:
     """청크 메타데이터"""
@@ -35,6 +42,12 @@ class ChunkMetadata:
         known_fields = {"source", "page", "doc_type", "section", "chapter", "error_code"}
         known = {k: v for k, v in data.items() if k in known_fields}
         extra = {k: v for k, v in data.items() if k not in known_fields}
+
+        doc_type = known.get("doc_type")
+        if isinstance(doc_type, str):
+            normalized = DOC_TYPE_ALIASES.get(doc_type.strip().lower())
+            if normalized:
+                known["doc_type"] = normalized
         return cls(**known, extra=extra)
 
 

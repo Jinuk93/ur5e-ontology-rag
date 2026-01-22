@@ -60,7 +60,7 @@
 
 | 파일 경로 | 역할 | 상태 |
 |-----------|------|------|
-| `docker-compose.yaml` | Neo4j, ChromaDB 컨테이너 | 구현 완료 |
+| `docker-compose.yaml` | Neo4j 컨테이너 (ChromaDB는 Python 패키지 모드) | 구현 완료 |
 | `venv/` | Python 가상환경 | 생성 완료 |
 
 ---
