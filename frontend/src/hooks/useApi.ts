@@ -10,6 +10,7 @@ import {
   getSensorReadings,
   getSensorPatterns,
   getSensorEvents,
+  getSensorReadingsRange,
 } from '@/lib/api';
 import type { ChatRequest, ChatResponse } from '@/types/api';
 
@@ -19,6 +20,7 @@ export const queryKeys = {
   ontologySummary: ['ontology', 'summary'] as const,
   evidence: (traceId: string) => ['evidence', traceId] as const,
   sensorReadings: (limit: number, offset: number) => ['sensors', 'readings', limit, offset] as const,
+  sensorReadingsRange: (hours: number, samples: number) => ['sensors', 'readings', 'range', hours, samples] as const,
   sensorPatterns: (limit: number) => ['sensors', 'patterns', limit] as const,
   sensorEvents: (limit: number) => ['sensors', 'events', limit] as const,
 };
@@ -129,5 +131,17 @@ export function useSensorEvents(limit = 20) {
     queryKey: queryKeys.sensorEvents(limit),
     queryFn: () => getSensorEvents(limit),
     staleTime: 1000 * 60, // 1 minute
+  });
+}
+
+/**
+ * Sensor readings range hook - for historical data with sampling
+ */
+export function useSensorReadingsRange(hours = 1, samples = 200, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.sensorReadingsRange(hours, samples),
+    queryFn: () => getSensorReadingsRange(hours, samples),
+    enabled,
+    staleTime: 1000 * 60, // 1 minute - historical data doesn't change frequently
   });
 }

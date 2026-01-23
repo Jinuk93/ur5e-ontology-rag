@@ -5,7 +5,7 @@
 
 import type { ChatRequest, ChatResponse, GraphNode, GraphEdge, OntologyPath, DocumentRef } from '@/types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8002';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 // Helper functions
 function asArray<T = unknown>(value: unknown): T[] {
@@ -275,6 +275,25 @@ export async function getSensorPatterns(limit = 10): Promise<PatternsResponse> {
 
 export async function getSensorEvents(limit = 20): Promise<EventsResponse> {
   const response = await fetch(`${API_BASE_URL}/api/sensors/events?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+// 시간 범위 기반 샘플링 데이터 조회
+export interface SensorRangeResponse {
+  readings: SensorReadingRaw[];
+  total: number;
+  sampled: number;
+  hours: number;
+  time_range: { start: string; end: string };
+}
+
+export async function getSensorReadingsRange(hours = 1, samples = 200): Promise<SensorRangeResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/sensors/readings/range?hours=${hours}&samples=${samples}`
+  );
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`);
   }

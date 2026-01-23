@@ -26,14 +26,55 @@
     "switchToSse": "Switch to SSE",
     "sensorLoadError": "Unable to load sensor data. Please check backend connection.",
     "sensorLoading": "Loading sensor data...",
-    "chartTitle": "Fz (Force Z-axis) Realtime Monitoring"
+    "chartTitle": "Fz (Vertical Force) Realtime Monitoring",
+    "unitNewton": "Newton (unit of force)",
+    "entities": {
+      "ur5e": {
+        "name": "UR5e Robot",
+        "description": "Universal Robots collaborative robot"
+      },
+      "axia80": {
+        "name": "Axia80 Sensor",
+        "description": "ATI 6-axis Force/Torque Sensor"
+      },
+      "fz": {
+        "name": "Fz (Vertical)",
+        "description": "Up/Down force",
+        "detail": "Gripper pressing force"
+      },
+      "fx": {
+        "name": "Fx (Forward)",
+        "description": "Front/Back force",
+        "detail": "Force from forward/backward motion"
+      },
+      "fy": {
+        "name": "Fy (Lateral)",
+        "description": "Left/Right force",
+        "detail": "Force from lateral motion"
+      }
+    },
+    "help": {
+      "title": "Usage Guide",
+      "tip1": "Click a card to view details",
+      "tip2": "Chart shows realtime sensor data",
+      "tip3": "Ask questions to the AI Assistant on the right",
+      "examples": "Example: \"Fz is -350N, what does this mean?\""
+    }
   },
   "alert": {
+    "critical": "Critical",
+    "warning": "Warning",
+    "normal": "Normal"
+  },
+  "card": {
+    "normalRange": "Normal range",
     "normal": "Normal",
     "warning": "Warning",
-    "critical": "Critical"
+    "critical": "Critical",
+    "exceeded": "exceeded"
   },
   "chat": {
+    "title": "AI Assistant",
     "placeholder": "Enter your question...",
     "send": "Send",
     "suggested": "Suggested Questions",
@@ -46,7 +87,11 @@
     "missingInfo": "Missing Information",
     "trySuggestions": "Try asking like this",
     "referenceInfo": "Reference information:",
-    "thinking": "Thinking..."
+    "thinking": "Thinking...",
+    "emptyState": "Ask questions about UR5e robot and sensors.",
+    "example1": "Fz is -350N, what does this mean?",
+    "example2": "How to resolve C153 error?",
+    "example3": "Any recent collision patterns?"
   },
   "evidence": {
     "title": "Evidence Details",

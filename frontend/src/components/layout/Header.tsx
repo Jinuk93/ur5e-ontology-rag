@@ -4,7 +4,6 @@ import { Activity, Network, History, Settings, MessageCircle, Wifi, WifiOff } fr
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useUIStore } from '@/stores/uiStore';
 import { useHealth } from '@/hooks/useApi';
@@ -27,11 +26,18 @@ export function Header() {
     <header className="h-14 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="flex h-full items-center justify-between px-4">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
-            <Activity className="h-5 w-5 text-white" />
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-9 w-9 items-center justify-center">
+            {/* Gradient background with glow */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30" />
+            {/* Inner highlight */}
+            <div className="absolute inset-[1px] rounded-[10px] bg-gradient-to-br from-white/20 to-transparent" />
+            <Activity className="relative h-5 w-5 text-white drop-shadow-sm" />
           </div>
-          <span className="text-lg font-semibold text-foreground">{t('title')}</span>
+          <div className="flex flex-col">
+            <span className="text-base font-bold tracking-tight text-foreground">{t('title')}</span>
+            <span className="text-[10px] text-muted-foreground -mt-0.5">Industrial AI Platform</span>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -57,7 +63,7 @@ export function Header() {
         </nav>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Connection status */}
           <Badge
             variant="outline"
@@ -78,9 +84,6 @@ export function Header() {
 
           {/* Language toggle */}
           <LanguageToggle />
-
-          {/* Theme toggle */}
-          <ThemeToggle />
 
           {/* Mobile chat toggle */}
           <Button

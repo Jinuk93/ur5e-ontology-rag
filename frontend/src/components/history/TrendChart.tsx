@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -25,7 +26,11 @@ interface TrendChartProps {
 }
 
 export function TrendChart({ data, axis, title, patternMarkers }: TrendChartProps) {
-  const isBrowser = typeof window !== 'undefined';
+  // Fix hydration mismatch - only render chart after mount
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Aggregate data by hour for trend view
   const chartData = data.map((reading) => {
@@ -75,7 +80,7 @@ export function TrendChart({ data, axis, title, patternMarkers }: TrendChartProp
       </div>
 
       <div className="h-[250px]">
-        {isBrowser ? (
+        {isMounted ? (
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <AreaChart data={chartData}>
             <defs>

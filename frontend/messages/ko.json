@@ -26,14 +26,55 @@
     "switchToSse": "SSE 모드로 전환",
     "sensorLoadError": "센서 데이터를 불러올 수 없습니다. 백엔드 연결을 확인하세요.",
     "sensorLoading": "센서 데이터 로딩 중...",
-    "chartTitle": "Fz (힘 Z축) 실시간 모니터링"
+    "chartTitle": "Fz (수직력) 실시간 모니터링",
+    "unitNewton": "뉴턴 (힘의 단위)",
+    "entities": {
+      "ur5e": {
+        "name": "UR5e 로봇",
+        "description": "유니버설로봇 협동로봇"
+      },
+      "axia80": {
+        "name": "Axia80 센서",
+        "description": "ATI 6축 힘/토크 센서"
+      },
+      "fz": {
+        "name": "Fz (수직력)",
+        "description": "위/아래 방향 힘",
+        "detail": "그리퍼가 물체를 누르는 힘"
+      },
+      "fx": {
+        "name": "Fx (전후력)",
+        "description": "앞/뒤 방향 힘",
+        "detail": "로봇이 전진/후진하며 받는 힘"
+      },
+      "fy": {
+        "name": "Fy (좌우력)",
+        "description": "좌/우 방향 힘",
+        "detail": "로봇이 좌우로 받는 힘"
+      }
+    },
+    "help": {
+      "title": "사용법 안내",
+      "tip1": "카드를 클릭하면 상세 정보를 볼 수 있습니다",
+      "tip2": "차트는 실시간 센서 데이터를 보여줍니다",
+      "tip3": "오른쪽 AI 어시스턴트에 질문해보세요",
+      "examples": "예시: \"Fz가 -350N인데 이게 뭐야?\""
+    }
   },
   "alert": {
-    "normal": "정상 동작",
+    "critical": "긴급",
     "warning": "경고",
-    "critical": "위험"
+    "normal": "정상"
+  },
+  "card": {
+    "normalRange": "정상 범위",
+    "normal": "정상",
+    "warning": "경고",
+    "critical": "위험",
+    "exceeded": "초과"
   },
   "chat": {
+    "title": "AI 어시스턴트",
     "placeholder": "질문을 입력하세요...",
     "send": "전송",
     "suggested": "추천 질문",
@@ -46,7 +87,11 @@
     "missingInfo": "부족한 정보",
     "trySuggestions": "이렇게 질문해보세요",
     "referenceInfo": "참고할 수 있는 내용:",
-    "thinking": "생각 중..."
+    "thinking": "생각 중...",
+    "emptyState": "UR5e 로봇과 센서에 대해 질문해보세요.",
+    "example1": "Fz가 -350N인데 이게 뭐야?",
+    "example2": "C153 에러 해결 방법 알려줘",
+    "example3": "최근 충돌 패턴이 있어?"
   },
   "evidence": {
     "title": "근거 상세",

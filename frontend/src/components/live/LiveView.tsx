@@ -14,47 +14,13 @@ import { useSensorReadings, useSensorEvents } from '@/hooks/useApi';
 import { useSensorSSE } from '@/hooks/useSSE';
 import type { EntityInfo, RiskAlert, SensorReading, NodeState } from '@/types/api';
 
-// Static entities (could be fetched from ontology API in future)
-const staticEntities: EntityInfo[] = [
-  {
-    id: 'ur5e',
-    name: 'UR5e',
-    type: 'ROBOT',
-    state: 'normal',
-  },
-  {
-    id: 'axia80',
-    name: 'Axia80',
-    type: 'SENSOR',
-    state: 'normal',
-  },
-  {
-    id: 'fz',
-    name: 'Fz',
-    type: 'MEASUREMENT_AXIS',
-    state: 'normal',
-    currentValue: 0,
-    unit: 'N',
-    normalRange: [-60, 0],
-  },
-  {
-    id: 'fx',
-    name: 'Fx',
-    type: 'MEASUREMENT_AXIS',
-    state: 'normal',
-    currentValue: 0,
-    unit: 'N',
-    normalRange: [-10, 10],
-  },
-  {
-    id: 'fy',
-    name: 'Fy',
-    type: 'MEASUREMENT_AXIS',
-    state: 'normal',
-    currentValue: 0,
-    unit: 'N',
-    normalRange: [-10, 10],
-  },
+// Entity configuration (names/descriptions come from i18n)
+const entityConfigs = [
+  { id: 'ur5e', type: 'ROBOT' as const },
+  { id: 'axia80', type: 'SENSOR' as const },
+  { id: 'fz', type: 'MEASUREMENT_AXIS' as const, unit: 'N', normalRange: [-60, 0] as [number, number] },
+  { id: 'fx', type: 'MEASUREMENT_AXIS' as const, unit: 'N', normalRange: [-10, 10] as [number, number] },
+  { id: 'fy', type: 'MEASUREMENT_AXIS' as const, unit: 'N', normalRange: [-10, 10] as [number, number] },
 ];
 
 function deriveEntityState(value: number, normalRange: [number, number]): NodeState {
@@ -112,12 +78,31 @@ export function LiveView() {
   const isError = streamMode === 'sse' ? !!sseError : pollingError;
   const isConnected = streamMode === 'sse' ? sseConnected : !pollingError;
 
+  // Build entities with i18n names/descriptions
+  const baseEntities: EntityInfo[] = useMemo(() => {
+    return entityConfigs.map((config) => {
+      // detail은 MEASUREMENT_AXIS 타입에만 있음
+      const hasDetail = config.type === 'MEASUREMENT_AXIS';
+      return {
+        id: config.id,
+        name: t(`entities.${config.id}.name`),
+        description: t(`entities.${config.id}.description`),
+        detail: hasDetail ? t(`entities.${config.id}.detail`) : undefined,
+        type: config.type,
+        state: 'normal' as NodeState,
+        unit: config.unit,
+        normalRange: config.normalRange,
+        currentValue: config.type === 'MEASUREMENT_AXIS' ? 0 : undefined,
+      };
+    });
+  }, [t]);
+
   // Derive entity states from latest reading
   const entities: EntityInfo[] = useMemo(() => {
     const latestReading = readings[readings.length - 1];
-    if (!latestReading) return staticEntities;
+    if (!latestReading) return baseEntities;
 
-    return staticEntities.map((entity) => {
+    return baseEntities.map((entity) => {
       if (entity.type !== 'MEASUREMENT_AXIS') return entity;
 
       const axisKey = entity.id.charAt(0).toUpperCase() + entity.id.slice(1) as keyof SensorReading;
@@ -135,7 +120,7 @@ export function LiveView() {
         state,
       };
     });
-  }, [readings]);
+  }, [readings, baseEntities]);
 
   // Derive sensor state for Axia80 card
   const sensorState: NodeState = useMemo(() => {
@@ -202,8 +187,16 @@ export function LiveView() {
       id: e.event_id,
       timestamp: e.start_time,
       type: e.error_code ? 'critical' : 'warning',
+      eventType: e.event_type,
       message: e.description,
+      errorCode: e.error_code || undefined,
       entityId: e.event_type === 'collision' ? 'fz' : undefined,
+      context: {
+        fzPeakN: (e as unknown as { context?: { fz_peak_N?: number } }).context?.fz_peak_N,
+        fzValueN: (e as unknown as { context?: { fz_value_N?: number } }).context?.fz_value_N,
+        shift: (e as unknown as { context?: { shift?: string } }).context?.shift,
+        product: (e as unknown as { context?: { product?: string } }).context?.product,
+      },
     }));
   }, [eventsData]);
 
@@ -243,13 +236,17 @@ export function LiveView() {
   return (
     <div className="flex flex-col h-full">
       {/* Alert Bar */}
-      <RiskAlertBar alerts={alerts} onAlertClick={handleAlertClick} />
+      <RiskAlertBar
+        alerts={alerts}
+        onAlertClick={handleAlertClick}
+        entityNames={enrichedEntities.map((e) => e.name)}
+      />
 
       {/* Main Content */}
       <div className="flex-1 p-4 overflow-auto">
-        {/* Stream Mode Toggle */}
+        {/* Stream Mode Toggle + Title */}
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Badge
               variant="outline"
               className={
@@ -265,6 +262,7 @@ export function LiveView() {
               )}
               {streamMode === 'sse' ? t('sseMode') : t('pollingMode')}
             </Badge>
+            <span className="text-sm font-medium text-slate-300">{t('title')}</span>
             {streamMode === 'sse' && !sseConnected && (
               <Button
                 variant="ghost"
@@ -294,8 +292,7 @@ export function LiveView() {
         )}
 
         {/* Entity Cards */}
-        <div className="mb-6">
-          <h2 className="text-sm font-medium text-slate-400 mb-3">{t('title')}</h2>
+        <div className="mb-4">
           <div className="flex flex-wrap gap-3">
             {enrichedEntities.map((entity) => (
               <ObjectCard
@@ -312,8 +309,8 @@ export function LiveView() {
         <div className="mb-6">
           <RealtimeChart
             data={readings}
-            axis="Fz"
-            title={t('chartTitle')}
+            axes={['Fz', 'Fx', 'Fy']}
+            title="힘 센서 (Fz/Fx/Fy) 실시간 모니터링"
             thresholds={{
               warning: -60,
               critical: -200,

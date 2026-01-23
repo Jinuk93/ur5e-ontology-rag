@@ -150,6 +150,67 @@ async def get_sensor_readings(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/readings/range")
+async def get_sensor_readings_range(
+    hours: int = Query(default=1, ge=1, le=168, description="조회할 시간 범위 (최대 168시간=7일)"),
+    samples: int = Query(default=200, ge=10, le=500, description="반환할 샘플 수"),
+):
+    """
+    시간 범위 기반 센서 데이터 조회 (샘플링)
+
+    7일치 데이터를 효율적으로 조회하기 위해 샘플링합니다.
+    - hours: 최근 N시간 데이터 조회
+    - samples: 반환할 데이터 포인트 수 (균등 샘플링)
+    """
+    try:
+        df = load_sensor_data()
+
+        if df.empty:
+            return {"readings": [], "total": 0, "time_range": {"start": "", "end": ""}}
+
+        total = len(df)
+        # 1초당 1샘플 기준, hours 시간에 해당하는 레코드 수
+        records_needed = hours * 3600
+        records_needed = min(records_needed, total)
+
+        # 최근 N시간 데이터 선택
+        subset = df.iloc[-records_needed:].copy()
+
+        # 균등 샘플링
+        if len(subset) > samples:
+            indices = [int(i * len(subset) / samples) for i in range(samples)]
+            subset = subset.iloc[indices]
+
+        readings = []
+        for _, row in subset.iterrows():
+            readings.append({
+                "timestamp": str(row['timestamp']),
+                "Fx": float(row['Fx']) if pd.notna(row['Fx']) else 0.0,
+                "Fy": float(row['Fy']) if pd.notna(row['Fy']) else 0.0,
+                "Fz": float(row['Fz']) if pd.notna(row['Fz']) else 0.0,
+                "Tx": float(row['Tx']) if pd.notna(row['Tx']) else 0.0,
+                "Ty": float(row['Ty']) if pd.notna(row['Ty']) else 0.0,
+                "Tz": float(row['Tz']) if pd.notna(row['Tz']) else 0.0,
+            })
+
+        time_range = {
+            "start": str(subset['timestamp'].min()) if not subset.empty else "",
+            "end": str(subset['timestamp'].max()) if not subset.empty else "",
+        }
+
+        return {
+            "readings": readings,
+            "total": records_needed,
+            "sampled": len(readings),
+            "hours": hours,
+            "time_range": time_range,
+        }
+
+    except Exception as e:
+        logger.error(f"Sensor readings range error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/patterns", response_model=PatternsResponse)
 async def get_sensor_patterns(
     limit: int = Query(default=10, ge=1, le=100, description="반환할 패턴 수"),

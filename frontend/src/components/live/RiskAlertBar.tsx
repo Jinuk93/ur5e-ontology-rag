@@ -1,8 +1,8 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import type { RiskAlert } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { staggerContainer, staggerItem } from '@/lib/animations';
@@ -10,81 +10,118 @@ import { staggerContainer, staggerItem } from '@/lib/animations';
 interface RiskAlertBarProps {
   alerts: RiskAlert[];
   onAlertClick?: (alert: RiskAlert) => void;
+  entityNames?: string[];
 }
 
 const severityConfig = {
   critical: {
-    icon: AlertTriangle,
-    bgClass: 'bg-red-500/20 border-red-500/50 hover:bg-red-500/30',
-    textClass: 'text-red-400',
-    badgeVariant: 'destructive' as const,
+    dotColor: 'bg-red-500',
+    glowColor: 'shadow-red-500/50',
+    textColor: 'text-slate-300',
   },
   warning: {
-    icon: AlertCircle,
-    bgClass: 'bg-yellow-500/20 border-yellow-500/50 hover:bg-yellow-500/30',
-    textClass: 'text-yellow-400',
-    badgeVariant: 'secondary' as const,
+    dotColor: 'bg-yellow-500',
+    glowColor: 'shadow-yellow-500/50',
+    textColor: 'text-slate-300',
   },
   info: {
-    icon: CheckCircle,
-    bgClass: 'bg-green-500/20 border-green-500/50 hover:bg-green-500/30',
-    textClass: 'text-green-400',
-    badgeVariant: 'outline' as const,
+    dotColor: 'bg-green-500',
+    glowColor: 'shadow-green-500/50',
+    textColor: 'text-slate-300',
   },
 };
 
-export function RiskAlertBar({ alerts, onAlertClick }: RiskAlertBarProps) {
+export function RiskAlertBar({ alerts, onAlertClick, entityNames = [] }: RiskAlertBarProps) {
+  const t = useTranslations('alert');
+  const [hoveredSeverity, setHoveredSeverity] = useState<string | null>(null);
+
   // Group alerts by severity
   const criticalAlerts = alerts.filter((a) => a.severity === 'critical');
   const warningAlerts = alerts.filter((a) => a.severity === 'warning');
   const infoAlerts = alerts.filter((a) => a.severity === 'info');
 
   const summaryItems = [
-    { severity: 'critical' as const, alerts: criticalAlerts, label: '긴급' },
-    { severity: 'warning' as const, alerts: warningAlerts, label: '경고' },
-    { severity: 'info' as const, alerts: infoAlerts, label: '정상' },
+    { severity: 'critical' as const, alerts: criticalAlerts, labelKey: 'critical' },
+    { severity: 'warning' as const, alerts: warningAlerts, labelKey: 'warning' },
+    { severity: 'info' as const, alerts: infoAlerts, labelKey: 'normal' },
   ];
 
   return (
     <motion.div
-      className="flex items-center gap-2 p-3 bg-slate-800/50 border-b border-white/10"
+      className="flex items-center gap-4 px-4 py-2 border-b border-white/5 bg-gradient-to-r from-slate-800/40 via-slate-800/30 to-slate-800/40"
+      style={{
+        boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.02), 0 1px 3px rgba(0,0,0,0.1)',
+      }}
       initial="hidden"
       animate="visible"
       variants={staggerContainer}
     >
-      {summaryItems.map(({ severity, alerts: severityAlerts, label }) => {
+      {summaryItems.map(({ severity, alerts: severityAlerts, labelKey }) => {
         const config = severityConfig[severity];
-        const Icon = config.icon;
         const count = severityAlerts.reduce((sum, a) => sum + (a.count || 1), 0);
         const latestAlert = severityAlerts[0];
+        const isHovered = hoveredSeverity === severity;
 
         return (
-          <motion.button
+          <motion.div
             key={severity}
             variants={staggerItem}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => latestAlert && onAlertClick?.(latestAlert)}
-            className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors',
-              config.bgClass,
-              !latestAlert && 'opacity-50 cursor-default'
-            )}
-            disabled={!latestAlert}
+            className="relative"
+            onMouseEnter={() => setHoveredSeverity(severity)}
+            onMouseLeave={() => setHoveredSeverity(null)}
           >
-            <Icon className={cn('h-4 w-4', config.textClass)} />
-            <span className={cn('text-sm font-medium', config.textClass)}>
-              {label}
-            </span>
-            <Badge variant={config.badgeVariant} className="text-xs">
-              {count}
-            </Badge>
-            {latestAlert && (
-              <span className="text-xs text-slate-400 hidden sm:inline">
-                {latestAlert.title}
+            <button
+              onClick={() => latestAlert && onAlertClick?.(latestAlert)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors',
+                'hover:bg-slate-700/50',
+                !latestAlert && 'opacity-50 cursor-default'
+              )}
+              disabled={!latestAlert}
+            >
+              {/* Traffic light dot */}
+              <div
+                className={cn(
+                  'w-3 h-3 rounded-full shadow-md',
+                  config.dotColor,
+                  count > 0 && config.glowColor
+                )}
+              />
+              <span className={cn('text-sm', config.textColor)}>
+                {t(labelKey)}
               </span>
-            )}
-          </motion.button>
+              <span className="text-sm font-medium text-white">
+                {count}
+              </span>
+            </button>
+
+            {/* Hover tooltip - entity list */}
+            <AnimatePresence>
+              {isHovered && count > 0 && entityNames.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-1 z-50 min-w-[140px]"
+                >
+                  <div className="bg-slate-800 border border-slate-600 rounded-lg shadow-xl py-2 px-3">
+                    <div className="space-y-1">
+                      {entityNames.map((name, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 text-sm text-slate-300"
+                        >
+                          <div className={cn('w-1.5 h-1.5 rounded-full', config.dotColor)} />
+                          {name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         );
       })}
     </motion.div>

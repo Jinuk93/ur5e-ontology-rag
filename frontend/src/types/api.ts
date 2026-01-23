@@ -160,6 +160,8 @@ export interface Pattern {
 export interface EntityInfo {
   id: string;
   name: string;
+  description?: string;
+  detail?: string;
   type: EntityType;
   state: NodeState;
   currentValue?: number;
