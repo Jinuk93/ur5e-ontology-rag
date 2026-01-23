@@ -8,10 +8,11 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from .patterns import DetectedPattern, PatternType, DEFAULT_ERROR_MAPPING
 from .sensor_store import SensorStore
@@ -22,19 +23,30 @@ logger = logging.getLogger(__name__)
 class PatternDetector:
     """패턴 감지 엔진"""
 
-    # 감지 임계값 설정
-    COLLISION_THRESHOLD = -350.0      # Fz 충돌 임계값 (N), 음수 피크
-    OVERLOAD_THRESHOLD = 300.0        # Fz 과부하 임계값 (N), 절대값
-    DRIFT_THRESHOLD_PCT = 10.0        # Baseline 대비 변화율 (%)
-    VIBRATION_STD_MULTIPLIER = 2.0    # 표준편차 증가 배수 (2.0x = 민감, 3.0x = 엄격)
+    # 설정 파일 경로
+    CONFIG_PATH = Path("configs/pattern_thresholds.yaml")
 
-    # 최소 지속 시간
-    OVERLOAD_MIN_DURATION_S = 5.0     # 과부하 최소 지속 시간 (초)
-    DRIFT_MIN_DURATION_H = 1.0        # 드리프트 최소 지속 시간 (시간)
-
-    # 윈도우 설정
-    DRIFT_WINDOW_HOURS = 1.0          # 드리프트 감지 윈도우 (시간)
-    VIBRATION_WINDOW_SECONDS = 60.0   # 진동 감지 윈도우 (초)
+    # 기본값 (설정 파일이 없을 때 fallback)
+    DEFAULT_CONFIG = {
+        "collision": {
+            "threshold_N": 350.0,  # 음수 피크 감지
+            "rise_time_ms": 100,
+            "min_deviation": 300,
+        },
+        "overload": {
+            "threshold_N": 150.0,
+            "duration_s": 5.0,
+        },
+        "drift": {
+            "window_h": 1.0,
+            "deviation_pct": 10.0,
+            "min_duration_h": 0.5,
+        },
+        "vibration": {
+            "window_s": 60.0,
+            "amplitude_threshold": 2.0,
+        },
+    }
 
     # Baseline 임계값 (이 값 미만이면 절대값 기반 드리프트 감지로 전환)
     DRIFT_BASELINE_EPSILON = 1.0      # N (baseline이 이 값 미만이면 절대값 모드)
@@ -43,11 +55,16 @@ class PatternDetector:
     # 패턴 저장 경로
     PATTERNS_PATH = Path("data/sensor/processed/detected_patterns.json")
 
-    def __init__(self, sensor_store: Optional[SensorStore] = None):
+    def __init__(
+        self,
+        sensor_store: Optional[SensorStore] = None,
+        config_path: Optional[Path] = None
+    ):
         """초기화
 
         Args:
             sensor_store: 센서 저장소 (없으면 자동 생성)
+            config_path: 설정 파일 경로 (기본: configs/pattern_thresholds.yaml)
         """
         if sensor_store is not None:
             self._store = sensor_store
@@ -57,7 +74,88 @@ class PatternDetector:
         self._pattern_counter = 0
         self._existing_patterns: List[DetectedPattern] = []
 
+        # 설정 로드
+        self._config = self._load_config(config_path or self.CONFIG_PATH)
+
         logger.info("PatternDetector 초기화 완료")
+
+    def _load_config(self, config_path: Path) -> Dict[str, Any]:
+        """설정 파일 로드
+
+        Args:
+            config_path: 설정 파일 경로
+
+        Returns:
+            설정 딕셔너리
+        """
+        if config_path.exists():
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = yaml.safe_load(f)
+                logger.info(f"패턴 설정 로드: {config_path}")
+                return config
+            except Exception as e:
+                logger.warning(f"설정 파일 로드 실패, 기본값 사용: {e}")
+                return self.DEFAULT_CONFIG
+        else:
+            logger.warning(f"설정 파일 없음, 기본값 사용: {config_path}")
+            return self.DEFAULT_CONFIG
+
+    @property
+    def collision_threshold(self) -> float:
+        """충돌 임계값 (N) - 음수 피크 감지용으로 음수화"""
+        return -abs(self._config.get("collision", {}).get(
+            "threshold_N", self.DEFAULT_CONFIG["collision"]["threshold_N"]
+        ))
+
+    @property
+    def overload_threshold(self) -> float:
+        """과부하 임계값 (N)"""
+        return self._config.get("overload", {}).get(
+            "threshold_N", self.DEFAULT_CONFIG["overload"]["threshold_N"]
+        )
+
+    @property
+    def overload_min_duration_s(self) -> float:
+        """과부하 최소 지속 시간 (초)"""
+        return self._config.get("overload", {}).get(
+            "duration_s", self.DEFAULT_CONFIG["overload"]["duration_s"]
+        )
+
+    @property
+    def drift_threshold_pct(self) -> float:
+        """드리프트 변화율 임계값 (%)"""
+        return self._config.get("drift", {}).get(
+            "deviation_pct", self.DEFAULT_CONFIG["drift"]["deviation_pct"]
+        )
+
+    @property
+    def drift_window_hours(self) -> float:
+        """드리프트 윈도우 (시간)"""
+        return self._config.get("drift", {}).get(
+            "window_h", self.DEFAULT_CONFIG["drift"]["window_h"]
+        )
+
+    @property
+    def drift_min_duration_h(self) -> float:
+        """드리프트 최소 지속 시간 (시간)"""
+        return self._config.get("drift", {}).get(
+            "min_duration_h", self.DEFAULT_CONFIG["drift"]["min_duration_h"]
+        )
+
+    @property
+    def vibration_window_seconds(self) -> float:
+        """진동 윈도우 (초)"""
+        return self._config.get("vibration", {}).get(
+            "window_s", self.DEFAULT_CONFIG["vibration"]["window_s"]
+        )
+
+    @property
+    def vibration_std_multiplier(self) -> float:
+        """진동 표준편차 배수"""
+        return self._config.get("vibration", {}).get(
+            "amplitude_threshold", self.DEFAULT_CONFIG["vibration"]["amplitude_threshold"]
+        )
 
     @property
     def sensor_store(self) -> SensorStore:
@@ -135,12 +233,12 @@ class PatternDetector:
 
         Args:
             axis: 분석할 축
-            threshold: 임계값 (기본: COLLISION_THRESHOLD)
+            threshold: 임계값 (기본: collision_threshold from config)
 
         Returns:
             충돌 패턴 목록
         """
-        threshold = threshold or self.COLLISION_THRESHOLD
+        threshold = threshold or self.collision_threshold
         data = self._store.data
 
         # 임계값 미만 데이터 찾기
@@ -199,14 +297,14 @@ class PatternDetector:
 
         Args:
             axis: 분석할 축
-            threshold: 임계값 (기본: OVERLOAD_THRESHOLD)
+            threshold: 임계값 (기본: overload_threshold from config)
             min_duration_s: 최소 지속 시간 (초)
 
         Returns:
             과부하 패턴 목록
         """
-        threshold = threshold or self.OVERLOAD_THRESHOLD
-        min_duration_s = min_duration_s or self.OVERLOAD_MIN_DURATION_S
+        threshold = threshold or self.overload_threshold
+        min_duration_s = min_duration_s or self.overload_min_duration_s
         data = self._store.data
 
         # 절대값이 임계값 초과하는 데이터
@@ -275,9 +373,9 @@ class PatternDetector:
         Returns:
             드리프트 패턴 목록
         """
-        window_hours = window_hours or self.DRIFT_WINDOW_HOURS
-        threshold_pct = threshold_pct or self.DRIFT_THRESHOLD_PCT
-        min_duration_h = min_duration_h or self.DRIFT_MIN_DURATION_H
+        window_hours = window_hours or self.drift_window_hours
+        threshold_pct = threshold_pct or self.drift_threshold_pct
+        min_duration_h = min_duration_h or self.drift_min_duration_h
 
         data = self._store.data
 
@@ -418,8 +516,8 @@ class PatternDetector:
         Returns:
             진동 패턴 목록
         """
-        window_seconds = window_seconds or self.VIBRATION_WINDOW_SECONDS
-        std_multiplier = std_multiplier or self.VIBRATION_STD_MULTIPLIER
+        window_seconds = window_seconds or self.vibration_window_seconds
+        std_multiplier = std_multiplier or self.vibration_std_multiplier
 
         data = self._store.data
 

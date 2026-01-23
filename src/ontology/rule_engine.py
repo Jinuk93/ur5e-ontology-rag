@@ -222,6 +222,200 @@ class RuleEngine:
 
         return None
 
+    def detect_vibration(
+        self,
+        fz_values: List[float],
+        timestamps_s: List[float]
+    ) -> Optional[InferenceResult]:
+        """진동 패턴 감지
+
+        표준편차 증가로 진동을 감지합니다.
+
+        Args:
+            fz_values: Fz 값 리스트
+            timestamps_s: 타임스탬프 리스트 (초)
+
+        Returns:
+            InferenceResult 또는 None
+        """
+        vibration_config = self.pattern_thresholds.get("vibration", {})
+        window_s = vibration_config.get("window_s", 5)
+        amplitude_threshold = vibration_config.get("amplitude_threshold", 2.0)
+        min_duration_s = vibration_config.get("min_duration_s", 10)
+
+        if len(fz_values) < 10:
+            return None
+
+        import numpy as np
+
+        # 전체 표준편차 계산
+        global_std = float(np.std(fz_values))
+        if global_std < 0.01:  # 거의 변화가 없으면 스킵
+            return None
+
+        # 롤링 표준편차 계산 (간단 구현)
+        window_size = max(2, int(len(fz_values) * window_s / (timestamps_s[-1] - timestamps_s[0])) if timestamps_s[-1] != timestamps_s[0] else 10)
+
+        vibration_start = None
+        max_local_std = 0
+
+        for i in range(window_size, len(fz_values)):
+            window_data = fz_values[i-window_size:i]
+            local_std = float(np.std(window_data))
+
+            if local_std > global_std * amplitude_threshold:
+                if vibration_start is None:
+                    vibration_start = i - window_size
+                max_local_std = max(max_local_std, local_std)
+
+                duration = timestamps_s[i] - timestamps_s[vibration_start]
+                if duration >= min_duration_s:
+                    return InferenceResult(
+                        rule_name="VIBRATION_DETECTION",
+                        result_type="pattern",
+                        result_id="PAT_VIBRATION",
+                        confidence=min(0.95, 0.6 + (local_std / global_std - amplitude_threshold) * 0.1),
+                        evidence={
+                            "features": {
+                                "global_std": round(global_std, 3),
+                                "max_local_std": round(max_local_std, 3),
+                                "std_ratio": round(max_local_std / global_std, 2),
+                                "duration_s": round(duration, 2)
+                            },
+                            "thresholds": {
+                                "amplitude_threshold": amplitude_threshold,
+                                "min_duration_s": min_duration_s
+                            },
+                            "judgment": f"std_ratio({max_local_std/global_std:.2f}) > threshold({amplitude_threshold}) for {duration:.1f}s",
+                            "data_range": {"start_idx": vibration_start, "end_idx": i}
+                        },
+                        message=f"진동 감지: 표준편차 {max_local_std/global_std:.1f}배 증가 ({duration:.1f}초 지속)"
+                    )
+            else:
+                vibration_start = None
+                max_local_std = 0
+
+        return None
+
+    def detect_drift(
+        self,
+        fz_values: List[float],
+        timestamps_s: List[float]
+    ) -> Optional[InferenceResult]:
+        """드리프트 패턴 감지
+
+        Baseline 대비 지속적인 이동을 감지합니다.
+
+        Args:
+            fz_values: Fz 값 리스트
+            timestamps_s: 타임스탬프 리스트 (초)
+
+        Returns:
+            InferenceResult 또는 None
+        """
+        drift_config = self.pattern_thresholds.get("drift", {})
+        window_h = drift_config.get("window_h", 1)
+        deviation_pct = drift_config.get("deviation_pct", 10)
+        min_duration_h = drift_config.get("min_duration_h", 0.5)
+
+        if len(fz_values) < 10:
+            return None
+
+        import numpy as np
+
+        # 전체 baseline 계산
+        baseline = float(np.mean(fz_values))
+
+        # baseline이 0에 가까우면 절대값 기반 감지
+        baseline_epsilon = 1.0
+        drift_absolute_threshold = 5.0
+
+        if abs(baseline) < baseline_epsilon:
+            use_absolute_mode = True
+        else:
+            use_absolute_mode = False
+
+        # 시간 범위 확인
+        total_duration_s = timestamps_s[-1] - timestamps_s[0] if timestamps_s else 0
+        total_duration_h = total_duration_s / 3600
+
+        if total_duration_h < min_duration_h:
+            return None
+
+        # 데이터를 시간 구간별로 나누어 평균 계산
+        window_s = window_h * 3600
+        segments = []
+        current_segment = []
+        segment_start_s = timestamps_s[0]
+
+        for fz, ts in zip(fz_values, timestamps_s):
+            if ts - segment_start_s > window_s:
+                if current_segment:
+                    segments.append(float(np.mean(current_segment)))
+                current_segment = [fz]
+                segment_start_s = ts
+            else:
+                current_segment.append(fz)
+
+        if current_segment:
+            segments.append(float(np.mean(current_segment)))
+
+        if len(segments) < 2:
+            return None
+
+        # 드리프트 감지
+        drift_start_idx = None
+        max_deviation = 0
+
+        for i, seg_mean in enumerate(segments):
+            if use_absolute_mode:
+                deviation = abs(seg_mean - baseline)
+                is_drift = deviation > drift_absolute_threshold
+            else:
+                deviation = abs((seg_mean - baseline) / abs(baseline) * 100)
+                is_drift = deviation > deviation_pct
+
+            if is_drift:
+                if drift_start_idx is None:
+                    drift_start_idx = i
+                max_deviation = max(max_deviation, deviation)
+
+                drift_duration_h = (i - drift_start_idx + 1) * window_h
+                if drift_duration_h >= min_duration_h:
+                    if use_absolute_mode:
+                        judgment = f"deviation({max_deviation:.2f}N) > threshold({drift_absolute_threshold}N) for {drift_duration_h:.1f}h"
+                        message = f"드리프트 감지: {max_deviation:.2f}N 편차 ({drift_duration_h:.1f}시간 지속)"
+                    else:
+                        judgment = f"deviation({max_deviation:.1f}%) > threshold({deviation_pct}%) for {drift_duration_h:.1f}h"
+                        message = f"드리프트 감지: {max_deviation:.1f}% 편차 ({drift_duration_h:.1f}시간 지속)"
+
+                    return InferenceResult(
+                        rule_name="DRIFT_DETECTION",
+                        result_type="pattern",
+                        result_id="PAT_DRIFT",
+                        confidence=min(0.90, 0.5 + max_deviation / (deviation_pct if not use_absolute_mode else drift_absolute_threshold) * 0.2),
+                        evidence={
+                            "features": {
+                                "baseline": round(baseline, 3),
+                                "max_deviation": round(max_deviation, 2),
+                                "detection_mode": "absolute" if use_absolute_mode else "percentage",
+                                "duration_h": round(drift_duration_h, 2)
+                            },
+                            "thresholds": {
+                                "deviation_threshold": drift_absolute_threshold if use_absolute_mode else deviation_pct,
+                                "min_duration_h": min_duration_h
+                            },
+                            "judgment": judgment,
+                            "segment_range": {"start_idx": drift_start_idx, "end_idx": i}
+                        },
+                        message=message
+                    )
+            else:
+                drift_start_idx = None
+                max_deviation = 0
+
+        return None
+
     def detect_patterns(self, data: Dict[str, List[float]]) -> List[InferenceResult]:
         """시계열 데이터에서 모든 패턴 감지
 
@@ -247,7 +441,15 @@ class RuleEngine:
         if overload:
             results.append(overload)
 
-        # TODO: 진동, 드리프트 감지 추가
+        # 진동 감지
+        vibration = self.detect_vibration(fz, ts_s)
+        if vibration:
+            results.append(vibration)
+
+        # 드리프트 감지
+        drift = self.detect_drift(fz, ts_s)
+        if drift:
+            results.append(drift)
 
         return results
 
