@@ -61,6 +61,9 @@ Desktop.ini
 data/raw/pdf/*.pdf
 !data/raw/pdf/.gitkeep
 
+# 센서 원천 데이터(대용량)
+data/sensor/**/*.parquet
+
 
 # ------------------------------------------------------------
 # [6] 데이터베이스 / 스토어
