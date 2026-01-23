@@ -7,10 +7,12 @@ import { RiskAlertBar } from './RiskAlertBar';
 import { ObjectCard } from './ObjectCard';
 import { RealtimeChart } from './RealtimeChart';
 import { EventList, EventItem } from './EventList';
+import { StatisticsSummary } from './StatisticsSummary';
+import { HeterogeneousPrediction } from './HeterogeneousPrediction';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUIStore } from '@/stores/uiStore';
-import { useSensorReadings, useSensorEvents } from '@/hooks/useApi';
+import { useSensorReadings, useSensorEvents, usePredictions } from '@/hooks/useApi';
 import { useSensorSSE } from '@/hooks/useSSE';
 import type { EntityInfo, RiskAlert, SensorReading, NodeState } from '@/types/api';
 
@@ -57,6 +59,9 @@ export function LiveView() {
   } = useSensorReadings(60, 0, streamMode === 'polling');
 
   const { data: eventsData } = useSensorEvents(10);
+
+  // 이기종 결합 예측 데이터
+  const { data: predictionsData } = usePredictions(10);
 
   // Convert polling API response to SensorReading array
   const pollingReadings: SensorReading[] = useMemo(() => {
@@ -323,6 +328,27 @@ export function LiveView() {
           events={events}
           onEventClick={handleEventClick}
           maxHeight="200px"
+        />
+
+        {/* Heterogeneous Prediction - UR5e + Axia80 Combined Analysis */}
+        <HeterogeneousPrediction
+          readings={readings}
+          predictions={predictionsData?.predictions}
+          maxHeight="200px"
+        />
+
+        {/* Statistics Summary */}
+        <StatisticsSummary
+          predictions={
+            predictionsData?.predictions
+              ? {
+                  total_patterns: predictionsData.predictions.length,
+                  high_risk_count: predictionsData.predictions.filter(
+                    (p) => p.risk_level === 'high' || p.risk_level === 'critical'
+                  ).length,
+                }
+              : undefined
+          }
         />
       </div>
     </div>

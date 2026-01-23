@@ -5,7 +5,7 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 
 import { cn } from "@/lib/utils"
 
-function ScrollArea({
+function ScrollAreaInner({
   className,
   children,
   ...props
@@ -25,6 +25,39 @@ function ScrollArea({
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
+  )
+}
+
+// Client-only wrapper to prevent hydration mismatch
+function ScrollArea({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+  const [isMounted, setIsMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // SSR: render simple div with overflow
+  if (!isMounted) {
+    return (
+      <div
+        data-slot="scroll-area"
+        className={cn("relative overflow-auto", className)}
+        style={props.style}
+      >
+        {children}
+      </div>
+    )
+  }
+
+  // Client: render full ScrollArea
+  return (
+    <ScrollAreaInner className={className} {...props}>
+      {children}
+    </ScrollAreaInner>
   )
 }
 

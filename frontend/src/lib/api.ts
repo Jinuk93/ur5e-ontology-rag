@@ -299,3 +299,39 @@ export async function getSensorReadingsRange(hours = 1, samples = 200): Promise<
   }
   return response.json();
 }
+
+// ============================================================
+// 이기종 결합 예측 API (Axia80 + UR5e 온톨로지)
+// ============================================================
+
+export interface PredictionItem {
+  error_code: string;
+  probability: number;
+  pattern: string;
+  cause?: string;
+  timeframe?: string;
+  recommendation?: string;
+}
+
+export interface RealtimePrediction {
+  timestamp: string;
+  sensor_value: number;
+  state: 'normal' | 'warning' | 'critical';
+  pattern_detected?: string;
+  predictions: PredictionItem[];
+  ontology_path?: string;
+}
+
+export interface PredictionsResponse {
+  predictions: RealtimePrediction[];
+  total_patterns: number;
+  high_risk_count: number;
+}
+
+export async function getPredictions(limit = 10): Promise<PredictionsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/sensors/predictions?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}

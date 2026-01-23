@@ -11,6 +11,7 @@ import {
   getSensorPatterns,
   getSensorEvents,
   getSensorReadingsRange,
+  getPredictions,
 } from '@/lib/api';
 import type { ChatRequest, ChatResponse } from '@/types/api';
 
@@ -23,6 +24,7 @@ export const queryKeys = {
   sensorReadingsRange: (hours: number, samples: number) => ['sensors', 'readings', 'range', hours, samples] as const,
   sensorPatterns: (limit: number) => ['sensors', 'patterns', limit] as const,
   sensorEvents: (limit: number) => ['sensors', 'events', limit] as const,
+  predictions: (limit: number) => ['sensors', 'predictions', limit] as const,
 };
 
 /**
@@ -143,5 +145,23 @@ export function useSensorReadingsRange(hours = 1, samples = 200, enabled = true)
     queryFn: () => getSensorReadingsRange(hours, samples),
     enabled,
     staleTime: 1000 * 60, // 1 minute - historical data doesn't change frequently
+  });
+}
+
+// ============================================================
+// 이기종 결합 예측 Hooks
+// ============================================================
+
+/**
+ * Realtime predictions hook - 온톨로지 기반 에러 예측
+ * Axia80 센서 패턴 + UR5e 온톨로지 결합
+ */
+export function usePredictions(limit = 10, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.predictions(limit),
+    queryFn: () => getPredictions(limit),
+    enabled,
+    refetchInterval: 10000, // 10 seconds - 예측은 자주 갱신
+    staleTime: 5000, // 5 seconds
   });
 }

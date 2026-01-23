@@ -21,7 +21,11 @@ from src.api.schemas import (
     PatternsResponse,
     EventInfo,
     EventsResponse,
+    PredictionItem,
+    RealtimePrediction,
+    PredictionsResponse,
 )
+from src.ontology import OntologyEngine, load_ontology
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +41,17 @@ _events_data: Optional[List[Dict]] = None
 
 # SSE 스트리밍 커서
 _sse_cursor: int = 0
+
+# OntologyEngine 캐시
+_ontology_engine: Optional[OntologyEngine] = None
+
+
+def get_ontology_engine() -> OntologyEngine:
+    """OntologyEngine 싱글톤"""
+    global _ontology_engine
+    if _ontology_engine is None:
+        _ontology_engine = OntologyEngine()
+    return _ontology_engine
 
 
 def load_sensor_data() -> pd.DataFrame:
@@ -278,6 +293,153 @@ async def get_sensor_events(
     except Exception as e:
         logger.error(f"Events error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/predictions", response_model=PredictionsResponse)
+async def get_realtime_predictions(
+    limit: int = Query(default=10, ge=1, le=50, description="분석할 최근 이벤트 수"),
+):
+    """
+    이기종 결합 기반 실시간 예측
+
+    Axia80 센서 데이터의 패턴과 온톨로지를 결합하여
+    에러 발생을 사전 예측합니다.
+
+    예측 경로:
+    - Axia80 센서 → 패턴 감지 (PAT_COLLISION, PAT_OVERLOAD 등)
+    - 패턴 → 온톨로지 추론 (TRIGGERS 관계)
+    - 추론 → 에러 코드 예측 (C153, C189 등)
+    """
+    try:
+        engine = get_ontology_engine()
+        patterns_raw = load_patterns()
+        events_raw = load_events()
+
+        predictions_list = []
+        high_risk_count = 0
+
+        # 패턴별로 온톨로지 기반 예측 수행
+        for pattern in patterns_raw[:limit]:
+            pattern_type = pattern.get('pattern_type', '')
+            pattern_id = f"PAT_{pattern_type.upper()}" if pattern_type else None
+            timestamp = pattern.get('timestamp', '')
+            confidence = pattern.get('confidence', 0.0)
+            metrics = pattern.get('metrics', {})
+
+            # 센서 값 추출
+            sensor_value = metrics.get('peak_value', metrics.get('max_value', 0))
+
+            # 상태 결정
+            state = "normal"
+            if abs(sensor_value) > 300:
+                state = "critical"
+            elif abs(sensor_value) > 100:
+                state = "warning"
+
+            prediction_items = []
+            ontology_path = None
+
+            if pattern_id:
+                # 온톨로지 추론 경로 탐색
+                traverser = engine.traverser
+                reasoning_result = traverser.get_reasoning_path(pattern_id)
+
+                if reasoning_result:
+                    # 에러 예측 추출
+                    for error_path in reasoning_result.get('error_paths', []):
+                        error_code = error_path.get('error_id', '')
+                        prob = error_path.get('confidence', 0) * confidence
+
+                        # 원인 추출
+                        cause = None
+                        for cause_path in reasoning_result.get('cause_paths', []):
+                            cause = cause_path.get('cause_id', '')
+                            break
+
+                        # 권장 조치
+                        recommendation = _get_recommendation_for_pattern(pattern_type)
+
+                        prediction_items.append(PredictionItem(
+                            error_code=error_code,
+                            probability=round(prob, 2),
+                            pattern=pattern_id,
+                            cause=cause,
+                            timeframe="수초 내" if prob > 0.8 else "수분 내",
+                            recommendation=recommendation,
+                        ))
+
+                        if prob > 0.7:
+                            high_risk_count += 1
+
+                    # 온톨로지 경로 생성
+                    if reasoning_result.get('error_paths'):
+                        first_error = reasoning_result['error_paths'][0]
+                        ontology_path = first_error.get('path', '')
+
+            # 예측이 없으면 기본 예측 추가
+            if not prediction_items and pattern_type:
+                default_errors = _get_default_errors_for_pattern(pattern_type)
+                for err_code, prob in default_errors:
+                    prediction_items.append(PredictionItem(
+                        error_code=err_code,
+                        probability=round(prob * confidence, 2),
+                        pattern=pattern_id or f"PAT_{pattern_type.upper()}",
+                        cause=_get_cause_for_pattern(pattern_type),
+                        timeframe="모니터링 중",
+                        recommendation=_get_recommendation_for_pattern(pattern_type),
+                    ))
+
+            predictions_list.append(RealtimePrediction(
+                timestamp=timestamp,
+                sensor_value=round(sensor_value, 2),
+                state=state,
+                pattern_detected=pattern_id,
+                predictions=prediction_items,
+                ontology_path=ontology_path,
+            ))
+
+        return PredictionsResponse(
+            predictions=predictions_list,
+            total_patterns=len(patterns_raw),
+            high_risk_count=high_risk_count,
+        )
+
+    except Exception as e:
+        logger.error(f"Predictions error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _get_default_errors_for_pattern(pattern_type: str) -> List[tuple]:
+    """패턴 타입별 기본 에러 코드 매핑"""
+    mapping = {
+        "collision": [("C153", 0.95), ("C119", 0.8)],
+        "overload": [("C189", 0.9)],
+        "drift": [],
+        "vibration": [("C204", 0.75)],
+    }
+    return mapping.get(pattern_type.lower(), [])
+
+
+def _get_cause_for_pattern(pattern_type: str) -> str:
+    """패턴 타입별 원인 매핑"""
+    mapping = {
+        "collision": "CAUSE_COLLISION",
+        "overload": "CAUSE_OVERLOAD",
+        "drift": "CAUSE_CALIBRATION",
+        "vibration": "CAUSE_JOINT_WEAR",
+    }
+    return mapping.get(pattern_type.lower(), "CAUSE_UNKNOWN")
+
+
+def _get_recommendation_for_pattern(pattern_type: str) -> str:
+    """패턴 타입별 권장 조치"""
+    mapping = {
+        "collision": "작업 영역 장애물 확인 및 제거",
+        "overload": "페이로드 무게 확인 및 감량",
+        "drift": "센서 캘리브레이션 수행",
+        "vibration": "조인트 볼트 토크 점검",
+    }
+    return mapping.get(pattern_type.lower(), "상황 점검 필요")
 
 
 async def sensor_stream_generator(request: Request, interval: float = 1.0):

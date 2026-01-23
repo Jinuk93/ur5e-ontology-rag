@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, Network, History, Settings, MessageCircle, Wifi, WifiOff } from 'lucide-react';
+import { Activity, Network, Settings, MessageCircle, Wifi, WifiOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { id: 'live' as const, labelKey: 'live', icon: Activity },
   { id: 'graph' as const, labelKey: 'graph', icon: Network },
-  { id: 'history' as const, labelKey: 'history', icon: History },
 ];
 
 export function Header() {

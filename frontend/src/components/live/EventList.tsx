@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { AlertTriangle, AlertCircle, Clock } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Clock, Zap } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -84,37 +84,27 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
     return '-';
   };
 
-  // Ontology-based prediction using event type, error code, and context
-  const getPrediction = (event: EventItem) => {
-    // Collision events - predict based on severity and pattern
+  // 이벤트 기반 AI 예측 (조치/권장 사항 중심)
+  const getEventPrediction = (event: EventItem): string => {
     if (event.eventType === 'collision') {
       if (event.errorCode === 'C153') {
         return '재발 가능성 높음';
-      }
-      if (event.context?.fzPeakN && event.context.fzPeakN > 500) {
+      } else if (event.context?.fzPeakN && event.context.fzPeakN > 500) {
         return '그리퍼 점검 필요';
+      } else {
+        return '작업 경로 검토';
       }
-      return '작업 경로 검토';
-    }
-
-    // Overload events - predict wear or stress issues
-    if (event.eventType === 'overload') {
+    } else if (event.eventType === 'overload') {
       if (event.errorCode) {
         return '부품 마모 주의';
-      }
-      if (event.context?.fzValueN && event.context.fzValueN > 200) {
+      } else if (event.context?.fzValueN && event.context.fzValueN > 200) {
         return '축 부하 증가 추세';
+      } else {
+        return '하중 분산 검토';
       }
-      return '하중 분산 검토';
-    }
-
-    // Drift events - predict calibration or sensor issues
-    if (event.eventType === 'drift' || event.eventType?.includes('drift')) {
+    } else if (event.eventType === 'drift' || event.eventType?.includes('drift')) {
       return '센서 교정 필요';
-    }
-
-    // Error code based predictions
-    if (event.errorCode) {
+    } else if (event.errorCode) {
       const errorPredictions: Record<string, string> = {
         C153: '동일 위치 재발 주의',
         C154: '보호 영역 침범 주의',
@@ -124,13 +114,9 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
         C201: '부하 한계 초과 주의',
       };
       return errorPredictions[event.errorCode] || '패턴 분석 중';
-    }
-
-    // Context-based predictions
-    if (event.context?.fzPeakN && event.context.fzPeakN > 800) {
+    } else if (event.context?.fzPeakN && event.context.fzPeakN > 800) {
       return '충돌 위험 증가';
-    }
-    if (event.context?.fzValueN && event.context.fzValueN > 300) {
+    } else if (event.context?.fzValueN && event.context.fzValueN > 300) {
       return '과부하 주의';
     }
 
@@ -177,78 +163,81 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
           </p>
         ) : (
           <table className="w-full text-xs table-fixed">
-            <colgroup>
-              <col className="w-[14%]" />
-              <col className="w-[12%]" />
-              <col className="w-[18%]" />
-              <col className="w-[18%]" />
-              <col className="w-[18%]" />
-              <col className="w-[20%]" />
-            </colgroup>
-            <thead className="sticky top-0 bg-slate-800/95 z-10">
-              <tr className="border-b border-slate-700/50">
-                <th className="text-center py-2 px-2 text-slate-400 font-semibold">시간</th>
-                <th className="text-center py-2 px-2 text-slate-400 font-semibold">상태</th>
-                <th className="text-center py-2 px-2 text-slate-400 font-semibold">감지 이벤트</th>
-                <th className="text-center py-2 px-2 text-slate-400 font-semibold">에러코드</th>
-                <th className="text-center py-2 px-2 text-slate-400 font-semibold">조치</th>
-                <th className="text-center py-2 px-2 text-slate-400 font-semibold">예측</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedEvents.map((event) => {
-                const config = eventConfig[event.type];
-                const Icon = config.icon;
-                const { date, time } = formatDateTime(event.timestamp);
+          <colgroup>
+            <col className="w-[14%]" />
+            <col className="w-[12%]" />
+            <col className="w-[18%]" />
+            <col className="w-[18%]" />
+            <col className="w-[18%]" />
+            <col className="w-[20%]" />
+          </colgroup>
+          <thead className="sticky top-0 bg-slate-800/95 z-10">
+            <tr className="border-b border-slate-700/50">
+              <th className="text-center py-2 px-2 text-slate-400 font-semibold">시간</th>
+              <th className="text-center py-2 px-2 text-slate-400 font-semibold">상태</th>
+              <th className="text-center py-2 px-2 text-slate-400 font-semibold">감지 이벤트</th>
+              <th className="text-center py-2 px-2 text-slate-400 font-semibold">에러코드</th>
+              <th className="text-center py-2 px-2 text-slate-400 font-semibold">조치</th>
+              <th className="text-center py-2 px-2 text-blue-300 font-semibold bg-blue-950/50">AI 예측</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedEvents.map((event) => {
+              const config = eventConfig[event.type];
+              const Icon = config.icon;
+              const { date, time } = formatDateTime(event.timestamp);
 
-                return (
-                  <tr
-                    key={event.id}
-                    onClick={() => onEventClick?.(event)}
-                    className={cn(
-                      'border-b border-slate-700/30 cursor-pointer transition-colors',
-                      'hover:bg-slate-700/30'
-                    )}
-                  >
-                    <td className="py-2 px-2 text-slate-300 whitespace-nowrap text-center font-semibold">
-                      <div>{date}</div>
-                      <div className="text-slate-400 font-medium">{time}</div>
-                    </td>
-                    <td className="py-2 px-2 text-center">
-                      <span className={cn(
-                        'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold',
-                        config.bgColor,
-                        config.color
-                      )}>
-                        <Icon className="h-3 w-3" />
-                        {t(event.type === 'critical' ? 'critical' : event.type === 'warning' ? 'warning' : 'normal')}
-                      </span>
-                    </td>
-                    <td className="py-2 px-2 text-slate-300 text-center font-semibold">
-                      {getEventTypeLabel(event.eventType)}
-                    </td>
-                    <td className="py-2 px-2 text-center font-semibold">
-                      {(() => {
-                        const errorInfo = getErrorCodeInfo(event);
-                        if (!errorInfo) return <span className="text-slate-400">-</span>;
-                        return (
-                          <div>
-                            <div className="text-red-400 font-bold">{errorInfo.code}</div>
-                            <div className="text-[10px] text-slate-400 font-medium">{errorInfo.description}</div>
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="py-2 px-2 text-slate-300 text-center font-semibold">
-                      {getAction(event)}
-                    </td>
-                    <td className="py-2 px-2 text-slate-300 text-center font-semibold">
-                      {getPrediction(event)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
+              return (
+                <tr
+                  key={event.id}
+                  onClick={() => onEventClick?.(event)}
+                  className={cn(
+                    'border-b border-slate-700/30 cursor-pointer transition-colors',
+                    'hover:bg-slate-700/30'
+                  )}
+                >
+                  <td className="py-2 px-2 text-slate-300 whitespace-nowrap text-center font-semibold">
+                    <div>{date}</div>
+                    <div className="text-slate-400 font-medium">{time}</div>
+                  </td>
+                  <td className="py-2 px-2 text-center">
+                    <span className={cn(
+                      'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold',
+                      config.bgColor,
+                      config.color
+                    )}>
+                      <Icon className="h-3 w-3" />
+                      {t(event.type === 'critical' ? 'critical' : event.type === 'warning' ? 'warning' : 'normal')}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2 text-slate-300 text-center font-semibold">
+                    {getEventTypeLabel(event.eventType)}
+                  </td>
+                  <td className="py-2 px-2 text-center font-semibold">
+                    {(() => {
+                      const errorInfo = getErrorCodeInfo(event);
+                      if (!errorInfo) return <span className="text-slate-400">-</span>;
+                      return (
+                        <div>
+                          <div className="text-red-400 font-bold">{errorInfo.code}</div>
+                          <div className="text-[10px] text-slate-400 font-medium">{errorInfo.description}</div>
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td className="py-2 px-2 text-slate-300 text-center font-semibold">
+                    {getAction(event)}
+                  </td>
+                  <td className="py-2 px-2 text-center font-semibold bg-blue-950/40">
+                    <span className="inline-flex items-center gap-1 text-blue-300">
+                      <Zap className="h-3 w-3 text-yellow-400" />
+                      {getEventPrediction(event)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
           </table>
         )}
       </ScrollArea>

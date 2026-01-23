@@ -25,6 +25,9 @@ from .sensor import (
     PatternsResponse,
     EventInfo,
     EventsResponse,
+    PredictionItem,
+    RealtimePrediction,
+    PredictionsResponse,
 )
 
 __all__ = [
@@ -49,4 +52,7 @@ __all__ = [
     "PatternsResponse",
     "EventInfo",
     "EventsResponse",
+    "PredictionItem",
+    "RealtimePrediction",
+    "PredictionsResponse",
 ]

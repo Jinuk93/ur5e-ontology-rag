@@ -222,8 +222,8 @@ export function RealtimeChart({ data, axis, axes, thresholds, title }: RealtimeC
                 }
                 return '';
               }}
-              formatter={(value: unknown, name: string) => {
-                if (typeof value !== 'number') return ['-', name];
+              formatter={(value: unknown, name?: string) => {
+                if (typeof value !== 'number' || !name) return ['-', name || ''];
                 const cfg = axisConfig[name as AxisType];
                 return [`${value.toFixed(2)} ${cfg?.unit || 'N'}`, cfg?.labelKo || name];
               }}

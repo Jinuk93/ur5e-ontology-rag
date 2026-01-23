@@ -60,3 +60,30 @@ class EventsResponse(BaseModel):
     """이벤트 목록 응답"""
     events: List[EventInfo]
     total: int
+
+
+class PredictionItem(BaseModel):
+    """단일 예측 결과"""
+    error_code: str = Field(description="예측되는 에러 코드")
+    probability: float = Field(description="발생 확률 (0.0 ~ 1.0)")
+    pattern: str = Field(description="감지된 패턴 ID")
+    cause: Optional[str] = Field(default=None, description="추정 원인")
+    timeframe: Optional[str] = Field(default=None, description="예상 발생 시점")
+    recommendation: Optional[str] = Field(default=None, description="권장 조치")
+
+
+class RealtimePrediction(BaseModel):
+    """실시간 예측 결과"""
+    timestamp: str = Field(description="예측 시점")
+    sensor_value: float = Field(description="현재 센서 값 (Fz)")
+    state: str = Field(description="현재 상태 (normal/warning/critical)")
+    pattern_detected: Optional[str] = Field(default=None, description="감지된 패턴")
+    predictions: List[PredictionItem] = Field(default_factory=list, description="예측 목록")
+    ontology_path: Optional[str] = Field(default=None, description="온톨로지 추론 경로")
+
+
+class PredictionsResponse(BaseModel):
+    """예측 응답"""
+    predictions: List[RealtimePrediction]
+    total_patterns: int = Field(description="감지된 패턴 수")
+    high_risk_count: int = Field(description="고위험 예측 수")

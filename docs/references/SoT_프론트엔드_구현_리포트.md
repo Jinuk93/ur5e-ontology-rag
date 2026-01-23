@@ -238,9 +238,45 @@
 - `ObjectCard.tsx`: 호버 시 scale(1.02), 클릭 시 scale(0.98) 효과
 - `RiskAlertBar.tsx`: 알림 버튼들 순차적 페이드인, 호버/탭 애니메이션
 
-### 2.17 잔여 작업
+### 2.17 이기종 결합 예측 컴포넌트 (P4 신규)
 
-- 없음 (Phase 3 모두 완료)
+**HeterogeneousPrediction 컴포넌트** (`frontend/src/components/live/HeterogeneousPrediction.tsx`):
+- Axia80 센서 데이터 + 온톨로지 기반 에러코드 예측 통합 표시
+- 현재 UR5e 상태 / Axia80 센서 현황 요약
+- 예측 결과 테이블: 감지 패턴, 위험도, 예측 에러, 확률, 권장 조치
+- 하이드레이션 오류 방지를 위해 ScrollArea 대신 일반 div 사용
+
+**LiveView 통합**:
+- EventList 하단에 HeterogeneousPrediction 컴포넌트 배치
+- usePredictions 훅으로 실시간 예측 데이터 연동
+
+### 2.18 통계 요약 개선 (P4 신규)
+
+**StatisticsSummary 컴포넌트 리팩토링** (`frontend/src/components/live/StatisticsSummary.tsx`):
+- **Axia80 6축 센서 평균값 표시**: Fx, Fy, Fz, Tx, Ty, Tz
+- **예비보전 점수 계산**: 충돌/과부하/드리프트 발생 및 Fz 편차 기반 (0-100점)
+- **기간 전환**: 24시간 / 7일 토글 버튼
+- **데이터 직접 조회**: useSensorPatterns, useSensorReadingsRange 훅 사용
+- **상태별 색상 표시**: 양호(녹색), 주의(노란색), 점검 권장(주황색), 긴급 점검(빨간색)
+
+### 2.19 네비게이션 변경 (P4 신규)
+
+**Header.tsx 변경**:
+- History 탭 제거 (Live, Graph 2개 탭만 유지)
+- 네비게이션 간소화
+
+### 2.20 AI 예측 UI 개선 (P4 신규)
+
+**EventList.tsx 변경**:
+- "예측" 컬럼명 → "AI 예측"으로 변경
+- AI 예측 컬럼에 노란색 Zap(⚡) 아이콘 추가
+- AI 예측 배경색을 진한 네이비(bg-blue-950/40)로 변경
+- 예측 로직을 온톨로지 에러코드 → 권장 조치 중심으로 변경
+  - 예: "재발 가능성 높음", "그리퍼 점검 필요", "작업 경로 검토" 등
+
+### 2.21 잔여 작업
+
+- UR5e 실제 데이터 추가 (미정 - 현재 Axia80 데이터만 존재)
 
 ---
 
@@ -369,3 +405,9 @@ PowerShell:
   - `frontend/src/components/chat/ChatPanel.tsx`: 메시지 애니메이션 적용
   - `frontend/src/components/live/ObjectCard.tsx`: 카드 호버/탭 애니메이션
   - `frontend/src/components/live/RiskAlertBar.tsx`: 순차 페이드인 애니메이션
+- **P4 완료** - 이기종 결합 예측 및 통계 개선
+  - `frontend/src/components/live/HeterogeneousPrediction.tsx`: 이기종 결합 예측 컴포넌트 신규 생성
+  - `frontend/src/components/live/StatisticsSummary.tsx`: Axia80 6축 평균, 예비보전 점수 추가
+  - `frontend/src/components/live/EventList.tsx`: AI 예측 컬럼 개선 (Zap 아이콘, 네이비 배경)
+  - `frontend/src/components/layout/Header.tsx`: History 탭 제거
+  - `frontend/src/components/live/LiveView.tsx`: HeterogeneousPrediction 통합
