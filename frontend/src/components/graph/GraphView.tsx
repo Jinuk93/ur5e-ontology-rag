@@ -98,11 +98,18 @@ export function GraphView() {
     <div className="flex flex-col h-full">
       {/* Breadcrumb */}
       <div className="p-3 border-b border-slate-700/50 bg-slate-800/30">
-        <PathBreadcrumb
-          path={currentPath}
-          relations={pathRelations}
-          onNodeClick={handleNodeClick}
-        />
+        <div className="flex items-center justify-between gap-3">
+          <PathBreadcrumb
+            path={currentPath}
+            relations={pathRelations}
+            onNodeClick={handleNodeClick}
+          />
+          {hoveredNodeId && (
+            <Badge variant="outline" className="text-xs text-slate-400 border-slate-700">
+              Hover: {hoveredNodeId}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Graph Area */}

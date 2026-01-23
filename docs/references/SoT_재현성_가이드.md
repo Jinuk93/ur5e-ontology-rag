@@ -1,9 +1,10 @@
 # P0 API 계약 정합성 및 재현성 검증
 
-> 이 문서는 "살아있는 작업보고서"입니다. 이후 관련 작업(계약 변경/검증 스크립트 수정/CI 추가 등)은 계속 이 파일의 내용을 갱신하고, 아래 업데이트 로그에 날짜별로 누적합니다.
-
-- 작성일: 2026-01-23
 - 목적: **프론트가 바로 붙을 수 있는 P0 API 계약(/api/chat)** 을 코드/문서/검증 스크립트 관점에서 정합하게 맞추고, Windows 환경에서 **재현 가능한 PASS 검증 루틴**을 확보한다.
+
+관련 문서:
+- 백엔드 총 가이드: [SoT_백엔드_API_가이드.md](SoT_백엔드_API_가이드.md)
+- 백엔드 런타임 검증 리포트: [SoT_백엔드_검증_리포트.md](SoT_백엔드_검증_리포트.md)
 
 ---
 
@@ -82,6 +83,33 @@ PowerShell에서:
 2) 다른 터미널에서 검증:
 - `python scripts/validate_api.py --base-url http://127.0.0.1:8002`
 
+### 4.3 프론트 스모크 (P0)
+
+1) (권장) 프론트에서 API Base URL 지정
+
+- 파일: `frontend/.env.local`
+- 내용:
+  - `NEXT_PUBLIC_API_URL=http://127.0.0.1:8002`
+
+2) 프론트 실행
+
+- `cd frontend`
+- `npm install`
+- `npm run dev`
+
+3) 확인 체크리스트
+
+- `http://localhost:3000` 접속
+- 채팅 패널에서 질문 입력 → 응답이 표시됨
+- 응답 하단 배지에서 `queryType`, `traceId`(앞 8자리), 신뢰도(있을 때) 표시됨
+- Evidence 토글이 열리고(근거가 있을 때), 문서/온톨로지 경로/그래프 요약이 표시됨
+
+4) 프로덕션 빌드 확인(옵션)
+
+- `cd frontend`
+- `npm run lint`
+- `npm run build`
+
 ---
 
 ## 5) 현재 API 상태 체크리스트
@@ -92,6 +120,11 @@ PowerShell에서:
 - `/api/evidence/{trace_id}`: 동작 (found True/False)
 - `evidence.similar_events`: 포함(키 존재)
 - `graph.nodes[*].state`: 포함(키 존재; UI 색상/스타일링 보조)
+- `/api/ontology/summary`: 동작
+- `/api/sensors/readings`: 동작
+- `/api/sensors/patterns`: 동작
+- `/api/sensors/events`: 동작
+- `/api/sensors/stream` (SSE): 동작(스모크)
 
 ---
 
@@ -113,15 +146,20 @@ PowerShell에서:
 ## 7) 다음 할 일(옵션)
 
 - (완료) 프론트가 바로 붙도록 **TS 타입 + 변환 어댑터(normalizeChatResponse)** 를 레포에 추가
-- (완료) 문서(UI_설계_명세서)에서 `ontology_paths`를 “문자열”이 아닌 “구조화 객체 배열” 기준으로 확정 표기
+- (완료) 문서(SoT_UI_설계_명세서)에서 `ontology_paths`를 "문자열"이 아닌 "구조화 객체 배열" 기준으로 확정 표기
 - CI(옵션): `scripts/e2e_validate.ps1`와 동일한 검증을 GitHub Actions로도 돌릴지 결정
 
 ---
 
-## 8) 업데이트 로그 (계속 여기에 누적)
+## 8) 업데이트 로그
 
-- 2026-01-23: P0 API 재현성 검증 루틴 확립(E2E 스크립트 추가) + validate 스크립트 인자화 + README 최소 가이드 추가
-- 2026-01-23: 프론트용 snake_case→camelCase 변환 어댑터(TypeScript) 추가: `contracts/p0_api_adapter.ts`
-- 2026-01-23: README에 프론트 연동 예제 추가 + UI 명세서에서 evidence.ontology_paths 기준(구조화 객체 배열) 확정
-- 2026-01-23: 작업보고서 파일명 정리: `docs/재현성검증.md`로 리네임
-- 2026-01-23: 프론트 P0 구현 진행상황 스냅샷 문서 추가: `docs/프론트엔드_작업보고서.md`
+- P0 API 재현성 검증 루틴 확립(E2E 스크립트 추가) + validate 스크립트 인자화 + README 최소 가이드 추가
+- 프론트용 snake_case→camelCase 변환 어댑터(TypeScript) 추가: `contracts/p0_api_adapter.ts`
+- 어댑터 정본을 프론트 런타임 기준으로 고정: `frontend/src/lib/api.ts` (contracts는 참고용)
+- README에 프론트 연동 예제 추가 + UI 명세서에서 evidence.ontology_paths 기준(구조화 객체 배열) 확정
+- 작업보고서 파일명 정리: `SoT_재현성_가이드.md`로 리네임
+- 프론트 P0 구현 진행상황 스냅샷 문서 추가: `SoT_프론트엔드_구현_리포트.md`
+- 프론트 빌드 경고/타입 이슈 정리: React Flow 노드 타입 수정 + Recharts SSR 경고 제거 + /api/chat 요청을 query 중심으로 정규화
+- 프론트 P1 완료: React Query 적용 + Evidence Drawer 구현 + Header 연결상태 표시
+- 프론트 P2 완료: 백엔드 센서 API 추가 + LiveView 실제 데이터 연동
+- validate 스크립트 런타임 검증 확장: /api/ontology/summary + /api/sensors/* + SSE(/api/sensors/stream) 스모크 체크

@@ -154,9 +154,9 @@
 | **4. Query** | 10 | 질문 분류기 | QueryClassifier |
 | | 11 | 온톨로지 추론 | OntologyEngine |
 | | 12 | 응답 생성 | ResponseGenerator |
-| **5. UI** | 13 | 기본 대시보드 | Streamlit UI |
-| | 14 | 관계 그래프 | D3.js 시각화 |
-| | 15 | 인터랙션 | 클릭 탐색 |
+| **5. UI** | 13 | UI 및 API 계약 | 설계 정본 + 계약(SOT) + 재현 검증 |
+| | 14 | 프론트엔드 구현 | Next.js 대시보드 (Live/Graph/History/Chat) |
+| | 15 | 센서 실시간/검증 | 센서 REST+SSE + E2E 검증 자동화 |
 | **6. Demo** | 16 | 통합 테스트 | E2E 테스트 |
 | | 17 | 데모 시나리오 | 3가지 시나리오 |
 
@@ -723,55 +723,39 @@ class OntologyEngine:
 
 ### Phase 13: 기본 대시보드
 
-**목표**: Streamlit 기반 메인 대시보드
+**목표**: UI 설계/계약을 정본으로 고정하고, 문서-코드-런타임 정합성을 재현 가능한 방식으로 확보
 
 **태스크**:
-- [ ] 레이아웃 구성 (사이드바 + 메인)
-- [ ] 질문 입력 인터페이스
-- [ ] 답변 표시 영역
-- [ ] 센서 상태 표시
+- [ ] UI 설계 명세(라이브/그래프/히스토리/챗+근거) 확정
+- [ ] P0 API 계약(`/api/chat`, `/api/evidence/{trace_id}`) 및 snake_case ↔ camelCase 전략 고정
+- [ ] Windows 환경에서 무인(E2E) 검증 루틴 고정
 
-**산출물**:
-- `src/dashboard/app.py`
-- `src/dashboard/pages/main.py`
+**산출물**(정본 링크):
+- `docs/steps/step_13_UI및API계약_설계.md`
+- `docs/steps/step_13_UI및API계약_완료.md`
+- `docs/references/SoT_UI_설계_명세서.md`
+- `docs/references/SoT_백엔드_API_가이드.md`, `docs/references/SoT_재현성_가이드.md`, `docs/references/SoT_백엔드_검증_리포트.md`
 
 **온톨로지 연결**:
 - 현재 센서 상태를 온톨로지 State로 표시
 
-**레이아웃**:
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  UR5e Ontology Dashboard                                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌─────────────┐  ┌─────────────────────────────────────────┐  │
-│  │ Status      │  │ Query                                    │  │
-│  │ Fz: -52N ✓ │  │ ┌─────────────────────────────────────┐ │  │
-│  │ Status: OK  │  │ │ 질문 입력...                        │ │  │
-│  └─────────────┘  │ └─────────────────────────────────────┘ │  │
-│                   │                                          │  │
-│                   │ Answer:                                  │  │
-│                   │ [구조화된 응답]                          │  │
-│                   └─────────────────────────────────────────┘  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+**UI 설계**: `docs/references/SoT_UI_설계_명세서.md`를 정본으로 사용
 
 ---
 
 ### Phase 14: 관계 그래프 시각화
 
-**목표**: D3.js 기반 온톨로지 관계 그래프
+**목표**: 프론트엔드에서 그래프(서브그래프/경로 브레드크럼)를 시각화하고, 근거 탐색 UX 제공
 
 **태스크**:
-- [ ] D3.js 그래프 컴포넌트 구현
-- [ ] 노드/엣지 렌더링
-- [ ] 하이라이트 기능
-- [ ] Streamlit 통합 (iframe 또는 컴포넌트)
+- [ ] Graph View(React Flow 기반) 구현
+- [ ] Path Breadcrumb(온톨로지 경로) 표시
+- [ ] 노드 선택/하이라이트 및 Chat/Evidence와 연동
 
-**산출물**:
-- `src/dashboard/components/graph.py`
-- `src/dashboard/static/graph.js`
+**산출물**(정본 링크):
+- `docs/steps/step_14_프론트엔드구현_설계.md`
+- `docs/steps/step_14_프론트엔드구현_완료.md`
+- `frontend/src/components/graph/*`
 
 **온톨로지 연결**: 온톨로지 관계를 시각적으로 표현
 
@@ -792,17 +776,17 @@ class OntologyEngine:
 
 ### Phase 15: 인터랙션
 
-**목표**: 클릭으로 탐색 가능한 그래프
+**목표**: LiveView 실시간(센서 REST+SSE)과 검증 자동화를 통해 “실제로 돌아간다”를 고정
 
 **태스크**:
-- [ ] 노드 클릭 → 상세 정보
-- [ ] 엣지 클릭 → 관계 설명
-- [ ] 더블클릭 → 확장/축소
-- [ ] 검색/필터 기능
+- [ ] 센서 데이터 REST API(readings/patterns/events) 제공
+- [ ] SSE 스트리밍(`/api/sensors/stream`) 제공 및 UI fallback 전략
+- [ ] validate/E2E 스크립트로 런타임 검증 자동화
 
-**산출물**:
-- `src/dashboard/components/interactive_graph.py`
-- 업데이트된 `graph.js`
+**산출물**(정본 링크):
+- `docs/steps/step_15_센서실시간및검증_설계.md`
+- `docs/steps/step_15_센서실시간및검증_완료.md`
+- `src/api/main.py`, `scripts/validate_api.py`, `scripts/e2e_validate.ps1`
 
 **온톨로지 연결**:
 - 노드 클릭 시 해당 엔티티의 온톨로지 정보 표시
@@ -833,55 +817,40 @@ class OntologyEngine:
 
 ### Phase 16: 통합 테스트
 
-**목표**: End-to-End 테스트
+**목표**: 재현 가능한 통합 검증(백엔드 런타임 + 선택적 pytest/프론트 빌드)
 
 **태스크**:
-- [ ] 온톨로지 로딩 테스트
-- [ ] 질문 분류 테스트
-- [ ] 추론 파이프라인 테스트
-- [ ] UI 통합 테스트
+- [ ] E2E 런타임 검증(서버 start/stop 포함)
+- [ ] (선택) pytest(unit/integration) 실행
+- [ ] (선택) 프론트 `lint/build` 게이트 통과
 
 **산출물**:
-- `tests/integration/`
-- 테스트 결과 보고서
+- `docs/steps/step_16_통합테스트_설계.md`
+- `docs/steps/step_16_통합테스트_완료.md`
+- `scripts/e2e_validate.ps1`, `scripts/validate_api.py`
+- `tests/integration/` (선택)
 
-**테스트 케이스**:
-```python
-# 온톨로지성 질문 테스트
-def test_ontology_query():
-    query = "Fz가 -350N인데 이게 뭐야?"
-    result = engine.process(query)
-
-    assert result.query_type == "ONTOLOGY"
-    assert result.analysis.state == "CRITICAL"
-    assert "PAT_OVERLOAD" in result.reasoning.pattern
-    assert result.prediction.error_code == "C189"
-    assert result.evidence.ontology_path is not None
-
-# 맥락 반영 테스트
-def test_context_awareness():
-    query = "어제 14시쯤 이상했는데 왜 그랬지?"
-    result = engine.process(query)
-
-    assert "SHIFT_B" in result.context
-    assert len(result.reasoning.similar_events) > 0
-```
+**재현(권장, Windows)**:
+- `powershell -ExecutionPolicy Bypass -File scripts/e2e_validate.ps1 -Port 8002 -ForceKillPort`
 
 ---
 
 ### Phase 17: 데모 시나리오
 
-**목표**: 3가지 핵심 데모 시나리오 준비
+**목표**: 3가지 핵심 데모 시나리오를 “명령어 + 질문 + 확인 포인트”로 고정
 
 **태스크**:
-- [ ] 시나리오 1: 온톨로지 추론 데모
-- [ ] 시나리오 2: 맥락 인식 데모
-- [ ] 시나리오 3: 예측 데모
-- [ ] 룰베이스 vs 온톨로지 비교 데모
+- [ ] 시나리오 1: 온톨로지 추론 + 근거(trace/evidence)
+- [ ] 시나리오 2: 그래프/경로 탐색(UI)
+- [ ] 시나리오 3: Live 센서(REST+SSE) + degrade
 
 **산출물**:
-- `docs/demo_scenarios.md`
-- 스크린샷/영상
+- `docs/steps/step_17_데모시나리오_설계.md`
+- `docs/steps/step_17_데모시나리오_완료.md`
+
+**실행(요약)**:
+- 백엔드: `python scripts/run_api.py --host 127.0.0.1 --port 8002`
+- 프론트(UI): `cd frontend` → `npm run dev`
 
 **시나리오 상세**:
 
@@ -1136,15 +1105,19 @@ ur5e-ontology-rag/
 │   │
 │   ├── sensor/
 │   │   ├── raw/                     # Phase 2: 원본 센서 데이터
-│   │   │   └── axia80_7days.csv
+│   │   │   └── axia80_week_01.parquet
 │   │   └── processed/               # Phase 8: 처리된 패턴 데이터
 │   │       ├── patterns.parquet
 │   │       └── statistics.json
 │   │
 │   └── benchmark/                   # Phase 16: 평가용 QA 데이터
-│       ├── ontology_qa.json         # 온톨로지형 질문
-│       ├── hybrid_qa.json           # 하이브리드형 질문
-│       └── rag_qa.json              # RAG형 질문
+│       ├── component_qa.json
+│       ├── error_code_qa.json
+│       ├── general_qa.json
+│       └── invalid_qa.json
+│
+│   └── evaluation/
+│       └── results/                 # Phase 16: 평가 결과 저장
 │
 ├── configs/
 │   ├── settings.yaml                # Phase 1: 전역 설정
@@ -1197,41 +1170,20 @@ ur5e-ontology-rag/
 │   │   ├── prompt_builder.py        # 프롬프트 구성
 │   │   └── verifier.py              # 응답 검증 & 근거 추적
 │   │
-│   ├── api/                         # Phase 12: REST API
-│   │   ├── __init__.py
-│   │   ├── main.py                  # FastAPI 앱 진입점
-│   │   ├── routes/
-│   │   │   ├── __init__.py
-│   │   │   ├── query.py             # POST /query
-│   │   │   ├── ontology.py          # GET /ontology/*
-│   │   │   ├── sensor.py            # GET /sensor/*
-│   │   │   └── health.py            # GET /health
-│   │   └── schemas/
-│   │       ├── __init__.py
-│   │       ├── request.py           # 요청 Pydantic 모델
-│   │       └── response.py          # 응답 Pydantic 모델
-│   │
-│   └── dashboard/                   # Phase 13-15: UI
+│   └── api/                         # Phase 12: REST API
 │       ├── __init__.py
-│       ├── app.py                   # Streamlit 메인 앱
-│       ├── pages/
-│       │   ├── __init__.py
-│       │   ├── 1_query.py           # 질의 인터페이스
-│       │   ├── 2_graph.py           # 관계 그래프
-│       │   └── 3_sensor.py          # 센서 모니터링
-│       ├── components/
-│       │   ├── __init__.py
-│       │   ├── chat.py              # 채팅 UI
-│       │   ├── graph.py             # 그래프 렌더러
-│       │   ├── sensor_chart.py      # 센서 차트
-│       │   └── evidence_panel.py    # 근거 패널
-│       └── static/
-│           ├── graph.js             # D3.js 온톨로지 그래프
-│           └── styles.css           # 커스텀 스타일
+│       └── main.py                  # FastAPI 앱 (POST /api/chat, GET /api/evidence 등)
+│
+├── frontend/                        # Phase 13-15: UI (Next.js) - 루트 레벨
+│   ├── src/app/                     # App Router
+│   ├── src/components/              # Live/Graph/History/Chat/Evidence
+│   ├── src/lib/api.ts               # API client + normalize adapter
+│   └── src/hooks/                   # React Query + SSE hooks
 │
 ├── scripts/
 │   ├── run_api.py                   # API 서버 실행
-│   ├── run_dashboard.py             # 대시보드 실행
+│   ├── e2e_validate.ps1             # 서버 기동→검증→종료(E2E)
+│   ├── validate_api.py              # 런타임 API 검증
 │   ├── run_ingestion.py             # Phase 2: 데이터 수집
 │   ├── run_embedding.py             # Phase 3: 임베딩 생성
 │   ├── run_ontology.py              # Phase 4-5: 온톨로지 구축
@@ -1260,13 +1212,17 @@ ur5e-ontology-rag/
 │       └── .gitkeep
 │
 └── docs/
-    ├── Unified_Spec.md              # 통합 기술 명세
-    ├── Unified_ROADMAP.md           # 통합 개발 로드맵
-    ├── 온톨로지_스키마_설계.md       # 온톨로지 상세 설계
-    ├── Axia80_센서_분석_보고서.md    # 센서 분석
-    ├── UR5e_로봇_분석_보고서.md      # 로봇 분석
-    └── phases/                      # Phase별 완료 보고서
-        └── Phase_XX_완료.md
+  ├── Unified_Spec.md              # 통합 기술 명세
+  ├── Unified_ROADMAP.md           # 통합 개발 로드맵
+  ├── 온톨로지_스키마_설계.md       # 온톨로지 상세 설계
+  ├── reports/
+  │   └── domain/
+  │       ├── robot/
+  │       │   └── UR5e_로봇_분석_보고서.md      # 로봇 분석
+  │       └── sensor/
+  │           └── Axia80_센서_분석_보고서.md    # 센서 분석
+  └── phases/                      # Phase별 완료 보고서
+    └── Phase_XX_완료.md
 ```
 
 ### 폴더별 Phase 매핑
@@ -1278,6 +1234,7 @@ ur5e-ontology-rag/
 | `data/processed/ontology/` | 4-5 | 온톨로지 데이터 |
 | `data/sensor/` | 2, 8 | 센서 데이터 |
 | `data/benchmark/` | 16 | 평가 데이터 |
+| `data/evaluation/` | 16 | 평가 결과 |
 | `configs/` | 1, 6, 9 | 설정 파일 |
 | `prompts/` | 12 | LLM 프롬프트 |
 | `src/ingestion/` | 2 | PDF 파싱 & 청킹 |
@@ -1286,7 +1243,7 @@ ur5e-ontology-rag/
 | `src/sensor/` | 7-9 | 센서 처리 |
 | `src/rag/` | 10-12 | 질의 엔진 |
 | `src/api/` | 12 | REST API |
-| `src/dashboard/` | 13-15 | UI |
+| `frontend/` | 13-15 | UI (Next.js) |
 | `scripts/` | 전체 | 실행 스크립트 |
 | `tests/` | 16 | 테스트 |
 | `stores/` | 3-4 | DB 영속화 |
@@ -1301,5 +1258,5 @@ ur5e-ontology-rag/
 | `src/ontology/graph_traverser.py` | 관계 경로 탐색 (Palantir-style) |
 | `src/rag/query_classifier.py` | 질문 유형 분류 (온톨로지/하이브리드/RAG) |
 | `src/rag/hybrid_retriever.py` | VectorDB + GraphDB 통합 검색 |
-| `src/dashboard/static/graph.js` | D3.js 인터랙티브 그래프 |
+| `frontend/src/components/graph/*` | React Flow 기반 그래프 UI |
 

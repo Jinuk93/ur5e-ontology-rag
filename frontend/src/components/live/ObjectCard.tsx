@@ -1,10 +1,12 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { Bot, Radio, BarChart3, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { EntityInfo, EntityType, NodeState } from '@/types/api';
 import { cn } from '@/lib/utils';
+import { cardHover, cardTap } from '@/lib/animations';
 
 interface ObjectCardProps {
   entity: EntityInfo;
@@ -64,66 +66,71 @@ export function ObjectCard({ entity, isSelected, onClick }: ObjectCardProps) {
   }
 
   return (
-    <Card
-      onClick={onClick}
-      className={cn(
-        'w-[200px] h-[150px] p-4 cursor-pointer transition-all',
-        'bg-slate-800/50 border-slate-700/50 hover:border-slate-600',
-        isSelected && 'ring-2 ring-blue-500 border-blue-500/50'
-      )}
+    <motion.div
+      whileHover={cardHover}
+      whileTap={cardTap}
     >
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-slate-700/50">
-              <Icon className="h-4 w-4 text-slate-300" />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-white">{entity.name}</h3>
-              <p className="text-xs text-slate-400">{entity.type}</p>
+      <Card
+        onClick={onClick}
+        className={cn(
+          'w-[200px] h-[150px] p-4 cursor-pointer transition-colors',
+          'bg-slate-800/50 border-slate-700/50 hover:border-slate-600',
+          isSelected && 'ring-2 ring-blue-500 border-blue-500/50'
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-slate-700/50">
+                <Icon className="h-4 w-4 text-slate-300" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-white">{entity.name}</h3>
+                <p className="text-xs text-slate-400">{entity.type}</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* State Badge */}
-        <div className="mt-2">
-          <Badge
-            variant="outline"
-            className={cn('gap-1', stateInfo.color)}
-          >
-            <StateIcon className="h-3 w-3" />
-            {stateInfo.label}
-          </Badge>
-        </div>
+          {/* State Badge */}
+          <div className="mt-2">
+            <Badge
+              variant="outline"
+              className={cn('gap-1', stateInfo.color)}
+            >
+              <StateIcon className="h-3 w-3" />
+              {stateInfo.label}
+            </Badge>
+          </div>
 
-        {/* Value */}
-        {hasValue && (
-          <div className="mt-auto pt-2">
-            <div className="flex items-baseline gap-1">
-              <span className={cn(
-                'text-xl font-bold',
-                entity.state === 'critical' && 'text-red-400',
-                entity.state === 'warning' && 'text-yellow-400',
-                entity.state === 'normal' && 'text-green-400'
-              )}>
-                {entity.currentValue}
-              </span>
-              {entity.unit && (
-                <span className="text-sm text-slate-400">{entity.unit}</span>
+          {/* Value */}
+          {hasValue && (
+            <div className="mt-auto pt-2">
+              <div className="flex items-baseline gap-1">
+                <span className={cn(
+                  'text-xl font-bold',
+                  entity.state === 'critical' && 'text-red-400',
+                  entity.state === 'warning' && 'text-yellow-400',
+                  entity.state === 'normal' && 'text-green-400'
+                )}>
+                  {entity.currentValue}
+                </span>
+                {entity.unit && (
+                  <span className="text-sm text-slate-400">{entity.unit}</span>
+                )}
+              </div>
+              {hasRange && (
+                <p className="text-xs text-slate-500">
+                  정상: {entity.normalRange![0]} ~ {entity.normalRange![1]}
+                </p>
+              )}
+              {deviation && (
+                <p className="text-xs text-yellow-400">{deviation}</p>
               )}
             </div>
-            {hasRange && (
-              <p className="text-xs text-slate-500">
-                정상: {entity.normalRange![0]} ~ {entity.normalRange![1]}
-              </p>
-            )}
-            {deviation && (
-              <p className="text-xs text-yellow-400">{deviation}</p>
-            )}
-          </div>
-        )}
-      </div>
-    </Card>
+          )}
+        </div>
+      </Card>
+    </motion.div>
   );
 }

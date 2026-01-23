@@ -609,8 +609,6 @@ causes = engine.infer_cause("PAT_COLLISION", {})
 | 항목 | 값 |
 |------|---|
 | 문서 버전 | v2.0 |
-| 작성일 | 2026-01-22 |
-| 최종 갱신일 | 2026-01-22 |
 | 완료 보고서 | [step_06_추론규칙_완료.md](step_06_추론규칙_완료.md) |
 | ROADMAP 섹션 | A.2 Phase 6 |
 | Spec 섹션 | 2.2, 12.3 |

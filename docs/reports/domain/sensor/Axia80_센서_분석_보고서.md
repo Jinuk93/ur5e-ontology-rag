@@ -1,6 +1,5 @@
 # ATI Axia80 Force/Torque 센서 분석 보고서
 
-> **작성일**: 2026-01-22
 > **목적**: Axia80 센서의 이해와 UR5e 로봇과의 관계 정의
 > **대상 독자**: 측정장비에 익숙하지 않은 사람도 이해할 수 있도록 작성
 
@@ -805,8 +804,3 @@ relationships:
 ## 추가 학습
 - [Force Torque Sensor Basics](https://standardbots.com/blog/force-torque-sensor)
 - [Robot Force Control Applications](https://control.com/technical-articles/common-applications-of-force-and-torque-sensors-for-robotic-automation/)
-
----
-
-**문서 버전**: 1.0
-**최종 수정**: 2026-01-22

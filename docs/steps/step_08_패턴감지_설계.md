@@ -343,6 +343,5 @@ for pattern in patterns:
 | 항목 | 값 |
 |------|------|
 | 문서 버전 | v1.0 |
-| 작성일 | 2026-01-22 |
 | ROADMAP 섹션 | Stage 3, Phase 8 |
 | Spec 섹션 | 8.2 센서 데이터, 8.3 패턴 감지 |

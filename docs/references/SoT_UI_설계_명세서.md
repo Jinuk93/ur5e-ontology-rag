@@ -1,7 +1,6 @@
 # UR5e Ontology RAG - UI 설계 명세서
 
 > **문서 버전**: 1.0
-> **작성일**: 2026-01-23
 > **대상**: 프론트엔드 개발자
 
 ---
@@ -889,26 +888,26 @@ frontend/
 
 ## 11. 구현 우선순위
 
-### Phase 1: MVP (1주)
+### Phase 1: MVP (1주) ✅ 완료
 
-- [ ] 프로젝트 셋업 (Next.js + Tailwind + shadcn)
-- [ ] 기본 레이아웃 (Header + SplitView)
-- [ ] Live View: ObjectCard + RealtimeChart
-- [ ] 챗봇: 기본 Q&A + 답변 표시
+- [x] 프로젝트 셋업 (Next.js + Tailwind + shadcn)
+- [x] 기본 레이아웃 (Header + SplitView)
+- [x] Live View: ObjectCard + RealtimeChart
+- [x] 챗봇: 기본 Q&A + 답변 표시
 
-### Phase 2: 핵심 기능 (1주)
+### Phase 2: 핵심 기능 (1주) ✅ 완료
 
-- [ ] Graph View: React Flow 서브그래프
-- [ ] History View: 패턴 테이블 + 트렌드 차트
-- [ ] 챗봇: Evidence Drawer + 신뢰도 표시
-- [ ] API 연동 완성
+- [x] Graph View: React Flow 서브그래프
+- [x] History View: 패턴 테이블 + 트렌드 차트
+- [x] 챗봇: Evidence 토글 + 신뢰도 표시
+- [x] API 연동 완성 (`sendChatMessage()` → `/api/chat`)
 
-### Phase 3: 완성도 (1주)
+### Phase 3: 완성도 (1주) ✅ 완료
 
-- [ ] ABSTAIN 개선 UI
-- [ ] 반응형 대응
-- [ ] 로딩/에러 상태
-- [ ] 애니메이션 (Framer Motion)
+- [x] ABSTAIN 개선 UI
+- [x] 반응형 대응 (SplitView + 모바일 Sheet)
+- [x] 로딩/에러 상태
+- [x] 애니메이션 (Framer Motion)
 
 ---
 
@@ -934,6 +933,35 @@ frontend/
 | 패턴 | `data/sensor/processed/detected_patterns.json` |
 | 이벤트 | `data/sensor/processed/anomaly_events.json` |
 
+### 12.2.1 센서 API (P2)
+
+| 엔드포인트 | 설명 |
+|---|---|
+| `GET /api/sensors/readings?limit=60&offset=0` | 최신 센서 측정값 조회 (limit/offset 지원) |
+| `GET /api/sensors/patterns?limit=10` | 감지된 패턴 목록 |
+| `GET /api/sensors/events?limit=20` | 이상 이벤트 목록 |
+
+### 12.2.2 센서 SSE 스트리밍 (P3-1)
+
+| 엔드포인트 | 설명 |
+|---|---|
+| `GET /api/sensors/stream?interval=1.0` | 센서 측정값을 SSE(`text/event-stream`)로 스트리밍 전송 (interval=초 단위, 기본 1초) |
+
+- 이벤트 포맷: `data: {JSON}\n\n` (EventSource 호환)
+- 데이터 스키마: `SensorReading`(timestamp + Fx/Fy/Fz/Tx/Ty/Tz)
+- LiveView는 **SSE 모드(기본)** 와 **REST 폴링 모드(fallback)** 를 UI에서 전환 가능
+
+### 12.2.3 테마 전환 (P3-2)
+
+- 다크/라이트 테마를 지원하며, Header에서 토글 가능
+- 기본 테마는 dark로 시작하며(구현 기준), 시스템 테마 감지도 지원 가능
+
+### 12.2.4 다국어(i18n) (P3-3)
+
+- 지원 언어: 한국어(ko), 영어(en)
+- Header에서 언어 토글 가능
+- 사용자 선호 언어는 로컬에 저장되어(상태 persist) 새로고침 후에도 유지
+
 ### 12.3 API 테스트
 
 ```bash
@@ -949,8 +977,17 @@ curl -X POST http://localhost:8000/api/chat \
 
 - 해소: `src/api/main.py` 제공 및 `scripts/run_api.py`의 엔트리포인트(`src.api.main:app`) 일치
 - 해소: `/api/chat`에서 `trace_id` 제공 → `/api/evidence/{trace_id}`로 근거 조회 가능
-- 잔여(정리 권장): 프론트 요청 바디 필드명 `query` vs `message` (문서/프론트/백엔드 중 1곳 기준으로 통일)
-- 잔여(정리 권장): 프론트 camelCase(`traceId`) vs 백엔드 snake_case(`trace_id`)는 API 레이어에서 변환
+- 해소: 프론트 camelCase(`traceId`) vs 백엔드 snake_case(`trace_id`) → `lib/api.ts`의 `normalizeChatResponse()`에서 변환
+- 해소: 프론트 `page.tsx` → 실제 대시보드 연결 완료 (Header + SplitView + 뷰 전환)
+- 해소: ChatPanel 구현 완료 (입력 → API 호출 → 응답 렌더링)
+- 해소: 프론트 요청 바디 필드명 `query` vs `message` → 프론트는 `query` 중심으로 전송하고, 하위호환을 위해 `message`도 허용(정규화)
+
+### 12.5 변경 이력
+
+- P0 프론트엔드 구현 완료
+  - `page.tsx`: Header + SplitView, currentView 기반 뷰 전환
+  - `ChatPanel.tsx`: 입력 → sendChatMessage API → 응답 렌더링
+  - `HistoryView.tsx`: 기간 선택, 패턴 테이블, 예측 카드
 
 ---
 

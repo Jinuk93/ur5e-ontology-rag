@@ -627,6 +627,5 @@ def test_abstain_response():
 | 항목 | 값 |
 |------|------|
 | 문서 버전 | v1.0 |
-| 작성일 | 2026-01-22 |
 | ROADMAP 섹션 | Stage 4, Phase 12 |
 | Spec 섹션 | 7.3 응답 구조 |

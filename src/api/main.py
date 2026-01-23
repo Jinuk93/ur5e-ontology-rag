@@ -10,12 +10,18 @@ Phase12 추론 엔진과 연동하여 챗봇 API를 제공합니다.
 
 import logging
 import uuid
-from datetime import datetime
+import json
+import asyncio
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, model_validator
+import pandas as pd
+import numpy as np
 
 from src.config import get_settings
 from src.rag import (
@@ -24,6 +30,9 @@ from src.rag import (
     QueryType,
 )
 from src.ontology import OntologyEngine
+
+# 센서 데이터 경로
+SENSOR_DATA_DIR = Path(__file__).parent.parent.parent / "data" / "sensor"
 
 # ============================================================
 # 로깅 설정
@@ -387,6 +396,327 @@ async def get_ontology_summary():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# 센서 데이터 API
+# ============================================================
+
+# 센서 데이터 캐시
+_sensor_df: Optional[pd.DataFrame] = None
+_patterns_data: Optional[List[Dict]] = None
+_events_data: Optional[List[Dict]] = None
+
+
+def load_sensor_data() -> pd.DataFrame:
+    """센서 데이터 로드 (캐싱)"""
+    global _sensor_df
+    if _sensor_df is None:
+        parquet_path = SENSOR_DATA_DIR / "raw" / "axia80_week_01.parquet"
+        if parquet_path.exists():
+            try:
+                _sensor_df = pd.read_parquet(parquet_path)
+            except Exception as e:
+                # parquet 엔진(pyarrow/fastparquet) 미설치, 파일 손상 등
+                logger.warning(f"Failed to read sensor parquet: {parquet_path} ({e})")
+                _sensor_df = pd.DataFrame()
+
+            if not _sensor_df.empty:
+                required_cols = {"timestamp", "Fx", "Fy", "Fz", "Tx", "Ty", "Tz"}
+                missing = required_cols - set(_sensor_df.columns)
+                if missing:
+                    logger.warning(f"Sensor parquet missing required columns: {sorted(missing)}")
+                    _sensor_df = pd.DataFrame()
+                else:
+                    logger.info(f"Loaded sensor data: {len(_sensor_df)} records")
+        else:
+            logger.warning(f"Sensor data not found: {parquet_path}")
+            _sensor_df = pd.DataFrame()
+    return _sensor_df
+
+
+def load_patterns() -> List[Dict]:
+    """패턴 데이터 로드"""
+    global _patterns_data
+    if _patterns_data is None:
+        patterns_path = SENSOR_DATA_DIR / "processed" / "detected_patterns.json"
+        if patterns_path.exists():
+            with open(patterns_path, 'r', encoding='utf-8') as f:
+                _patterns_data = json.load(f)
+            logger.info(f"Loaded patterns: {len(_patterns_data)} patterns")
+        else:
+            _patterns_data = []
+    return _patterns_data
+
+
+def load_events() -> List[Dict]:
+    """이상 이벤트 데이터 로드"""
+    global _events_data
+    if _events_data is None:
+        events_path = SENSOR_DATA_DIR / "processed" / "anomaly_events.json"
+        if events_path.exists():
+            with open(events_path, 'r', encoding='utf-8') as f:
+                _events_data = json.load(f)
+            logger.info(f"Loaded events: {len(_events_data)} events")
+        else:
+            _events_data = []
+    return _events_data
+
+
+class SensorReading(BaseModel):
+    """센서 측정값"""
+    timestamp: str
+    Fx: float
+    Fy: float
+    Fz: float
+    Tx: float
+    Ty: float
+    Tz: float
+    status: Optional[str] = "normal"
+    task_mode: Optional[str] = "idle"
+
+
+class SensorReadingsResponse(BaseModel):
+    """센서 데이터 응답"""
+    readings: List[SensorReading]
+    total: int
+    time_range: Dict[str, str]
+
+
+class PatternInfo(BaseModel):
+    """패턴 정보"""
+    id: str
+    type: str
+    timestamp: str
+    confidence: float
+    metrics: Dict[str, Any]
+    related_error_codes: List[str] = Field(default_factory=list)
+
+
+class PatternsResponse(BaseModel):
+    """패턴 목록 응답"""
+    patterns: List[PatternInfo]
+    total: int
+
+
+class EventInfo(BaseModel):
+    """이벤트 정보"""
+    event_id: str
+    scenario: str
+    event_type: str
+    start_time: str
+    end_time: str
+    duration_s: float
+    error_code: Optional[str] = None
+    description: str
+
+
+class EventsResponse(BaseModel):
+    """이벤트 목록 응답"""
+    events: List[EventInfo]
+    total: int
+
+
+@app.get("/api/sensors/readings", response_model=SensorReadingsResponse, tags=["Sensors"])
+async def get_sensor_readings(
+    limit: int = Query(default=60, ge=1, le=1000, description="반환할 레코드 수"),
+    offset: int = Query(default=0, ge=0, description="시작 오프셋 (최신 데이터 기준)"),
+):
+    """
+    센서 측정값 조회
+
+    최신 데이터부터 limit 개수만큼 반환합니다.
+    프론트엔드 LiveView에서 실시간 차트 데이터로 사용합니다.
+    """
+    try:
+        df = load_sensor_data()
+
+        if df.empty:
+            return SensorReadingsResponse(
+                readings=[],
+                total=0,
+                time_range={"start": "", "end": ""},
+            )
+
+        # 최신 데이터부터 가져오기
+        total = len(df)
+        start_idx = max(0, total - offset - limit)
+        end_idx = total - offset
+
+        subset = df.iloc[start_idx:end_idx].copy()
+
+        readings = []
+        for _, row in subset.iterrows():
+            readings.append(SensorReading(
+                timestamp=str(row['timestamp']),
+                Fx=float(row['Fx']) if pd.notna(row['Fx']) else 0.0,
+                Fy=float(row['Fy']) if pd.notna(row['Fy']) else 0.0,
+                Fz=float(row['Fz']) if pd.notna(row['Fz']) else 0.0,
+                Tx=float(row['Tx']) if pd.notna(row['Tx']) else 0.0,
+                Ty=float(row['Ty']) if pd.notna(row['Ty']) else 0.0,
+                Tz=float(row['Tz']) if pd.notna(row['Tz']) else 0.0,
+                status=str(row.get('status', 'normal')),
+                task_mode=str(row.get('task_mode', 'idle')),
+            ))
+
+        time_range = {
+            "start": str(subset['timestamp'].min()) if not subset.empty else "",
+            "end": str(subset['timestamp'].max()) if not subset.empty else "",
+        }
+
+        return SensorReadingsResponse(
+            readings=readings,
+            total=total,
+            time_range=time_range,
+        )
+
+    except Exception as e:
+        logger.error(f"Sensor readings error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/sensors/patterns", response_model=PatternsResponse, tags=["Sensors"])
+async def get_sensor_patterns(
+    limit: int = Query(default=10, ge=1, le=100, description="반환할 패턴 수"),
+):
+    """
+    감지된 패턴 목록 조회
+
+    충돌, 과부하, 드리프트 등 감지된 패턴 목록을 반환합니다.
+    프론트엔드 HistoryView에서 패턴 테이블로 사용합니다.
+    """
+    try:
+        patterns_raw = load_patterns()
+
+        patterns = []
+        for p in patterns_raw[:limit]:
+            patterns.append(PatternInfo(
+                id=p.get('pattern_id', p.get('id', '')),
+                type=p.get('pattern_type', p.get('type', '')),
+                timestamp=p.get('timestamp', p.get('start_time', '')),
+                confidence=float(p.get('confidence', 0.0)),
+                metrics=p.get('metrics', {}),
+                related_error_codes=p.get('related_error_codes', p.get('error_codes', [])),
+            ))
+
+        return PatternsResponse(
+            patterns=patterns,
+            total=len(patterns_raw),
+        )
+
+    except Exception as e:
+        logger.error(f"Patterns error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/sensors/events", response_model=EventsResponse, tags=["Sensors"])
+async def get_sensor_events(
+    limit: int = Query(default=20, ge=1, le=100, description="반환할 이벤트 수"),
+):
+    """
+    이상 이벤트 목록 조회
+
+    시나리오 A/B/C에서 발생한 이상 이벤트 목록을 반환합니다.
+    """
+    try:
+        events_raw = load_events()
+
+        events = []
+        for e in events_raw[:limit]:
+            events.append(EventInfo(
+                event_id=e.get('event_id', ''),
+                scenario=e.get('scenario', ''),
+                event_type=e.get('event_type', ''),
+                start_time=e.get('start_time', ''),
+                end_time=e.get('end_time', ''),
+                duration_s=float(e.get('duration_s', 0)),
+                error_code=e.get('error_code'),
+                description=e.get('description', ''),
+            ))
+
+        return EventsResponse(
+            events=events,
+            total=len(events_raw),
+        )
+
+    except Exception as e:
+        logger.error(f"Events error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# SSE 스트리밍 커서 (시뮬레이션용)
+_sse_cursor: int = 0
+
+
+async def sensor_stream_generator(request: Request, interval: float = 1.0):
+    """
+    센서 데이터 SSE 스트림 생성기
+
+    실제 운영에서는 실시간 센서 데이터를 받아 전송하지만,
+    현재는 저장된 데이터를 순차적으로 재생합니다.
+    """
+    global _sse_cursor
+    df = load_sensor_data()
+
+    if df.empty:
+        yield f"data: {json.dumps({'error': 'No sensor data available'})}\n\n"
+        return
+
+    total = len(df)
+
+    while True:
+        # 클라이언트 연결 확인
+        if await request.is_disconnected():
+            logger.info("SSE client disconnected")
+            break
+
+        # 현재 커서 위치의 데이터 가져오기
+        row = df.iloc[_sse_cursor % total]
+
+        reading = {
+            "timestamp": str(row['timestamp']),
+            "Fx": float(row['Fx']) if pd.notna(row['Fx']) else 0.0,
+            "Fy": float(row['Fy']) if pd.notna(row['Fy']) else 0.0,
+            "Fz": float(row['Fz']) if pd.notna(row['Fz']) else 0.0,
+            "Tx": float(row['Tx']) if pd.notna(row['Tx']) else 0.0,
+            "Ty": float(row['Ty']) if pd.notna(row['Ty']) else 0.0,
+            "Tz": float(row['Tz']) if pd.notna(row['Tz']) else 0.0,
+            "cursor": _sse_cursor,
+            "total": total,
+        }
+
+        # SSE 형식으로 전송
+        yield f"data: {json.dumps(reading)}\n\n"
+
+        # 커서 이동
+        _sse_cursor = (_sse_cursor + 1) % total
+
+        # 간격 대기
+        await asyncio.sleep(interval)
+
+
+@app.get("/api/sensors/stream", tags=["Sensors"])
+async def stream_sensor_data(
+    request: Request,
+    interval: float = Query(default=1.0, ge=0.1, le=10.0, description="전송 간격 (초)"),
+):
+    """
+    센서 데이터 SSE 스트림
+
+    Server-Sent Events를 통해 실시간 센서 데이터를 스트리밍합니다.
+    프론트엔드 LiveView에서 EventSource로 구독합니다.
+
+    - interval: 데이터 전송 간격 (기본 1초)
+    """
+    return StreamingResponse(
+        sensor_stream_generator(request, interval),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # nginx 버퍼링 비활성화
+        },
+    )
 
 
 # ============================================================

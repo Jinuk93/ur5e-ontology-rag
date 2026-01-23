@@ -1,0 +1,76 @@
+{
+  "common": {
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "retry": "재시도",
+    "cancel": "취소",
+    "confirm": "확인",
+    "save": "저장",
+    "close": "닫기"
+  },
+  "header": {
+    "title": "UR5e Monitor",
+    "live": "Live",
+    "graph": "Graph",
+    "history": "History",
+    "connected": "연결됨",
+    "disconnected": "연결 끊김",
+    "connecting": "연결 중..."
+  },
+  "live": {
+    "title": "모니터링 객체",
+    "sseMode": "SSE 실시간",
+    "pollingMode": "폴링 (5초)",
+    "reconnect": "재연결",
+    "switchToPolling": "폴링 모드로 전환",
+    "switchToSse": "SSE 모드로 전환",
+    "sensorLoadError": "센서 데이터를 불러올 수 없습니다. 백엔드 연결을 확인하세요.",
+    "sensorLoading": "센서 데이터 로딩 중...",
+    "chartTitle": "Fz (힘 Z축) 실시간 모니터링"
+  },
+  "alert": {
+    "normal": "정상 동작",
+    "warning": "경고",
+    "critical": "위험"
+  },
+  "chat": {
+    "placeholder": "질문을 입력하세요...",
+    "send": "전송",
+    "suggested": "추천 질문",
+    "evidence": "근거 보기",
+    "confidence": "신뢰도",
+    "abstain": "응답 불가",
+    "queryType": "질의 유형",
+    "abstainTitle": "확실한 답변을 드리기 어렵습니다.",
+    "foundInfo": "확인된 정보",
+    "missingInfo": "부족한 정보",
+    "trySuggestions": "이렇게 질문해보세요",
+    "referenceInfo": "참고할 수 있는 내용:",
+    "thinking": "생각 중..."
+  },
+  "evidence": {
+    "title": "근거 상세",
+    "ontologyPaths": "온톨로지 경로",
+    "documentRefs": "문서 참조",
+    "similarEvents": "유사 이벤트",
+    "graphSummary": "그래프 요약",
+    "relevance": "관련도"
+  },
+  "history": {
+    "title": "히스토리",
+    "period": "기간",
+    "hour1": "1시간",
+    "hour24": "24시간",
+    "day7": "7일",
+    "patterns": "패턴",
+    "prediction": "예측"
+  },
+  "theme": {
+    "light": "라이트 모드로 전환",
+    "dark": "다크 모드로 전환"
+  },
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  }
+}

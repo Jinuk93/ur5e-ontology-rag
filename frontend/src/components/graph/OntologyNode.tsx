@@ -5,11 +5,15 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import type { NodeState } from '@/types/api';
 
-export interface OntologyNodeData {
+import type { Node } from '@xyflow/react';
+
+export interface OntologyNodeData extends Record<string, unknown> {
   label: string;
   type: string;
   state?: NodeState;
 }
+
+type OntologyNodeType = Node<OntologyNodeData, 'ontology'>;
 
 const typeStyles: Record<string, { bg: string; border: string; text: string }> = {
   MEASUREMENT_AXIS: { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-400' },
@@ -28,8 +32,8 @@ const stateColors: Record<NodeState, string> = {
   critical: 'ring-red-500',
 };
 
-function OntologyNodeComponent({ data, selected }: NodeProps<{ data: OntologyNodeData }>) {
-  const nodeData = data as unknown as OntologyNodeData;
+function OntologyNodeComponent({ data, selected }: NodeProps<OntologyNodeType>) {
+  const nodeData = data;
   const style = typeStyles[nodeData.type] || typeStyles.MEASUREMENT_AXIS;
   const stateRing = nodeData.state ? stateColors[nodeData.state] : '';
 

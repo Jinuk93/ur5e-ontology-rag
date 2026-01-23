@@ -2,7 +2,7 @@
 
 > **Version**: 2.0
 > **문서 목적**: 온톨로지 기반 제조 AI 시스템 기술 설계서
-> **참고 문서**: Axia80_센서_분석_보고서.md, UR5e_로봇_분석_보고서.md, 온톨로지_스키마_설계.md
+> **참고 문서**: reports/domain/sensor/Axia80_센서_분석_보고서.md, reports/domain/robot/UR5e_로봇_분석_보고서.md, 온톨로지_스키마_설계.md
 
 ---
 
@@ -144,7 +144,7 @@
 │   ┌─────────────────────────────────────────────────────────────────┐   │
 │   │ 1. 엔티티 인식                                                  │   │
 │   │    → Fz는 Axia80 센서의 Z축 힘 측정값                          │   │
-│   │    → 정상 범위: -60N ~ 0N (IDLE 상태)                          │   │
+│   │    → 정상 범위(예시 기준선): -60N ~ 0N                         │   │
 │   │    → -350N은 정상의 약 6배                                       │   │
 │   │                                                                  │   │
 │   │ 2. 현재 맥락 분석                                                │   │
@@ -258,7 +258,7 @@
 |--------------|-------------------|
 | **이기종 데이터 통합** | Axia80 센서 + UR5e 로봇 + 문서 3종 |
 | **온톨로지 기반 관계** | 4-Domain (Equipment, Measurement, Knowledge, Context) |
-| **시각적 그래프 탐색** | 관계 그래프 UI (D3.js) |
+| **시각적 그래프 탐색** | 관계 그래프 UI (React Flow) |
 | **맥락 기반 분석** | 시간대, 제품, 작업자 컨텍스트 반영 |
 
 ## 3.3 규모 비교
@@ -846,9 +846,12 @@ Document:
 │                                                                          │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │  Frontend (팔란티어 스타일 UI)                                    │  │
-│  │  • Streamlit (빠른 프로토타이핑)                                  │  │
-│  │  • D3.js (관계 그래프 시각화)                                     │  │
-│  │  • Plotly (센서 차트)                                             │  │
+│  │  • Next.js 14+ (App Router) - 실제: v16                           │  │
+│  │  • Tailwind + shadcn/ui                                            │  │
+│  │  • React Flow (관계 그래프)                                       │  │
+│  │  • Recharts (센서/히스토리 차트)                                  │  │
+│  │  • TanStack Query (데이터 캐싱/로딩)                              │  │
+│  │  • SSE(EventSource) + REST 폴백                                   │  │
 │  └───────────────────────────────────────────────────────────────────┘  │
 │                              │                                           │
 │                              ▼                                           │
@@ -883,8 +886,9 @@ Document:
 | **Vector DB** | ChromaDB | 로컬 실행, 빠른 프로토타이핑 |
 | **Sensor Store** | Parquet | 컬럼 기반, 빠른 조회 |
 | **Backend** | FastAPI | 비동기, 자동 문서화 |
-| **Frontend** | Streamlit | 빠른 UI 개발 |
-| **Graph Viz** | D3.js | 유연한 그래프 시각화 |
+| **Frontend** | Next.js | 타입/라우팅/컴포넌트 기반 UI |
+| **Graph Viz** | React Flow | 인터랙티브 그래프 컴포넌트 |
+| **Charts** | Recharts | React 네이티브 차트 |
 | **LLM** | GPT-4 | 최고 수준의 추론 능력 |
 
 ## 9.3 의존성
@@ -894,7 +898,6 @@ Document:
 python>=3.10
 fastapi>=0.100.0
 uvicorn>=0.23.0
-streamlit>=1.40.0
 
 # Database
 chromadb>=0.4.0
@@ -909,7 +912,7 @@ pyarrow>=14.0.0
 pyyaml>=6.0
 
 # Visualization
-plotly>=5.18.0
+## 프론트엔드(Next.js) 의존성은 `frontend/package.json`을 기준으로 합니다.
 ```
 
 ---
@@ -920,30 +923,33 @@ plotly>=5.18.0
 
 | Method | Path | 설명 |
 |--------|------|------|
-| POST | `/api/v1/query` | 질의응답 (메인) |
-| GET | `/api/v1/ontology/entity/{id}` | 엔티티 상세 조회 |
-| GET | `/api/v1/ontology/relations/{id}` | 관계 탐색 |
-| GET | `/api/v1/sensor/current` | 현재 센서 상태 |
-| GET | `/api/v1/sensor/patterns` | 감지된 패턴 |
-| GET | `/api/v1/evidence/{trace_id}` | 근거 상세 조회 |
-| GET | `/api/v1/health` | 상태 점검 |
+| GET | `/health` | 상태 점검 |
+| POST | `/api/chat` | 챗봇 질의 (P0 계약) |
+| GET | `/api/evidence/{trace_id}` | 근거/상세 조회 (trace 기반) |
+| GET | `/api/ontology/summary` | 온톨로지 요약 |
+| GET | `/api/sensors/readings` | 센서 측정값 조회 (limit/offset) |
+| GET | `/api/sensors/patterns` | 감지된 패턴 목록 |
+| GET | `/api/sensors/events` | 이상 이벤트 목록 |
+| GET | `/api/sensors/stream` | 센서 SSE 스트리밍(EventSource) |
 
-## 10.2 POST /api/v1/query
+> **센서 API Degrade 정책**: 센서 데이터 파일(`data/sensor/raw/axia80_week_01.parquet`)이 없거나 parquet 엔진이 없는 환경에서는 `readings=[]`로 빈 배열을 반환하며, SSE는 에러 이벤트를 1회 송출 후 종료될 수 있습니다. 이는 데모 데이터 부재 상황에서의 정상 degrade 동작으로 취급합니다.
+
+> 참고: 과거(레거시) API는 `src_backup/` 계열 문서/코드에 남아 있을 수 있으며, UI 연동의 정본은 위 P0 계약(`/api/chat`, `/api/evidence/{trace_id}`)을 기준으로 합니다.
+
+## 10.2 POST /api/chat
 
 ### Request
 ```json
 {
   "query": "Fz가 -350N인데 이게 뭐야?",
   "context": {
-    "current_time": "2024-01-17T14:30:00",
-    "product": "PART-C"
-  },
-  "options": {
-    "include_graph": true,
-    "include_prediction": true
+    "currentView": "live",
+    "selectedEntity": "Fz"
   }
 }
 ```
+
+> 하위호환: `query` 대신 `message`를 보낼 수도 있습니다.
 
 ### Response
 ```json
@@ -963,7 +969,7 @@ plotly>=5.18.0
   "reasoning": {
     "cause": "CAUSE_GRIP_POSITION",
     "confidence": 0.85,
-    "ontology_path": "Fz → CRITICAL → PAT_OVERLOAD → CAUSE_GRIP_POSITION"
+    "ontology_path": "Fz → State_Critical → PAT_OVERLOAD → CAUSE_GRIP_POSITION"
   },
 
   "prediction": {
@@ -978,6 +984,12 @@ plotly>=5.18.0
   },
 
   "evidence": {
+    "ontology_paths": [
+      {
+        "path": ["Fz", "State_Critical", "PAT_OVERLOAD", "CAUSE_GRIP_POSITION"],
+        "relations": ["HAS_STATE", "INDICATES", "INDICATES"]
+      }
+    ],
     "document_refs": [
       {"doc_id": "service_manual", "page": 45, "chunk_id": "SM-045-01"}
     ],
@@ -1001,7 +1013,9 @@ plotly>=5.18.0
 }
 ```
 
-## 10.3 GET /api/v1/ontology/entity/{id}
+## 10.3 GET /api/v1/ontology/entity/{id} (미구현 - 향후 확장용)
+
+> **주의**: 이 엔드포인트는 현재 구현되지 않았습니다. 아래는 향후 확장 시 예상되는 응답 스키마입니다.
 
 ### Response
 ```json
@@ -1082,11 +1096,11 @@ plotly>=5.18.0
 
 | 컴포넌트 | 설명 | 기술 |
 |----------|------|------|
-| **Query Interface** | 질문 입력/답변 표시 | Streamlit |
-| **Knowledge Graph** | 관계 그래프 시각화, 클릭 탐색 | D3.js |
-| **Sensor Timeline** | 센서 데이터 + 이벤트 타임라인 | Plotly |
-| **Real-time Status** | 현재 센서 상태/맥락 | Streamlit |
-| **Evidence Panel** | 근거 (온톨로지 경로 + 문서) | Streamlit |
+| **Query Interface** | 질문 입력/답변 표시 | Next.js (React) |
+| **Knowledge Graph** | 관계 그래프 시각화, 클릭 탐색 | React Flow |
+| **Sensor Timeline** | 센서 데이터 + 이벤트 타임라인 | Recharts |
+| **Real-time Status** | 현재 센서 상태/맥락 | Next.js (React) |
+| **Evidence Panel** | 근거 (온톨로지 경로 + 문서) | Next.js (React) |
 
 ## 11.3 그래프 인터랙션
 
@@ -1143,6 +1157,12 @@ plotly>=5.18.0
 
 ## 12.3 테스트 시나리오
 
+### 12.3.0 재현성(런타임 검증) - 권장
+
+- Windows E2E: `powershell -ExecutionPolicy Bypass -File scripts/e2e_validate.ps1 -Port 8002 -ForceKillPort`
+- 런타임 API 검증: `scripts/validate_api.py`
+- 프론트 품질 게이트(선택): `frontend/`에서 `npm run lint`, `npm run build`
+
 ### 시나리오 1: 온톨로지 추론 테스트
 ```
 질문: "Fz가 -350N인데 이게 뭐야?"
@@ -1189,7 +1209,7 @@ plotly>=5.18.0
 
 | 문서 | 설명 |
 |------|------|
-| `Axia80_센서_분석_보고서.md` | ATI Axia80 센서 상세 분석 |
-| `UR5e_로봇_분석_보고서.md` | UR5e 협동로봇 상세 분석 |
+| `reports/domain/sensor/Axia80_센서_분석_보고서.md` | ATI Axia80 센서 상세 분석 |
+| `reports/domain/robot/UR5e_로봇_분석_보고서.md` | UR5e 협동로봇 상세 분석 |
 | `온톨로지_스키마_설계.md` | 온톨로지 스키마 상세 설계 |
 | `Unified_ROADMAP.md` | 개발 로드맵 |

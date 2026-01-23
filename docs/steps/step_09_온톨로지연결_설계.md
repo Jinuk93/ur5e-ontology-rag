@@ -352,6 +352,5 @@ enriched_ontology = connector.enrich_ontology(patterns)
 | 항목 | 값 |
 |------|------|
 | 문서 버전 | v1.0 |
-| 작성일 | 2026-01-22 |
 | ROADMAP 섹션 | Stage 3, Phase 9 |
 | Spec 섹션 | 8.4 온톨로지 연결 |

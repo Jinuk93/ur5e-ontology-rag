@@ -1,198 +1,180 @@
-// P0 API contract helper (backend snake_case -> frontend camelCase)
+// P0 API Contract - Type Definitions Only
 //
-// 목적:
-// - 백엔드는 Python 표준(snake_case)을 유지
-// - 프론트는 이 어댑터에서 camelCase로 변환하여 UI 전역에서는 camelCase만 사용
+// 이 파일은 백엔드-프론트엔드 간 API 계약을 정의하는 **타입 전용** 파일입니다.
 //
-// 사용 예시:
-// const raw = await fetch('/api/chat', { method: 'POST', body: JSON.stringify({ query: '...' })}).then(r => r.json())
-// const data = normalizeChatResponse(raw)
+// ========================================
+// 런타임 어댑터 로직(정본):
+//   frontend/src/lib/api.ts
+//   - normalizeChatResponse(): snake_case → camelCase 변환
+//   - buildChatRequest(): 요청 구성
+// ========================================
+//
+// 이 파일의 역할:
+// - API 계약 문서화 (타입/인터페이스 정의)
+// - 백엔드 응답 스키마 참조용
+// - 프론트엔드 타입 참조용 (실제 타입은 frontend/src/types/api.ts 사용 권장)
+//
+// 스키마 변경 시:
+// 1. 백엔드 스키마 수정 (src/api/main.py)
+// 2. 프론트 타입 수정 (frontend/src/types/api.ts)
+// 3. 프론트 어댑터 수정 (frontend/src/lib/api.ts)
+// 4. 이 파일은 문서화 목적으로 동기화 (선택)
 
-export type QueryType = 'ontology' | 'hybrid' | 'rag' | string
-export type NodeState = 'normal' | 'warning' | 'critical' | string
+// ============================================================
+// Type Definitions
+// ============================================================
+
+export type QueryType = 'ontology' | 'hybrid' | 'rag' | string;
+export type NodeState = 'normal' | 'warning' | 'critical' | string;
+
+// ============================================================
+// Evidence Types
+// ============================================================
 
 export interface OntologyPath {
-  path: string[]
-  relations: string[]
-  confidence?: number
+  path: string[];
+  relations: string[];
+  confidence?: number;
 }
 
 export interface DocumentRef {
-  docId?: string
-  page?: number
-  chunkId?: string
-  relevance?: number
-  // 백엔드가 다른 키를 줄 수도 있어 열어둠
-  [k: string]: unknown
-}
-
-export interface GraphNode {
-  id: string
-  type: string
-  label: string
-  state?: NodeState
-  [k: string]: unknown
-}
-
-export interface GraphEdge {
-  source: string
-  target: string
-  relation: string
-  [k: string]: unknown
+  docId?: string;
+  page?: number;
+  chunkId?: string;
+  relevance?: number;
 }
 
 export interface ChatEvidence {
-  ontologyPathObjects?: OntologyPath[]
-  documentRefs?: DocumentRef[]
-  similarEvents?: string[]
-  // 필요하면 확장
-  [k: string]: unknown
+  ontologyPathObjects?: OntologyPath[];
+  documentRefs?: DocumentRef[];
+  similarEvents?: string[];
 }
 
-export interface ChatResponse {
-  traceId: string
-  queryType: QueryType
-  answer: string
-  abstain: boolean
-  abstainReason?: string
+// ============================================================
+// Graph Types
+// ============================================================
 
-  analysis?: Record<string, unknown>
-  reasoning?: Record<string, unknown>
-  prediction?: Record<string, unknown>
-  recommendation?: Record<string, unknown>
-
-  evidence?: ChatEvidence
-  graph?: {
-    nodes: GraphNode[]
-    edges: GraphEdge[]
-  }
-
-  timestamp?: string
-  [k: string]: unknown
+export interface GraphNode {
+  id: string;
+  type: string;
+  label: string;
+  state?: NodeState;
 }
 
-type AnyRecord = Record<string, any>
-
-function asArray<T = any>(value: any): T[] {
-  if (Array.isArray(value)) return value
-  return []
+export interface GraphEdge {
+  source: string;
+  target: string;
+  relation: string;
 }
 
-function mapOntologyPathObject(item: any): OntologyPath {
-  // 백엔드가 { path: [...], relations: [...] } 형태를 준다는 전제
-  return {
-    path: Array.isArray(item?.path) ? item.path : [],
-    relations: Array.isArray(item?.relations) ? item.relations : [],
-    confidence: typeof item?.confidence === 'number' ? item.confidence : undefined,
-  }
+// ============================================================
+// ABSTAIN Types (P3-4)
+// ============================================================
+
+export interface PartialEvidence {
+  found: string[];
+  missing: string[];
 }
 
-function mapDocumentRef(item: any): DocumentRef {
-  // 흔한 snake_case 키를 camelCase로 보정
-  const docId = item?.doc_id ?? item?.docId
-  const chunkId = item?.chunk_id ?? item?.chunkId
-  const relevance = item?.relevance ?? item?.score
-
-  return {
-    ...item,
-    docId: typeof docId === 'string' ? docId : undefined,
-    chunkId: typeof chunkId === 'string' ? chunkId : undefined,
-    page: typeof item?.page === 'number' ? item.page : undefined,
-    relevance: typeof relevance === 'number' ? relevance : undefined,
-  }
-}
-
-function mapGraphNode(item: any): GraphNode {
-  return {
-    ...item,
-    id: String(item?.id ?? ''),
-    type: String(item?.type ?? ''),
-    label: String(item?.label ?? ''),
-    state: item?.state,
-  }
-}
-
-function mapGraphEdge(item: any): GraphEdge {
-  return {
-    ...item,
-    source: String(item?.source ?? ''),
-    target: String(item?.target ?? ''),
-    relation: String(item?.relation ?? ''),
-  }
-}
+// ============================================================
+// Chat Request/Response
+// ============================================================
 
 /**
- * 백엔드(snake_case) 응답을 프론트(camelCase)로 정규화.
+ * 프론트엔드 → 백엔드 요청 스키마
  *
- * 핵심 매핑:
- * - trace_id -> traceId
- * - query_type -> queryType
- * - abstain_reason -> abstainReason
- * - evidence.ontology_paths -> evidence.ontologyPathObjects
- * - evidence.document_refs -> evidence.documentRefs
- * - evidence.similar_events -> evidence.similarEvents
+ * 백엔드는 query와 message 모두 수용 (query 우선)
  */
-export function normalizeChatResponse(raw: unknown): ChatResponse {
-  const r = (raw ?? {}) as AnyRecord
-
-  const traceId = r.trace_id ?? r.traceId
-  const queryType = r.query_type ?? r.queryType
-  const abstainReason = r.abstain_reason ?? r.abstainReason
-
-  const evidence = (r.evidence ?? {}) as AnyRecord
-  const ontologyPathObjectsRaw = evidence.ontology_paths ?? evidence.ontologyPathObjects
-  const documentRefsRaw = evidence.document_refs ?? evidence.documentRefs
-  const similarEventsRaw = evidence.similar_events ?? evidence.similarEvents
-
-  const graph = (r.graph ?? {}) as AnyRecord
-  const nodesRaw = graph.nodes
-  const edgesRaw = graph.edges
-
-  return {
-    ...r,
-    traceId: String(traceId ?? ''),
-    queryType: (queryType ?? '') as QueryType,
-    answer: String(r.answer ?? ''),
-    abstain: Boolean(r.abstain),
-    abstainReason: typeof abstainReason === 'string' ? abstainReason : undefined,
-
-    evidence: {
-      ...evidence,
-      ontologyPathObjects: asArray(ontologyPathObjectsRaw).map(mapOntologyPathObject),
-      documentRefs: asArray(documentRefsRaw).map(mapDocumentRef),
-      similarEvents: asArray(similarEventsRaw).map((x) => String(x)),
-    },
-
-    graph: {
-      nodes: asArray(nodesRaw).map(mapGraphNode),
-      edges: asArray(edgesRaw).map(mapGraphEdge),
-    },
-
-    timestamp: typeof r.timestamp === 'string' ? r.timestamp : undefined,
-  }
-}
-
 export interface ChatRequest {
-  // 프론트는 message를 우선으로 쓰되, 백엔드가 query/message 모두 받으므로 둘 중 하나만 넣어도 됨
-  message?: string
-  query?: string
-  context?: Record<string, unknown>
+  message?: string;
+  query?: string;
+  context?: {
+    selectedEntity?: string;
+    currentValue?: number;
+    timeRange?: string;
+    recentEvents?: string[];
+    currentView?: 'live' | 'graph' | 'history';
+  };
 }
 
 /**
- * 프론트 요청을 백엔드와 호환되게 구성.
+ * 백엔드 → 프론트엔드 응답 스키마 (camelCase 정규화 후)
  *
- * 권장: 프론트 내부에서는 message를 표준으로 사용.
- * - message가 있으면 message만 전송
- * - 없으면 query 전송
+ * 백엔드 원본은 snake_case (trace_id, query_type, abstain_reason 등)
+ * 프론트 어댑터에서 camelCase로 변환
  */
-export function buildChatRequest(req: ChatRequest): AnyRecord {
-  const message = typeof req.message === 'string' ? req.message : undefined
-  const query = typeof req.query === 'string' ? req.query : undefined
+export interface ChatResponse {
+  traceId: string;
+  queryType: QueryType;
+  answer: string;
+  abstain: boolean;
+  abstainReason?: string;
 
-  return {
-    ...(message ? { message } : {}),
-    ...(!message && query ? { query } : {}),
-    context: req.context ?? undefined,
-  }
+  // ABSTAIN 개선 UI 지원 (P3-4)
+  partialEvidence?: PartialEvidence;
+  suggestedQuestions?: string[];
+
+  // 분석 결과
+  analysis?: {
+    entity?: string;
+    value?: number;
+    unit?: string;
+    state?: string;
+    normalRange?: number[];
+    deviation?: string;
+  };
+
+  // 추론 결과
+  reasoning?: {
+    confidence: number;
+    pattern?: string;
+    patternConfidence?: number;
+    cause?: string;
+    causeConfidence?: number;
+  };
+
+  // 예측
+  prediction?: {
+    errorCode?: string;
+    probability?: number;
+    timeframe?: string;
+  };
+
+  // 권장 조치
+  recommendation?: {
+    immediate?: string;
+    reference?: string;
+  };
+
+  // 근거
+  evidence?: ChatEvidence;
+
+  // 그래프 시각화용
+  graph?: {
+    nodes: GraphNode[];
+    edges: GraphEdge[];
+  };
+
+  timestamp?: string;
 }
+
+// ============================================================
+// Backend snake_case → Frontend camelCase 매핑 참조
+// ============================================================
+//
+// 백엔드 응답 (snake_case)    →  프론트 타입 (camelCase)
+// ─────────────────────────────────────────────────────────
+// trace_id                   →  traceId
+// query_type                 →  queryType
+// abstain_reason             →  abstainReason
+// partial_evidence           →  partialEvidence
+// suggested_questions        →  suggestedQuestions
+// evidence.ontology_paths    →  evidence.ontologyPathObjects
+// evidence.document_refs     →  evidence.documentRefs
+// evidence.similar_events    →  evidence.similarEvents
+// analysis.normal_range      →  analysis.normalRange
+// reasoning.pattern_confidence → reasoning.patternConfidence
+// reasoning.cause_confidence →  reasoning.causeConfidence
+// prediction.error_code      →  prediction.errorCode
+//
+// 변환 로직 구현: frontend/src/lib/api.ts > normalizeChatResponse()

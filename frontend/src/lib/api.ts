@@ -13,7 +13,15 @@ function asArray<T = unknown>(value: unknown): T[] {
   return [];
 }
 
-function mapOntologyPath(item: Record<string, unknown>): OntologyPath {
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+function mapOntologyPath(value: unknown): OntologyPath {
+  const item = asRecord(value);
   return {
     path: Array.isArray(item?.path) ? item.path as string[] : [],
     relations: Array.isArray(item?.relations) ? item.relations as string[] : [],
@@ -21,7 +29,8 @@ function mapOntologyPath(item: Record<string, unknown>): OntologyPath {
   };
 }
 
-function mapDocumentRef(item: Record<string, unknown>): DocumentRef {
+function mapDocumentRef(value: unknown): DocumentRef {
+  const item = asRecord(value);
   const docId = (item?.doc_id ?? item?.docId) as string | undefined;
   const chunkId = (item?.chunk_id ?? item?.chunkId) as string | undefined;
   const relevance = (item?.relevance ?? item?.score) as number | undefined;
@@ -34,7 +43,8 @@ function mapDocumentRef(item: Record<string, unknown>): DocumentRef {
   };
 }
 
-function mapGraphNode(item: Record<string, unknown>): GraphNode {
+function mapGraphNode(value: unknown): GraphNode {
+  const item = asRecord(value);
   return {
     id: String(item?.id ?? ''),
     type: String(item?.type ?? ''),
@@ -43,7 +53,8 @@ function mapGraphNode(item: Record<string, unknown>): GraphNode {
   };
 }
 
-function mapGraphEdge(item: Record<string, unknown>): GraphEdge {
+function mapGraphEdge(value: unknown): GraphEdge {
+  const item = asRecord(value);
   return {
     source: String(item?.source ?? ''),
     target: String(item?.target ?? ''),
@@ -60,6 +71,9 @@ export function normalizeChatResponse(raw: Record<string, unknown>): ChatRespons
   const traceId = (r.trace_id ?? r.traceId) as string;
   const queryType = (r.query_type ?? r.queryType) as ChatResponse['queryType'];
   const abstainReason = (r.abstain_reason ?? r.abstainReason) as string | undefined;
+
+  const partialEvidenceRaw = (r.partial_evidence ?? r.partialEvidence) as Record<string, unknown> | undefined;
+  const suggestedQuestionsRaw = (r.suggested_questions ?? r.suggestedQuestions) as unknown;
 
   const evidence = (r.evidence ?? {}) as Record<string, unknown>;
   const ontologyPathsRaw = evidence.ontology_paths ?? evidence.ontologyPathObjects;
@@ -112,6 +126,13 @@ export function normalizeChatResponse(raw: Record<string, unknown>): ChatRespons
     answer: String(r.answer ?? ''),
     abstain: Boolean(r.abstain),
     abstainReason: typeof abstainReason === 'string' ? abstainReason : undefined,
+    partialEvidence: partialEvidenceRaw
+      ? {
+          found: asArray(partialEvidenceRaw.found).map((x) => String(x)),
+          missing: asArray(partialEvidenceRaw.missing).map((x) => String(x)),
+        }
+      : undefined,
+    suggestedQuestions: asArray(suggestedQuestionsRaw).map((x) => String(x)),
     analysis,
     reasoning,
     prediction,
@@ -135,11 +156,11 @@ export function normalizeChatResponse(raw: Record<string, unknown>): ChatRespons
 export function buildChatRequest(req: ChatRequest): Record<string, unknown> {
   const message = typeof req.message === 'string' ? req.message : undefined;
   const query = typeof req.query === 'string' ? req.query : undefined;
+  const normalizedQuery = query ?? message;
 
   return {
+    ...(normalizedQuery ? { query: normalizedQuery } : {}),
     ...(message ? { message } : {}),
-    ...(!message && query ? { query } : {}),
-    ...(query && !message ? { query } : {}),
     context: req.context ?? undefined,
   };
 }
@@ -179,5 +200,83 @@ export async function getHealth() {
 
 export async function getOntologySummary() {
   const response = await fetch(`${API_BASE_URL}/api/ontology/summary`);
+  return response.json();
+}
+
+// ============================================================
+// Sensor API
+// ============================================================
+
+export interface SensorReadingRaw {
+  timestamp: string;
+  Fx: number;
+  Fy: number;
+  Fz: number;
+  Tx: number;
+  Ty: number;
+  Tz: number;
+  status?: string;
+  task_mode?: string;
+}
+
+export interface SensorReadingsResponse {
+  readings: SensorReadingRaw[];
+  total: number;
+  time_range: { start: string; end: string };
+}
+
+export interface PatternRaw {
+  id: string;
+  type: string;
+  timestamp: string;
+  confidence: number;
+  metrics: Record<string, unknown>;
+  related_error_codes: string[];
+}
+
+export interface PatternsResponse {
+  patterns: PatternRaw[];
+  total: number;
+}
+
+export interface EventRaw {
+  event_id: string;
+  scenario: string;
+  event_type: string;
+  start_time: string;
+  end_time: string;
+  duration_s: number;
+  error_code?: string;
+  description: string;
+}
+
+export interface EventsResponse {
+  events: EventRaw[];
+  total: number;
+}
+
+export async function getSensorReadings(limit = 60, offset = 0): Promise<SensorReadingsResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/sensors/readings?limit=${limit}&offset=${offset}`
+  );
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getSensorPatterns(limit = 10): Promise<PatternsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/sensors/patterns?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getSensorEvents(limit = 20): Promise<EventsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/sensors/events?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
   return response.json();
 }

@@ -1,0 +1,76 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "close": "Close"
+  },
+  "header": {
+    "title": "UR5e Monitor",
+    "live": "Live",
+    "graph": "Graph",
+    "history": "History",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connecting": "Connecting..."
+  },
+  "live": {
+    "title": "Monitoring Objects",
+    "sseMode": "SSE Realtime",
+    "pollingMode": "Polling (5s)",
+    "reconnect": "Reconnect",
+    "switchToPolling": "Switch to Polling",
+    "switchToSse": "Switch to SSE",
+    "sensorLoadError": "Unable to load sensor data. Please check backend connection.",
+    "sensorLoading": "Loading sensor data...",
+    "chartTitle": "Fz (Force Z-axis) Realtime Monitoring"
+  },
+  "alert": {
+    "normal": "Normal",
+    "warning": "Warning",
+    "critical": "Critical"
+  },
+  "chat": {
+    "placeholder": "Enter your question...",
+    "send": "Send",
+    "suggested": "Suggested Questions",
+    "evidence": "View Evidence",
+    "confidence": "Confidence",
+    "abstain": "Unable to respond",
+    "queryType": "Query Type",
+    "abstainTitle": "Unable to provide a confident answer.",
+    "foundInfo": "Information Found",
+    "missingInfo": "Missing Information",
+    "trySuggestions": "Try asking like this",
+    "referenceInfo": "Reference information:",
+    "thinking": "Thinking..."
+  },
+  "evidence": {
+    "title": "Evidence Details",
+    "ontologyPaths": "Ontology Paths",
+    "documentRefs": "Document References",
+    "similarEvents": "Similar Events",
+    "graphSummary": "Graph Summary",
+    "relevance": "Relevance"
+  },
+  "history": {
+    "title": "History",
+    "period": "Period",
+    "hour1": "1 Hour",
+    "hour24": "24 Hours",
+    "day7": "7 Days",
+    "patterns": "Patterns",
+    "prediction": "Prediction"
+  },
+  "theme": {
+    "light": "Switch to Light Mode",
+    "dark": "Switch to Dark Mode"
+  },
+  "language": {
+    "ko": "한국어",
+    "en": "English"
+  }
+}

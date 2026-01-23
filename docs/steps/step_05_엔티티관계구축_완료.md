@@ -358,8 +358,6 @@ python scripts/build_ontology.py
 | 항목 | 값 |
 |------|---|
 | 문서 버전 | v2.2 |
-| 작성일 | 2026-01-22 |
-| 최종 갱신일 | 2026-01-22 |
 | 설계서 참조 | [step_05_엔티티관계구축_설계.md](step_05_엔티티관계구축_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 5 |
 | Spec 섹션 | Section 6 |

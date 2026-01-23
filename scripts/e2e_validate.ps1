@@ -7,6 +7,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# 스크립트 실행 위치와 무관하게 레포 루트 기준으로 동작
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+
 function Write-Info([string]$msg) { Write-Host "[INFO] $msg" }
 function Write-Warn([string]$msg) { Write-Host "[WARN] $msg" }
 function Write-Err([string]$msg)  { Write-Host "[ERR]  $msg" }
@@ -59,7 +62,7 @@ $serverArgs = @(
   "--port", $Port
 )
 
-$serverProc = Start-Process -FilePath "python" -ArgumentList $serverArgs -PassThru -WindowStyle Hidden
+$serverProc = Start-Process -FilePath "python" -ArgumentList $serverArgs -PassThru -WindowStyle Hidden -WorkingDirectory $RepoRoot
 Write-Info "Server PID: $($serverProc.Id)"
 
 try {
@@ -73,8 +76,14 @@ try {
 
   # 3) 검증 실행
   Write-Info "Running acceptance validation (scripts/validate_api.py)..."
-  python scripts/validate_api.py --base-url $baseUrl --wait-seconds 0
-  $exitCode = $LASTEXITCODE
+  Push-Location $RepoRoot
+  try {
+    python scripts/validate_api.py --base-url $baseUrl --wait-seconds 0
+    $exitCode = $LASTEXITCODE
+  }
+  finally {
+    Pop-Location
+  }
   if ($exitCode -ne 0) {
     Write-Err "Validation failed (exit code: $exitCode)"
     exit $exitCode

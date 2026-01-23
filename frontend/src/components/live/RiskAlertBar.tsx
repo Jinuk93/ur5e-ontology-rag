@@ -1,9 +1,11 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { RiskAlert } from '@/types/api';
 import { cn } from '@/lib/utils';
+import { staggerContainer, staggerItem } from '@/lib/animations';
 
 interface RiskAlertBarProps {
   alerts: RiskAlert[];
@@ -44,7 +46,12 @@ export function RiskAlertBar({ alerts, onAlertClick }: RiskAlertBarProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-slate-800/50 border-b border-white/10">
+    <motion.div
+      className="flex items-center gap-2 p-3 bg-slate-800/50 border-b border-white/10"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
       {summaryItems.map(({ severity, alerts: severityAlerts, label }) => {
         const config = severityConfig[severity];
         const Icon = config.icon;
@@ -52,8 +59,11 @@ export function RiskAlertBar({ alerts, onAlertClick }: RiskAlertBarProps) {
         const latestAlert = severityAlerts[0];
 
         return (
-          <button
+          <motion.button
             key={severity}
+            variants={staggerItem}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => latestAlert && onAlertClick?.(latestAlert)}
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors',
@@ -74,9 +84,9 @@ export function RiskAlertBar({ alerts, onAlertClick }: RiskAlertBarProps) {
                 {latestAlert.title}
               </span>
             )}
-          </button>
+          </motion.button>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

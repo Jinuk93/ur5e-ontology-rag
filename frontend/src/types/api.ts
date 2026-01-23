@@ -95,12 +95,19 @@ export interface RecommendationInfo {
   reference?: string;
 }
 
+export interface PartialEvidence {
+  found: string[];
+  missing: string[];
+}
+
 export interface ChatResponse {
   traceId: string;
   queryType: QueryType;
   answer: string;
   abstain: boolean;
   abstainReason?: string;
+  partialEvidence?: PartialEvidence;
+  suggestedQuestions?: string[];
   analysis?: AnalysisInfo;
   reasoning?: ReasoningInfo;
   prediction?: PredictionInfo;

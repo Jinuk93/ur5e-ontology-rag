@@ -36,6 +36,7 @@ const axisConfig: Record<AxisType, { label: string; unit: string; color: string 
 
 export function RealtimeChart({ data, axis, thresholds, title }: RealtimeChartProps) {
   const config = axisConfig[axis];
+  const isBrowser = typeof window !== 'undefined';
 
   // Format data for chart
   const chartData = data.map((reading) => ({
@@ -63,7 +64,8 @@ export function RealtimeChart({ data, axis, thresholds, title }: RealtimeChartPr
       </div>
 
       <div className="h-[200px]">
-        <ResponsiveContainer width="100%" height="100%">
+        {isBrowser ? (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis
@@ -86,7 +88,10 @@ export function RealtimeChart({ data, axis, thresholds, title }: RealtimeChartPr
                 fontSize: '12px',
               }}
               labelStyle={{ color: '#94a3b8' }}
-              formatter={(value: number) => [`${value.toFixed(2)} ${config.unit}`, config.label]}
+              formatter={(value) => {
+                if (typeof value !== 'number') return ['-', config.label];
+                return [`${value.toFixed(2)} ${config.unit}`, config.label];
+              }}
             />
 
             {/* Threshold lines */}
@@ -126,7 +131,10 @@ export function RealtimeChart({ data, axis, thresholds, title }: RealtimeChartPr
               activeDot={{ r: 4, fill: config.color }}
             />
           </LineChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-full" />
+        )}
       </div>
     </Card>
   );

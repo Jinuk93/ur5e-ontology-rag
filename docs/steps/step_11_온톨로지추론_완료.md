@@ -6,7 +6,6 @@
 |------|------|
 | Phase | 11 - 온톨로지 추론 (Ontology Reasoning) |
 | 상태 | ✅ 완료 |
-| 완료일 | 2026-01-22 |
 | 이전 단계 | Phase 10 - 질문 분류기 |
 | 다음 단계 | Phase 12 - 응답 생성 |
 | Stage | Stage 4 (Query Engine) |
@@ -409,6 +408,5 @@ response = generator.generate(reasoning)
 | 항목 | 값 |
 |------|------|
 | 문서 버전 | v1.0 |
-| 작성일 | 2026-01-22 |
 | ROADMAP 섹션 | Stage 4, Phase 11 |
 | Spec 섹션 | 7.2 온톨로지성 질문 처리 |

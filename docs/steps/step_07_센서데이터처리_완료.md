@@ -6,7 +6,6 @@
 |------|------|
 | Phase | 07 - 센서 데이터 처리 (Sensor Data Processing) |
 | 상태 | ✅ 완료 |
-| 완료일 | 2026-01-22 |
 | 이전 단계 | Phase 06 - 추론 규칙 |
 | 다음 단계 | Phase 08 - 패턴 감지 |
 
@@ -275,6 +274,5 @@ context = store.get_context_at(event_time)
 | 항목 | 값 |
 |------|------|
 | 문서 버전 | v1.0 |
-| 작성일 | 2026-01-22 |
 | ROADMAP 섹션 | Stage 3, Phase 7 |
 | Spec 섹션 | 8.2 센서 데이터 |

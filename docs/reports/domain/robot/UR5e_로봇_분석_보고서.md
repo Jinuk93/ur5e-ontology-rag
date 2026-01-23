@@ -1,6 +1,5 @@
 # UR5e 협동로봇 분석 보고서
 
-> **작성일**: 2026-01-22
 > **목적**: UR5e 로봇의 이해와 Axia80 센서, 에러코드와의 관계 정의
 > **대상 독자**: 협동로봇에 익숙하지 않은 사람도 이해할 수 있도록 작성
 
@@ -932,8 +931,3 @@ ErrorCode:
 - [UR Academy](https://academy.universal-robots.com/) - 무료 온라인 교육
 - [UR+ Ecosystem](https://www.universal-robots.com/plus/) - 호환 제품/소프트웨어
 - [UR Forum](https://forum.universal-robots.com/) - 커뮤니티
-
----
-
-**문서 버전**: 1.0
-**최종 수정**: 2026-01-22

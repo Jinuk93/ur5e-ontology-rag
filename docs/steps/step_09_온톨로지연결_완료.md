@@ -6,7 +6,6 @@
 |------|------|
 | Phase | 09 - 온톨로지 연결 (Ontology Connection) |
 | 상태 | ✅ 완료 |
-| 완료일 | 2026-01-22 |
 | 이전 단계 | Phase 08 - 패턴 감지 |
 | 다음 단계 | Phase 10 - 질문 분류기 |
 | Stage 완료 | ✅ Stage 3 (Sensor Integration) 완료 |
@@ -265,7 +264,6 @@ enriched_ontology = connector.enrich_ontology(patterns)
 | 항목 | 값 |
 |------|------|
 | 문서 버전 | v1.0 |
-| 작성일 | 2026-01-22 |
 | ROADMAP 섹션 | Stage 3, Phase 9 |
 | Spec 섹션 | 8.4 온톨로지 연결 |
 | Stage 상태 | ✅ 완료 |

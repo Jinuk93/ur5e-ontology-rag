@@ -24,13 +24,9 @@ interface TrendChartProps {
   }>;
 }
 
-const patternColors = {
-  collision: '#ef4444',
-  overload: '#f97316',
-  drift: '#eab308',
-};
-
 export function TrendChart({ data, axis, title, patternMarkers }: TrendChartProps) {
+  const isBrowser = typeof window !== 'undefined';
+
   // Aggregate data by hour for trend view
   const chartData = data.map((reading) => {
     const date = new Date(reading.timestamp);
@@ -79,8 +75,9 @@ export function TrendChart({ data, axis, title, patternMarkers }: TrendChartProp
       </div>
 
       <div className="h-[250px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
+        {isBrowser ? (
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -130,8 +127,11 @@ export function TrendChart({ data, axis, title, patternMarkers }: TrendChartProp
               fillOpacity={1}
               fill="url(#colorValue)"
             />
-          </AreaChart>
-        </ResponsiveContainer>
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="w-full h-full" />
+        )}
       </div>
     </Card>
   );
