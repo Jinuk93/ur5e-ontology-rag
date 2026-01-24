@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TrendChart } from './TrendChart';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -105,6 +105,12 @@ export function HistoryView() {
   const { timeRange, setTimeRange, setGraphCenterNode, setCurrentView } = useUIStore();
   const [trendData] = useState(() => generateTrendData(7));
 
+  // Hydration 에러 방지: 클라이언트에서만 날짜 포맷팅
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const patternMarkers = mockPatterns.map((p) => ({
     timestamp: p.timestamp,
     type: p.type as 'collision' | 'overload' | 'drift',
@@ -118,6 +124,7 @@ export function HistoryView() {
   };
 
   const formatTimestamp = (ts: string) => {
+    if (!isMounted) return '-'; // SSR에서는 placeholder
     const date = new Date(ts);
     return date.toLocaleDateString('ko-KR', {
       month: 'numeric',

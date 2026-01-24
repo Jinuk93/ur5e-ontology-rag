@@ -320,6 +320,7 @@ export interface RealtimePrediction {
   pattern_detected?: string;
   predictions: PredictionItem[];
   ontology_path?: string;
+  risk_level?: 'low' | 'medium' | 'high' | 'critical';
 }
 
 export interface PredictionsResponse {

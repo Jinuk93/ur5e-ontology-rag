@@ -87,3 +87,66 @@ class PredictionsResponse(BaseModel):
     predictions: List[RealtimePrediction]
     total_patterns: int = Field(description="감지된 패턴 수")
     high_risk_count: int = Field(description="고위험 예측 수")
+
+
+# ============================================================
+# UR5e + Axia80 통합 실시간 스트림 스키마 (Phase 2)
+# ============================================================
+
+class UR5eTelemetrySchema(BaseModel):
+    """UR5e 텔레메트리 데이터"""
+    tcp_speed: float = Field(description="TCP 속도 (m/s, 0~1.0)")
+    tcp_acceleration: float = Field(description="TCP 가속도 (m/s², -5~5)")
+    joint_torque_sum: float = Field(description="조인트 토크 합 (Nm, 0~150)")
+    joint_current_avg: float = Field(description="조인트 평균 전류 (A, 0.5~5.0)")
+    safety_mode: str = Field(description="안전 모드 (normal/reduced/protective_stop)")
+    program_state: str = Field(description="프로그램 상태 (running/paused/stopped)")
+    protective_stop: bool = Field(description="보호 정지 활성화 여부")
+
+
+class Axia80Schema(BaseModel):
+    """Axia80 힘 센서 데이터"""
+    Fx: float = Field(description="X축 힘 (N)")
+    Fy: float = Field(description="Y축 힘 (N)")
+    Fz: float = Field(description="Z축 힘 (N)")
+    Tx: float = Field(description="X축 토크 (Nm)")
+    Ty: float = Field(description="Y축 토크 (Nm)")
+    Tz: float = Field(description="Z축 토크 (Nm)")
+    force_magnitude: float = Field(description="힘 크기 (N)")
+    force_rate: float = Field(description="힘 변화율 (N/tick)")
+    force_spike: bool = Field(description="힘 스파이크 감지")
+    peak_axis: str = Field(description="최대 힘 축 (Fx/Fy/Fz)")
+
+
+class CorrelationMetricsSchema(BaseModel):
+    """UR5e-Axia80 상관 메트릭"""
+    torque_force_ratio: float = Field(description="토크/힘 비율")
+    speed_force_correlation: float = Field(description="속도-힘 상관계수 (-1~1)")
+    anomaly_detected: bool = Field(description="이상 감지 여부")
+
+
+class RiskAssessmentSchema(BaseModel):
+    """위험도 평가"""
+    contact_risk_score: float = Field(description="접촉 위험 점수 (0~1)")
+    collision_risk_score: float = Field(description="충돌 위험 점수 (0~1)")
+    risk_level: str = Field(description="위험 수준 (low/medium/high/critical)")
+    recommended_action: str = Field(description="권장 조치")
+    prediction_horizon_sec: int = Field(default=3, description="예측 시간 범위 (초)")
+
+
+class ScenarioInfoSchema(BaseModel):
+    """현재 시나리오 정보"""
+    current: str = Field(description="현재 시나리오 타입")
+    elapsed_sec: float = Field(description="시나리오 경과 시간")
+    remaining_sec: float = Field(description="시나리오 남은 시간")
+
+
+class IntegratedStreamData(BaseModel):
+    """통합 실시간 스트림 데이터"""
+    timestamp: str = Field(description="타임스탬프 (ISO 8601)")
+    scenario: ScenarioInfoSchema = Field(description="시나리오 정보")
+    axia80: Axia80Schema = Field(description="Axia80 힘 센서 데이터")
+    ur5e: UR5eTelemetrySchema = Field(description="UR5e 텔레메트리 (시뮬레이션)")
+    correlation: CorrelationMetricsSchema = Field(description="상관 분석 결과")
+    risk: RiskAssessmentSchema = Field(description="위험도 평가")
+    data_source: str = Field(default="simulated", description="데이터 소스 (simulated/live)")

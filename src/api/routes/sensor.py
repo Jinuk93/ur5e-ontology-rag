@@ -24,8 +24,11 @@ from src.api.schemas import (
     PredictionItem,
     RealtimePrediction,
     PredictionsResponse,
+    IntegratedStreamData,
 )
 from src.ontology import OntologyEngine, load_ontology
+from src.simulation.correlation_engine import get_correlation_engine, reset_correlation_engine
+from src.simulation.scenario_sequencer import ScenarioType, get_scenario_sequencer
 
 logger = logging.getLogger(__name__)
 
@@ -490,7 +493,7 @@ async def stream_sensor_data(
     interval: float = Query(default=1.0, ge=0.1, le=10.0, description="전송 간격 (초)"),
 ):
     """
-    센서 데이터 SSE 스트림
+    센서 데이터 SSE 스트림 (Axia80 only - 레거시)
 
     Server-Sent Events를 통해 실시간 센서 데이터를 스트리밍합니다.
     프론트엔드 LiveView에서 EventSource로 구독합니다.
@@ -506,3 +509,140 @@ async def stream_sensor_data(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ============================================================
+# Phase 2: 통합 실시간 스트림 (UR5e + Axia80 상관분석)
+# ============================================================
+
+async def integrated_stream_generator(request: Request, interval: float = 0.5):
+    """
+    통합 센서 데이터 SSE 스트림 생성기
+
+    CorrelationEngine을 사용하여 UR5e + Axia80 상관 데이터를 생성합니다.
+    시나리오 기반 시뮬레이션으로 물리적 상관관계가 있는 데이터를 제공합니다.
+    """
+    engine = get_correlation_engine()
+
+    while True:
+        if await request.is_disconnected():
+            logger.info("Integrated SSE client disconnected")
+            break
+
+        try:
+            # CorrelationEngine에서 통합 데이터 생성
+            reading = engine.tick()
+
+            # JSON 직렬화
+            data = reading.to_dict()
+            data["data_source"] = "simulated"
+
+            yield f"data: {json.dumps(data)}\n\n"
+
+        except Exception as e:
+            logger.error(f"Integrated stream error: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        await asyncio.sleep(interval)
+
+
+@router.get("/stream/integrated")
+async def stream_integrated_data(
+    request: Request,
+    interval: float = Query(default=0.5, ge=0.1, le=5.0, description="전송 간격 (초)"),
+):
+    """
+    통합 실시간 스트림 (UR5e + Axia80)
+
+    ⚠️ 시뮬레이션 데이터: UR5e 텔레메트리는 시나리오 기반으로 생성됩니다.
+
+    Server-Sent Events를 통해 다음 데이터를 실시간 스트리밍합니다:
+    - Axia80: 힘/토크 센서 데이터
+    - UR5e: TCP 속도, 조인트 토크, 전류, 안전 모드 (시뮬레이션)
+    - Correlation: 토크/힘 비율, 속도-힘 상관계수
+    - Risk: 접촉/충돌 위험 점수, 권장 조치
+
+    시나리오 종류:
+    - normal (70%): 정상 작업 사이클
+    - collision (10%): 충돌 → 스파이크 → 보호정지
+    - overload (10%): 과부하 지속
+    - wear (5%): 마모 징후 (토크/힘 불일치)
+    - risk_approach (5%): 위험 접근
+
+    - interval: 데이터 전송 간격 (기본 0.5초)
+    """
+    return StreamingResponse(
+        integrated_stream_generator(request, interval),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/stream/scenario")
+async def force_scenario(
+    scenario: str = Query(description="강제 시나리오 (normal/collision/overload/wear/risk_approach)"),
+    duration: Optional[int] = Query(default=None, description="시나리오 지속 시간 (초)"),
+):
+    """
+    시나리오 강제 전환 (테스트/데모용)
+
+    현재 시나리오를 강제로 특정 시나리오로 전환합니다.
+    """
+    try:
+        scenario_type = ScenarioType(scenario)
+        sequencer = get_scenario_sequencer()
+        sequencer.force_scenario(scenario_type, duration)
+
+        return {
+            "success": True,
+            "scenario": scenario,
+            "duration": duration or sequencer.scenario_config.duration_range[1],
+            "message": f"시나리오를 '{scenario}'로 전환했습니다.",
+        }
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"유효하지 않은 시나리오: {scenario}. "
+                   f"가능한 값: {[s.value for s in ScenarioType]}"
+        )
+
+
+@router.get("/stream/statistics")
+async def get_stream_statistics():
+    """
+    스트림 통계 조회
+
+    최근 60개 데이터의 통계를 반환합니다.
+    """
+    engine = get_correlation_engine()
+    stats = engine.get_statistics()
+
+    if not stats:
+        return {"message": "아직 데이터가 수집되지 않았습니다.", "statistics": {}}
+
+    return {
+        "message": "통계 조회 성공",
+        "statistics": stats,
+    }
+
+
+@router.post("/stream/reset")
+async def reset_stream():
+    """
+    스트림 리셋
+
+    CorrelationEngine과 ScenarioSequencer를 리셋합니다.
+    """
+    from src.simulation.scenario_sequencer import reset_scenario_sequencer
+
+    reset_correlation_engine()
+    reset_scenario_sequencer()
+
+    return {
+        "success": True,
+        "message": "스트림이 리셋되었습니다.",
+    }

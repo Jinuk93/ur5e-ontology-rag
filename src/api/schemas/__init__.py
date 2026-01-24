@@ -28,6 +28,13 @@ from .sensor import (
     PredictionItem,
     RealtimePrediction,
     PredictionsResponse,
+    # Phase 2: 통합 실시간 스트림
+    UR5eTelemetrySchema,
+    Axia80Schema,
+    CorrelationMetricsSchema,
+    RiskAssessmentSchema,
+    ScenarioInfoSchema,
+    IntegratedStreamData,
 )
 
 __all__ = [
@@ -55,4 +62,11 @@ __all__ = [
     "PredictionItem",
     "RealtimePrediction",
     "PredictionsResponse",
+    # Phase 2: 통합 실시간 스트림
+    "UR5eTelemetrySchema",
+    "Axia80Schema",
+    "CorrelationMetricsSchema",
+    "RiskAssessmentSchema",
+    "ScenarioInfoSchema",
+    "IntegratedStreamData",
 ]

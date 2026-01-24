@@ -9,11 +9,12 @@ import { RealtimeChart } from './RealtimeChart';
 import { EventList, EventItem } from './EventList';
 import { StatisticsSummary } from './StatisticsSummary';
 import { HeterogeneousPrediction } from './HeterogeneousPrediction';
+import { CorrelationTable } from './CorrelationTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUIStore } from '@/stores/uiStore';
 import { useSensorReadings, useSensorEvents, usePredictions } from '@/hooks/useApi';
-import { useSensorSSE } from '@/hooks/useSSE';
+import { useSensorSSE, useIntegratedSSE } from '@/hooks/useSSE';
 import type { EntityInfo, RiskAlert, SensorReading, NodeState } from '@/types/api';
 
 // Entity configuration (names/descriptions come from i18n)
@@ -62,6 +63,17 @@ export function LiveView() {
 
   // 이기종 결합 예측 데이터
   const { data: predictionsData } = usePredictions(10);
+
+  // 통합 SSE (UR5e + Axia80 상관분석)
+  const {
+    data: integratedData,
+    latestData: latestIntegratedData,
+    isConnected: integratedConnected,
+  } = useIntegratedSSE({
+    interval: 0.5,
+    bufferSize: 60,
+    enabled: streamMode === 'sse',
+  });
 
   // Convert polling API response to SensorReading array
   const pollingReadings: SensorReading[] = useMemo(() => {
@@ -336,6 +348,14 @@ export function LiveView() {
           readings={readings}
           predictions={predictionsData?.predictions}
           maxHeight="200px"
+        />
+
+        {/* UR5e + Axia80 실시간 상관분석 (Simulated) */}
+        <CorrelationTable
+          data={integratedData}
+          latestData={latestIntegratedData}
+          isConnected={integratedConnected}
+          maxHeight="300px"
         />
 
         {/* Statistics Summary */}
