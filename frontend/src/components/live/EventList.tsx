@@ -1,10 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { AlertTriangle, AlertCircle, Clock, Zap } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Clock, Zap, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { useEventResolveStore } from '@/stores/eventResolveStore';
 import type { RealtimePrediction } from '@/lib/api';
 
 export interface EventItem {
@@ -56,6 +58,7 @@ const eventConfig = {
 
 export function EventList({ events, predictions, onEventClick, maxHeight = '200px' }: EventListProps) {
   const t = useTranslations('card');
+  const { resolvedEventIds, toggleResolve } = useEventResolveStore();
 
   // Sort events by timestamp descending (most recent first)
   const sortedEvents = useMemo(() => {
@@ -226,21 +229,23 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
         ) : (
           <table className="w-full text-xs table-fixed">
           <colgroup>
-            <col className="w-[14%]" />
-            <col className="w-[12%]" />
-            <col className="w-[18%]" />
-            <col className="w-[18%]" />
-            <col className="w-[18%]" />
-            <col className="w-[20%]" />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '20%' }} />
+            <col style={{ width: '14%' }} />
           </colgroup>
           <thead className="sticky top-0 bg-slate-800/95 z-10">
             <tr className="border-b border-slate-700/50">
-              <th className="text-center py-2 px-2 text-slate-400 font-semibold">시간</th>
-              <th className="text-center py-2 px-2 text-slate-400 font-semibold">상태</th>
-              <th className="text-center py-2 px-2 text-slate-400 font-semibold">감지 이벤트</th>
-              <th className="text-center py-2 px-2 text-slate-400 font-semibold">에러코드</th>
-              <th className="text-center py-2 px-2 text-slate-400 font-semibold">조치</th>
-              <th className="text-center py-2 px-2 text-blue-300 font-semibold bg-blue-950/50">AI 예측</th>
+              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">시간</th>
+              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">상태</th>
+              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">감지 이벤트</th>
+              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">에러코드</th>
+              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">조치</th>
+              <th className="text-center py-2 px-1.5 text-blue-300 font-semibold bg-blue-950/50">AI 예측</th>
+              <th className="text-center py-2 px-1.5 text-green-300 font-semibold bg-green-950/30">해결완료</th>
             </tr>
           </thead>
           <tbody>
@@ -248,6 +253,7 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
               const config = eventConfig[event.type];
               const Icon = config.icon;
               const { date, time } = formatDateTime(event.timestamp);
+              const isResolved = resolvedEventIds.has(event.id);
 
               return (
                 <tr
@@ -255,14 +261,15 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
                   onClick={() => onEventClick?.(event)}
                   className={cn(
                     'border-b border-slate-700/30 cursor-pointer transition-colors',
-                    'hover:bg-slate-700/30'
+                    'hover:bg-slate-700/30',
+                    isResolved && 'opacity-50 bg-green-950/10'
                   )}
                 >
-                  <td className="py-2 px-2 text-slate-300 whitespace-nowrap text-center font-semibold">
+                  <td className="py-2 px-1.5 text-slate-300 whitespace-nowrap text-center font-semibold">
                     <div>{date}</div>
                     <div className="text-slate-400 font-medium">{time}</div>
                   </td>
-                  <td className="py-2 px-2 text-center">
+                  <td className="py-2 px-1.5 text-center">
                     <span className={cn(
                       'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold',
                       config.bgColor,
@@ -272,10 +279,10 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
                       {t(event.type === 'critical' ? 'critical' : event.type === 'warning' ? 'warning' : 'normal')}
                     </span>
                   </td>
-                  <td className="py-2 px-2 text-slate-300 text-center font-semibold">
+                  <td className="py-2 px-1.5 text-slate-300 text-center font-semibold">
                     {getEventTypeLabel(event.eventType)}
                   </td>
-                  <td className="py-2 px-2 text-center font-semibold">
+                  <td className="py-2 px-1.5 text-center font-semibold">
                     {(() => {
                       const errorInfo = getErrorCodeInfo(event);
                       if (!errorInfo) return <span className="text-slate-400">-</span>;
@@ -287,10 +294,10 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
                       );
                     })()}
                   </td>
-                  <td className="py-2 px-2 text-slate-300 text-center font-semibold">
+                  <td className="py-2 px-1.5 text-slate-300 text-center font-semibold">
                     {getAction(event)}
                   </td>
-                  <td className="py-2 px-2 text-center font-semibold bg-blue-950/40">
+                  <td className="py-2 px-1.5 text-center font-semibold bg-blue-950/40">
                     {(() => {
                       const prediction = getEventPrediction(event);
                       return (
@@ -313,6 +320,24 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
                         </div>
                       );
                     })()}
+                  </td>
+                  <td className="py-2 px-1.5 text-center bg-green-950/20">
+                    <div
+                      className="flex items-center justify-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={isResolved}
+                        onCheckedChange={() => toggleResolve(event.id)}
+                        className={cn(
+                          'h-4 w-4 border-slate-500',
+                          isResolved && 'border-green-500 bg-green-500 data-[state=checked]:bg-green-500'
+                        )}
+                      />
+                      {isResolved && (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-400 ml-1" />
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

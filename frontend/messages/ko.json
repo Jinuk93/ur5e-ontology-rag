@@ -35,7 +35,7 @@
       },
       "axia80": {
         "name": "Axia80 센서",
-        "description": "ATI 6축 힘/토크 센서"
+        "description": "Fz, Fx, Fy + 이벤트 감지"
       },
       "fz": {
         "name": "Fz (수직력)",

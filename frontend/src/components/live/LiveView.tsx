@@ -1,20 +1,22 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2, Radio, RefreshCw } from 'lucide-react';
+import { Loader2, Radio, RefreshCw, Bell, BellOff, Volume2, VolumeX } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { RiskAlertBar } from './RiskAlertBar';
 import { ObjectCard } from './ObjectCard';
+import { EventDetectionCard } from './EventDetectionCard';
 import { RealtimeChart } from './RealtimeChart';
 import { EventList, EventItem } from './EventList';
 import { StatisticsSummary } from './StatisticsSummary';
-import { HeterogeneousPrediction } from './HeterogeneousPrediction';
 import { CorrelationTable } from './CorrelationTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUIStore } from '@/stores/uiStore';
+import { useAlertStore } from '@/stores/alertStore';
 import { useSensorReadings, useSensorEvents, usePredictions } from '@/hooks/useApi';
 import { useSensorSSE, useIntegratedSSE } from '@/hooks/useSSE';
+import { useAnomalyAlert } from '@/hooks/useAnomalyAlert';
 import type { EntityInfo, RiskAlert, SensorReading, NodeState } from '@/types/api';
 
 // Entity configuration (names/descriptions come from i18n)
@@ -38,6 +40,7 @@ type StreamMode = 'sse' | 'polling';
 export function LiveView() {
   const t = useTranslations('live');
   const { selectedEntity, setSelectedEntity, setGraphCenterNode, setCurrentView } = useUIStore();
+  const { settings, updateSettings, detectedEvents } = useAlertStore();
   const [streamMode, setStreamMode] = useState<StreamMode>('sse');
 
   // SSE mode
@@ -74,6 +77,9 @@ export function LiveView() {
     bufferSize: 60,
     enabled: streamMode === 'sse',
   });
+
+  // 이상 감지 알림 시스템
+  useAnomalyAlert(latestIntegratedData);
 
   // Convert polling API response to SensorReading array
   const pollingReadings: SensorReading[] = useMemo(() => {
@@ -190,7 +196,7 @@ export function LiveView() {
         severity: 'info',
         title: '정상 동작',
         timestamp: new Date().toISOString(),
-        count: enrichedEntities.length,
+        count: enrichedEntities.length + 1, // +1 for EventDetectionCard
       });
     }
 
@@ -291,14 +297,43 @@ export function LiveView() {
               </Button>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleStreamMode}
-            className="text-xs"
-          >
-            {streamMode === 'sse' ? t('switchToPolling') : t('switchToSse')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Alert Settings Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => updateSettings({ toastEnabled: !settings.toastEnabled })}
+              className={settings.toastEnabled ? 'text-green-400' : 'text-slate-500'}
+              title={settings.toastEnabled ? '알림 끄기' : '알림 켜기'}
+            >
+              {settings.toastEnabled ? (
+                <Bell className="h-4 w-4" />
+              ) : (
+                <BellOff className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => updateSettings({ soundEnabled: !settings.soundEnabled })}
+              className={settings.soundEnabled ? 'text-green-400' : 'text-slate-500'}
+              title={settings.soundEnabled ? '소리 끄기' : '소리 켜기'}
+            >
+              {settings.soundEnabled ? (
+                <Volume2 className="h-4 w-4" />
+              ) : (
+                <VolumeX className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleStreamMode}
+              className="text-xs"
+            >
+              {streamMode === 'sse' ? t('switchToPolling') : t('switchToSse')}
+            </Button>
+          </div>
         </div>
 
         {/* Connection Status */}
@@ -319,15 +354,17 @@ export function LiveView() {
                 onClick={() => handleEntityClick(entity)}
               />
             ))}
+            {/* 이벤트 감지 카드 - 실제 발생한 이벤트 (충돌/과부하/드리프트) */}
+            <EventDetectionCard events={events} />
           </div>
         </div>
 
-        {/* Chart */}
+        {/* Chart - UR5e + Axia80 통합 모니터링 */}
         <div className="mb-6">
           <RealtimeChart
             data={readings}
-            axes={['Fz', 'Fx', 'Fy']}
-            title="힘 센서 (Fz/Fx/Fy) 실시간 모니터링"
+            integratedData={integratedData}
+            axes={['Fz', 'Fx', 'Fy', 'tcp_speed', 'joint_torque_sum', 'joint_current_avg']}
             thresholds={{
               warning: -60,
               critical: -200,
@@ -343,19 +380,13 @@ export function LiveView() {
           maxHeight="200px"
         />
 
-        {/* Heterogeneous Prediction - UR5e + Axia80 Combined Analysis */}
-        <HeterogeneousPrediction
-          readings={readings}
-          predictions={predictionsData?.predictions}
-          maxHeight="200px"
-        />
-
         {/* UR5e + Axia80 실시간 상관분석 (Simulated) */}
         <CorrelationTable
           data={integratedData}
           latestData={latestIntegratedData}
           isConnected={integratedConnected}
           maxHeight="300px"
+          detectedEvents={detectedEvents}
         />
 
         {/* Statistics Summary */}

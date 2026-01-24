@@ -238,17 +238,15 @@
 - `ObjectCard.tsx`: 호버 시 scale(1.02), 클릭 시 scale(0.98) 효과
 - `RiskAlertBar.tsx`: 알림 버튼들 순차적 페이드인, 호버/탭 애니메이션
 
-### 2.17 이기종 결합 예측 컴포넌트 (P4 신규)
+### 2.17 이기종 결합 예측 컴포넌트 (P4 신규) → **제거됨** ❌
 
-**HeterogeneousPrediction 컴포넌트** (`frontend/src/components/live/HeterogeneousPrediction.tsx`):
-- Axia80 센서 데이터 + 온톨로지 기반 에러코드 예측 통합 표시
-- 현재 UR5e 상태 / Axia80 센서 현황 요약
-- 예측 결과 테이블: 감지 패턴, 위험도, 예측 에러, 확률, 권장 조치
-- 하이드레이션 오류 방지를 위해 ScrollArea 대신 일반 div 사용
+~~**HeterogeneousPrediction 컴포넌트** (`frontend/src/components/live/HeterogeneousPrediction.tsx`):~~
+- ~~Axia80 센서 데이터 + 온톨로지 기반 에러코드 예측 통합 표시~~
+- ~~현재 UR5e 상태 / Axia80 센서 현황 요약~~
 
-**LiveView 통합**:
-- EventList 하단에 HeterogeneousPrediction 컴포넌트 배치
-- usePredictions 훅으로 실시간 예측 데이터 연동
+**변경 사항 (2026-01-24):**
+- `HeterogeneousPrediction` 컴포넌트 **삭제**
+- 기능이 `CorrelationTable` (실시간 예지보전)에 통합됨
 
 ### 2.18 통계 요약 개선 (P4 신규)
 
@@ -274,9 +272,104 @@
 - 예측 로직을 온톨로지 에러코드 → 권장 조치 중심으로 변경
   - 예: "재발 가능성 높음", "그리퍼 점검 필요", "작업 경로 검토" 등
 
-### 2.21 잔여 작업
+### 2.21 실시간 예지보전 UI 개선 (P5 신규)
 
-- UR5e 실제 데이터 추가 (미정 - 현재 Axia80 데이터만 존재)
+**CorrelationTable 컴포넌트 변경** (`frontend/src/components/live/CorrelationTable.tsx`):
+- 이름 변경: "UR5e + Axia80 상관분석" → "**실시간 예지보전**"
+- 배지 변경: "Simulated" → "**AI 예측**" (청록색 펄스 애니메이션)
+- 위험도 카드에 **AI 배지** 추가 (우측 상단, 청록-보라 그라데이션)
+- "위험도 평가" → "**위험도 예측**" 라벨 변경
+- **위험 감지 기록** 섹션 추가 (하단에 row 형태로 표시)
+  - 최대 20개 저장, 화면에 5개 표시 후 스크롤
+  - low 제외, medium/high/critical만 기록
+  - 시간, 시나리오, 위험도, 최대 힘, 위험%, 지속시간 표시
+
+### 2.22 이상 감지 알림 시스템 (P5 신규)
+
+**alertStore.ts** (`frontend/src/stores/alertStore.ts`):
+- Zustand 기반 이벤트 저장소
+- `LiveDetectedEvent` 타입: 시나리오, 위험도, 최대 힘/위험도, 지속시간, 보호정지 등
+- `AlertSettings`: 알림 ON/OFF, 사운드 ON/OFF, 시나리오/위험도별 필터
+
+**useAnomalyAlert.ts** (`frontend/src/hooks/useAnomalyAlert.ts`):
+- IntegratedStreamData 모니터링
+- 시나리오 변경 시 Toast 알림 + 이벤트 기록
+- 위험도 상승 시 추가 알림
+- 정상 복귀 시 초록색 성공 알림
+
+**useAlertSound.ts** (`frontend/src/hooks/useAlertSound.ts`):
+- Web Audio API 기반 경고음 생성
+- 위험도별 다른 비프 패턴 (low: 1회, medium: 2회, high: 3회, critical: 상승음 4회)
+
+**sonner.tsx** (`frontend/src/components/ui/sonner.tsx`):
+- Toast 알림 설정
+- 위치: 정중앙 상단 (offset 60px, 상단바 안 가림)
+- 최대 2개 동시 표시
+- 크기: 작게 (text-xs, py-1.5, max-w-280px)
+- 경고/위험: 빨간 배경 + 빨간 아이콘
+- 정상 복귀: 초록 배경 + 초록 체크 아이콘
+
+**LiveView 알림 토글** (`frontend/src/components/live/LiveView.tsx`):
+- 상단에 종(Bell) 아이콘 버튼: Toast 알림 ON/OFF
+- 스피커(Volume) 아이콘 버튼: 경고음 ON/OFF
+
+### 2.23 센서 통합 모니터링 차트 개선 (P6 신규)
+
+**RealtimeChart 컴포넌트 변경** (`frontend/src/components/live/RealtimeChart.tsx`):
+- 제목 변경: "힘 센서 실시간 모니터링" → "**UR5e + Axia80 센서 통합 모니터링**"
+- **UR5e 텔레메트리 데이터 추가**:
+  - `tcp_speed` (TCP 속도, m/s) - 로즈 색상
+  - `joint_torque_sum` (관절 토크 합, Nm) - 보라색
+  - `joint_current_avg` (평균 전류, A) - 청록색
+- 축 타입 확장: `Axia80AxisType` + `UR5eAxisType` → `AxisType`
+- 체크박스 그룹화: Axia80 / UR5e 구분자로 시각적 분리
+- `integratedData` prop 추가로 통합 SSE 데이터 지원
+
+**LiveView 변경** (`frontend/src/components/live/LiveView.tsx`):
+- RealtimeChart에 `integratedData={integratedData}` 전달
+- axes 확장: `['Fz', 'Fx', 'Fy', 'tcp_speed', 'joint_torque_sum', 'joint_current_avg']`
+
+### 2.24 이벤트 감지 카드 (P6 신규)
+
+**EventDetectionCard 컴포넌트** (`frontend/src/components/live/EventDetectionCard.tsx`):
+- Entity Cards 영역에 추가 (Fy 좌우력 옆)
+- **실제 발생한 이벤트** (EventList의 events) 기반
+- **이벤트 타입별 개수 표시**: 충돌 N건, 과부하 N건, 드리프트 N건
+- **총 이벤트 수 및 심각도 구분**: 위험(critical), 경고(warning), 정상(info)
+- 이벤트 없으면 "정상" 표시 (녹색 체크 아이콘)
+- 이벤트 있으면 빨간색/노란색 테두리 + 펄스 애니메이션
+
+**LiveView 변경** (`frontend/src/components/live/LiveView.tsx`):
+- EventDetectionCard에 `events` prop 전달 (useSensorEvents 데이터)
+
+### 2.25 이벤트 해결 관리 시스템 (P7 신규)
+
+**eventResolveStore.ts** (`frontend/src/stores/eventResolveStore.ts`):
+- Zustand + persist 기반 이벤트 해결 상태 저장소
+- LocalStorage에 영속화 (새로고침해도 유지)
+- `resolvedEventIds`: 해결된 이벤트 ID Set
+- `resolveEvent(id)`, `unresolveEvent(id)`, `toggleResolve(id)` 액션
+- `isResolved(id)`: 해결 여부 확인
+
+**EventList.tsx 변경** (`frontend/src/components/live/EventList.tsx`):
+- **"해결완료" 체크박스 컬럼 추가** (테이블 끝)
+- **컬럼 간격 균등화**: 7개 컬럼 (12% / 12% / 14% / 14% / 14% / 20% / 14%)
+- 체크 시 해당 행 연하게 표시 (opacity-50, bg-green-950/10)
+- 녹색 체크 아이콘 (CheckCircle2) 표시
+- 체크박스 클릭 시 행 클릭 이벤트 전파 방지 (stopPropagation)
+
+**EventDetectionCard.tsx 변경** (`frontend/src/components/live/EventDetectionCard.tsx`):
+- `useEventResolveStore` 연동
+- **해결된 이벤트 제외**하여 미해결 이벤트만 카운트
+- 표시 형식: "미해결 N건 (위험 X, 경고 Y) / 해결 M건"
+- 해결된 이벤트가 있으면 녹색으로 해결 건수 표시
+
+**i18n 변경** (`frontend/messages/ko.json`, `frontend/messages/en.json`):
+- Axia80 센서 설명 변경: "ATI 6축 힘/토크 센서" → "Fz, Fx, Fy + 이벤트 감지"
+
+### 2.26 잔여 작업
+
+- 없음 (모든 기능 구현 완료 ✅)
 
 ---
 
@@ -411,3 +504,20 @@ PowerShell:
   - `frontend/src/components/live/EventList.tsx`: AI 예측 컬럼 개선 (Zap 아이콘, 네이비 배경)
   - `frontend/src/components/layout/Header.tsx`: History 탭 제거
   - `frontend/src/components/live/LiveView.tsx`: HeterogeneousPrediction 통합
+- **P5 완료** - 이상 감지 알림 시스템 및 UI 개선 (2026-01-24)
+  - `frontend/src/stores/alertStore.ts`: 이벤트 저장소 (Zustand)
+  - `frontend/src/hooks/useAnomalyAlert.ts`: 이상 감지 알림 통합 훅
+  - `frontend/src/hooks/useAlertSound.ts`: Web Audio API 경고음 훅
+  - `frontend/src/components/ui/sonner.tsx`: Toast 알림 컴포넌트
+  - `frontend/src/components/live/CorrelationTable.tsx`: "상관분석" → "실시간 예지보전", AI 배지 추가, 위험 감지 기록 섹션
+  - `frontend/src/components/live/LiveView.tsx`: HeterogeneousPrediction 제거, 알림 토글 버튼 추가
+  - `frontend/src/app/layout.tsx`: Toaster 컴포넌트 추가
+- **P6 완료** - UR5e + Axia80 센서 통합 모니터링 차트 (2026-01-24)
+  - `frontend/src/components/live/RealtimeChart.tsx`: UR5e 텔레메트리 데이터 추가 (tcp_speed, joint_torque_sum, joint_current_avg)
+  - `frontend/src/components/live/LiveView.tsx`: integratedData 전달, 통합 axes 설정
+  - `frontend/src/components/live/EventDetectionCard.tsx`: 이벤트 감지 카드 신규 (충돌/과부하/마모 모니터링)
+- **P7 완료** - 이벤트 해결 관리 시스템 (2026-01-24)
+  - `frontend/src/stores/eventResolveStore.ts`: 이벤트 해결 상태 저장소 (Zustand + persist)
+  - `frontend/src/components/live/EventList.tsx`: "해결완료" 체크박스 컬럼 추가, 컬럼 간격 균등화
+  - `frontend/src/components/live/EventDetectionCard.tsx`: 해결된 이벤트 제외 카운트, 해결 건수 표시
+  - `frontend/messages/ko.json`, `frontend/messages/en.json`: Axia80 센서 설명 변경 (Fz, Fx, Fy + 이벤트 감지)
