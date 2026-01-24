@@ -335,3 +335,109 @@ export async function getPredictions(limit = 10): Promise<PredictionsResponse> {
   }
   return response.json();
 }
+
+// ============================================================
+// 온톨로지 그래프 탐색 API (팔란티어 스타일)
+// ============================================================
+
+export interface OntologyGraphNode {
+  id: string;
+  type: string;
+  label: string;
+  domain?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface OntologyGraphEdge {
+  source: string;
+  target: string;
+  relation: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface AllEntitiesResponse {
+  entities: OntologyGraphNode[];
+  total: number;
+  by_type: Record<string, number>;
+  by_domain: Record<string, number>;
+}
+
+export interface EntityDetailResponse {
+  id: string;
+  type: string;
+  name: string;
+  domain?: string;
+  properties?: Record<string, unknown>;
+  description?: string;
+}
+
+export interface NeighborsResponse {
+  center: OntologyGraphNode;
+  nodes: OntologyGraphNode[];
+  edges: OntologyGraphEdge[];
+  total_neighbors: number;
+}
+
+export interface SubgraphResponse {
+  nodes: OntologyGraphNode[];
+  edges: OntologyGraphEdge[];
+  center_id: string;
+  depth: number;
+  total_nodes: number;
+  total_edges: number;
+}
+
+/**
+ * 전체 엔티티 목록 조회
+ */
+export async function getOntologyEntities(): Promise<AllEntitiesResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/ontology/entities`);
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * 특정 엔티티 상세 정보 조회
+ */
+export async function getOntologyEntity(entityId: string): Promise<EntityDetailResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/ontology/entity/${encodeURIComponent(entityId)}`);
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * 이웃 노드 조회 (1-hop 탐색)
+ */
+export async function getOntologyNeighbors(
+  entityId: string,
+  direction: 'outgoing' | 'incoming' | 'both' = 'both'
+): Promise<NeighborsResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/ontology/neighbors/${encodeURIComponent(entityId)}?direction=${direction}`
+  );
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * 서브그래프 조회 (팔란티어 스타일 그래프 탐색)
+ */
+export async function getOntologyGraph(
+  centerId: string,
+  depth: number = 2,
+  direction: 'outgoing' | 'incoming' | 'both' = 'both'
+): Promise<SubgraphResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/ontology/graph?center=${encodeURIComponent(centerId)}&depth=${depth}&direction=${direction}`
+  );
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}

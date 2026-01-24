@@ -23,6 +23,7 @@ from src.api.routes import (
     system_router,
     chat_router,
     sensor_router,
+    ontology_router,
     configure_system,
     configure_chat,
     get_evidence_store,
@@ -106,6 +107,7 @@ configure_chat(get_classifier, get_engine, get_generator)
 app.include_router(system_router)
 app.include_router(chat_router)
 app.include_router(sensor_router)
+app.include_router(ontology_router)
 
 
 # ============================================================

@@ -12,6 +12,10 @@ import {
   getSensorEvents,
   getSensorReadingsRange,
   getPredictions,
+  getOntologyEntities,
+  getOntologyEntity,
+  getOntologyNeighbors,
+  getOntologyGraph,
 } from '@/lib/api';
 import type { ChatRequest, ChatResponse } from '@/types/api';
 
@@ -19,6 +23,10 @@ import type { ChatRequest, ChatResponse } from '@/types/api';
 export const queryKeys = {
   health: ['health'] as const,
   ontologySummary: ['ontology', 'summary'] as const,
+  ontologyEntities: ['ontology', 'entities'] as const,
+  ontologyEntity: (entityId: string) => ['ontology', 'entity', entityId] as const,
+  ontologyNeighbors: (entityId: string, direction: string) => ['ontology', 'neighbors', entityId, direction] as const,
+  ontologyGraph: (centerId: string, depth: number, direction: string) => ['ontology', 'graph', centerId, depth, direction] as const,
   evidence: (traceId: string) => ['evidence', traceId] as const,
   sensorReadings: (limit: number, offset: number) => ['sensors', 'readings', limit, offset] as const,
   sensorReadingsRange: (hours: number, samples: number) => ['sensors', 'readings', 'range', hours, samples] as const,
@@ -163,5 +171,69 @@ export function usePredictions(limit = 10, enabled = true) {
     enabled,
     refetchInterval: 10000, // 10 seconds - 예측은 자주 갱신
     staleTime: 5000, // 5 seconds
+  });
+}
+
+// ============================================================
+// 온톨로지 그래프 탐색 Hooks (팔란티어 스타일)
+// ============================================================
+
+/**
+ * 전체 온톨로지 엔티티 목록 조회
+ * 그래프 탐색의 시작점을 선택하기 위한 엔티티 목록
+ */
+export function useOntologyEntities(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.ontologyEntities,
+    queryFn: getOntologyEntities,
+    enabled,
+    staleTime: 1000 * 60 * 10, // 10 minutes - 온톨로지는 자주 변경되지 않음
+  });
+}
+
+/**
+ * 특정 엔티티의 상세 정보 조회
+ */
+export function useOntologyEntity(entityId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.ontologyEntity(entityId || ''),
+    queryFn: () => getOntologyEntity(entityId!),
+    enabled: enabled && !!entityId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+/**
+ * 이웃 노드 조회 (1-hop 탐색)
+ * 클릭한 노드의 직접 연결된 이웃들을 반환
+ */
+export function useOntologyNeighbors(
+  entityId: string | null,
+  direction: 'outgoing' | 'incoming' | 'both' = 'both',
+  enabled = true
+) {
+  return useQuery({
+    queryKey: queryKeys.ontologyNeighbors(entityId || '', direction),
+    queryFn: () => getOntologyNeighbors(entityId!, direction),
+    enabled: enabled && !!entityId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+/**
+ * 서브그래프 조회 (팔란티어 스타일 그래프 탐색)
+ * 중심 노드에서 depth만큼 확장된 서브그래프를 반환
+ */
+export function useOntologyGraph(
+  centerId: string | null,
+  depth: number = 2,
+  direction: 'outgoing' | 'incoming' | 'both' = 'both',
+  enabled = true
+) {
+  return useQuery({
+    queryKey: queryKeys.ontologyGraph(centerId || '', depth, direction),
+    queryFn: () => getOntologyGraph(centerId!, depth, direction),
+    enabled: enabled && !!centerId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }

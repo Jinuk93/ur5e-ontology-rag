@@ -326,6 +326,7 @@ export function LiveView() {
         {/* Events */}
         <EventList
           events={events}
+          predictions={predictionsData?.predictions}
           onEventClick={handleEventClick}
           maxHeight="200px"
         />

@@ -5,6 +5,7 @@ import { AlertTriangle, AlertCircle, Clock, Zap } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import type { RealtimePrediction } from '@/lib/api';
 
 export interface EventItem {
   id: string;
@@ -24,6 +25,7 @@ export interface EventItem {
 
 interface EventListProps {
   events: EventItem[];
+  predictions?: RealtimePrediction[];
   onEventClick?: (event: EventItem) => void;
   maxHeight?: string;
 }
@@ -52,7 +54,7 @@ const eventConfig = {
   },
 };
 
-export function EventList({ events, onEventClick, maxHeight = '200px' }: EventListProps) {
+export function EventList({ events, predictions, onEventClick, maxHeight = '200px' }: EventListProps) {
   const t = useTranslations('card');
 
   // Sort events by timestamp descending (most recent first)
@@ -61,6 +63,37 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
   }, [events]);
+
+  // 이벤트와 매칭되는 온톨로지 예측 찾기
+  const findMatchingPrediction = (event: EventItem): RealtimePrediction | undefined => {
+    if (!predictions || predictions.length === 0) return undefined;
+
+    // 이벤트 타입을 패턴 ID로 변환
+    const patternMap: Record<string, string> = {
+      'collision': 'PAT_COLLISION',
+      'overload': 'PAT_OVERLOAD',
+      'drift': 'PAT_DRIFT',
+    };
+    const expectedPattern = patternMap[event.eventType];
+
+    // 1. 에러코드로 매칭
+    if (event.errorCode) {
+      const matchByError = predictions.find(p =>
+        p.predictions.some(pred => pred.error_code === event.errorCode)
+      );
+      if (matchByError) return matchByError;
+    }
+
+    // 2. 패턴 타입으로 매칭
+    if (expectedPattern) {
+      const matchByPattern = predictions.find(p =>
+        p.pattern_detected === expectedPattern
+      );
+      if (matchByPattern) return matchByPattern;
+    }
+
+    return undefined;
+  };
 
   const formatDateTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -84,26 +117,52 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
     return '-';
   };
 
-  // 이벤트 기반 AI 예측 (조치/권장 사항 중심)
-  const getEventPrediction = (event: EventItem): string => {
+  // 온톨로지 기반 AI 예측 (API 데이터 우선 사용)
+  const getEventPrediction = (event: EventItem): { text: string; fromOntology: boolean; probability?: number } => {
+    // 온톨로지 예측 데이터가 있으면 우선 사용
+    const matchedPrediction = findMatchingPrediction(event);
+    if (matchedPrediction && matchedPrediction.predictions.length > 0) {
+      const pred = matchedPrediction.predictions[0];
+      const prob = pred.probability;
+
+      // 온톨로지 경로 기반 예측 메시지 생성
+      let message = pred.recommendation || '';
+      if (!message && pred.cause) {
+        // cause 기반 메시지
+        const causeMessages: Record<string, string> = {
+          'CAUSE_COLLISION': '충돌 원인 분석 완료',
+          'CAUSE_OVERLOAD': '과부하 원인 감지',
+          'CAUSE_DRIFT': '센서 드리프트 감지',
+        };
+        message = causeMessages[pred.cause] || `${pred.error_code} 예측`;
+      }
+      if (!message) {
+        message = prob > 0.8 ? '즉시 점검 필요' : prob > 0.5 ? '주의 관찰' : '모니터링';
+      }
+
+      return { text: message, fromOntology: true, probability: prob };
+    }
+
+    // Fallback: 기존 하드코딩 로직
+    let fallbackText = '모니터링 중';
     if (event.eventType === 'collision') {
       if (event.errorCode === 'C153') {
-        return '재발 가능성 높음';
+        fallbackText = '재발 가능성 높음';
       } else if (event.context?.fzPeakN && event.context.fzPeakN > 500) {
-        return '그리퍼 점검 필요';
+        fallbackText = '그리퍼 점검 필요';
       } else {
-        return '작업 경로 검토';
+        fallbackText = '작업 경로 검토';
       }
     } else if (event.eventType === 'overload') {
       if (event.errorCode) {
-        return '부품 마모 주의';
+        fallbackText = '부품 마모 주의';
       } else if (event.context?.fzValueN && event.context.fzValueN > 200) {
-        return '축 부하 증가 추세';
+        fallbackText = '축 부하 증가 추세';
       } else {
-        return '하중 분산 검토';
+        fallbackText = '하중 분산 검토';
       }
     } else if (event.eventType === 'drift' || event.eventType?.includes('drift')) {
-      return '센서 교정 필요';
+      fallbackText = '센서 교정 필요';
     } else if (event.errorCode) {
       const errorPredictions: Record<string, string> = {
         C153: '동일 위치 재발 주의',
@@ -113,14 +172,14 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
         C200: '충돌 패턴 분석 필요',
         C201: '부하 한계 초과 주의',
       };
-      return errorPredictions[event.errorCode] || '패턴 분석 중';
+      fallbackText = errorPredictions[event.errorCode] || '패턴 분석 중';
     } else if (event.context?.fzPeakN && event.context.fzPeakN > 800) {
-      return '충돌 위험 증가';
+      fallbackText = '충돌 위험 증가';
     } else if (event.context?.fzValueN && event.context.fzValueN > 300) {
-      return '과부하 주의';
+      fallbackText = '과부하 주의';
     }
 
-    return '모니터링 중';
+    return { text: fallbackText, fromOntology: false };
   };
 
   const getErrorCodeInfo = (event: EventItem) => {
@@ -153,6 +212,9 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
         </div>
         <p className="text-xs text-slate-500 mt-1">
           센서에서 감지된 이상 패턴 기록입니다. 클릭하면 상세 분석을 볼 수 있습니다.
+        </p>
+        <p className="text-xs text-red-400 mt-1">
+          AI가 UR5e 에러코드와 Axia80 센서 이벤트의 상관관계를 분석하여 예측 및 조치를 제안합니다.
         </p>
       </div>
 
@@ -229,10 +291,28 @@ export function EventList({ events, onEventClick, maxHeight = '200px' }: EventLi
                     {getAction(event)}
                   </td>
                   <td className="py-2 px-2 text-center font-semibold bg-blue-950/40">
-                    <span className="inline-flex items-center gap-1 text-blue-300">
-                      <Zap className="h-3 w-3 text-yellow-400" />
-                      {getEventPrediction(event)}
-                    </span>
+                    {(() => {
+                      const prediction = getEventPrediction(event);
+                      return (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className={cn(
+                            'inline-flex items-center gap-1',
+                            prediction.fromOntology ? 'text-cyan-300' : 'text-blue-300'
+                          )}>
+                            <Zap className={cn(
+                              'h-3 w-3',
+                              prediction.fromOntology ? 'text-cyan-400' : 'text-yellow-400'
+                            )} />
+                            {prediction.text}
+                          </span>
+                          {prediction.fromOntology && prediction.probability !== undefined && (
+                            <span className="text-[9px] text-cyan-500">
+                              온톨로지 ({Math.round(prediction.probability * 100)}%)
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                 </tr>
               );

@@ -132,7 +132,7 @@ export function RealtimeChart({ data, axis, axes, thresholds, title }: RealtimeC
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
       }}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-0">
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-medium text-white">
             {title || `힘 센서 실시간 모니터링`}
@@ -183,7 +183,7 @@ export function RealtimeChart({ data, axis, axes, thresholds, title }: RealtimeC
       </div>
 
       {/* Demo notice */}
-      <div className="flex items-center gap-1.5 -mt-0.5 mb-0.5">
+      <div className="flex items-center gap-1.5 -mt-0.5 -mb-1">
         <Info className="h-3.5 w-3.5 text-red-400 shrink-0" />
         <span className="text-xs text-red-400">
           데모 버전: 2024-01-15 ~ 2024-01-21 (7일) 샘플 데이터가 제공됩니다.
