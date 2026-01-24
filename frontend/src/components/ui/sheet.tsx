@@ -7,7 +7,34 @@ import { XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Prevent hydration mismatch from Radix UI's internal hidden div
+  if (!mounted) return null
+
+  return (
+    <SheetPrimitive.Root
+      data-slot="sheet"
+      {...props}
+    />
+  )
+}
+
+// Wrapper to prevent hydration mismatch from Radix UI internal elements
+function SheetPortalWrapper({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+
+  return <>{children}</>
 }
 
 function SheetTrigger({
@@ -53,9 +80,10 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left"
 }) {
   return (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
+    <SheetPortalWrapper>
+      <SheetPortal>
+        <SheetOverlay />
+        <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
@@ -77,7 +105,8 @@ function SheetContent({
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>
       </SheetPrimitive.Content>
-    </SheetPortal>
+      </SheetPortal>
+    </SheetPortalWrapper>
   )
 }
 

@@ -44,6 +44,11 @@ class PromptBuilder:
 - 감지된 패턴과 예상 원인을 설명합니다.
 - 에러 예측이 있다면 확률과 함께 제시합니다.
 - 온톨로지 경로를 근거로 제시합니다.
+
+### 비교 질문 응답 규칙
+- 추론 결과에 있는 'comparison_data'와 'conclusions'의 텍스트를 바탕으로 답변하세요.
+- Python 엔진이 계산한 '차이점(Diff)' 정보를 활용하여 자연스럽게 설명하세요.
+- 새로운 수치를 계산하지 말고, 제공된 분석 결과를 전달하는 데 집중하세요.
 """
 
     SYSTEM_PROMPT_HYBRID = """
@@ -152,7 +157,13 @@ class PromptBuilder:
             lines.append("\n### 추론 과정")
             for i, step in enumerate(reasoning.reasoning_chain, 1):
                 desc = step.get("description", step.get("step", ""))
+                result = step.get("result")
                 lines.append(f"{i}. {desc}")
+                # 비교 결과 등 result에 중요한 데이터가 있으면 포함
+                if result and isinstance(result, list): # comparison 데이터 등
+                    lines.append(f"   (분석 데이터: {result})")
+                elif result and isinstance(result, dict) and "normal_range" in result: # entity 정의 등
+                    lines.append(f"   (속성: {result})")
 
         # 결론
         if reasoning.conclusions:

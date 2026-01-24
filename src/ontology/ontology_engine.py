@@ -9,6 +9,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
+import json
+from pathlib import Path
+
 from .models import OntologySchema, Entity
 from .schema import RelationType, EntityType
 from .loader import load_ontology
@@ -91,7 +94,99 @@ class OntologyEngine:
         self.ontology = ontology or load_ontology()
         self.rule_engine = rule_engine or RuleEngine()
         self.traverser = GraphTraverser(self.ontology)
+        self._pattern_log_cache: Optional[List[Dict[str, Any]]] = None
         logger.info("OntologyEngine 초기화 완료")
+
+    def _load_detected_patterns(self) -> List[Dict[str, Any]]:
+        """감지된 패턴 로그 로드 (캐싱)
+
+        data/sensor/processed/detected_patterns.json을 사용합니다.
+        """
+        if self._pattern_log_cache is not None:
+            return self._pattern_log_cache
+
+        root = Path(__file__).resolve().parents[2]
+        patterns_path = root / "data" / "sensor" / "processed" / "detected_patterns.json"
+        if not patterns_path.exists():
+            self._pattern_log_cache = []
+            return self._pattern_log_cache
+
+        try:
+            with open(patterns_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                self._pattern_log_cache = data
+            else:
+                self._pattern_log_cache = []
+        except Exception as e:
+            logger.warning(f"패턴 로그 로드 실패: {e}")
+            self._pattern_log_cache = []
+
+        return self._pattern_log_cache
+
+    def _build_pattern_history(self, resolved_pattern_id: str, limit: int = 3) -> Dict[str, Any]:
+        """패턴 이력(최근 감지 여부) 요약"""
+        patterns = self._load_detected_patterns()
+
+        target_type = resolved_pattern_id.replace("PAT_", "").lower()
+        matched: List[Dict[str, Any]] = []
+        for p in patterns:
+            pid = (p.get("pattern_id") or p.get("id") or "").upper()
+            ptype = (p.get("pattern_type") or p.get("type") or "").lower()
+            if pid == resolved_pattern_id or ptype == target_type:
+                matched.append(p)
+
+        # 타임스탬프 필드 후보
+        def _ts(item: Dict[str, Any]) -> str:
+            return str(item.get("timestamp") or item.get("start_time") or item.get("time") or "")
+
+        matched_sorted = sorted(matched, key=_ts)
+        count = len(matched_sorted)
+        latest_ts = _ts(matched_sorted[-1]) if count else ""
+        recent_samples = [
+            {
+                "timestamp": _ts(x),
+                "confidence": float(x.get("confidence", 0.0)) if x.get("confidence") is not None else 0.0,
+                "metrics": x.get("metrics", {}),
+            }
+            for x in matched_sorted[-limit:]
+        ]
+
+        # 데이터 기간(전체) 추정
+        all_ts = [_ts(x) for x in patterns if _ts(x)]
+        time_range = {
+            "start": min(all_ts) if all_ts else "",
+            "end": max(all_ts) if all_ts else "",
+        }
+
+        if patterns and count == 0:
+            desc = (
+                f"최근 데이터 기간({time_range['start']} ~ {time_range['end']})에서 "
+                f"{resolved_pattern_id} 감지 기록이 없습니다."
+            )
+            confidence = 0.9
+        elif not patterns:
+            desc = (
+                "패턴 이력 데이터(detected_patterns.json)를 찾지 못해 최근 감지 여부를 확인할 수 없습니다. "
+                "(패턴 감지 파이프라인 실행 또는 데이터 경로 확인이 필요합니다.)"
+            )
+            confidence = 0.4
+        else:
+            desc = (
+                f"최근 데이터 기간({time_range['start']} ~ {time_range['end']})에서 "
+                f"{resolved_pattern_id} 패턴이 {count}회 감지되었습니다. "
+                f"마지막 감지 시각: {latest_ts}"
+            )
+            confidence = 0.95
+
+        return {
+            "description": desc,
+            "count": count,
+            "latest_timestamp": latest_ts,
+            "samples": recent_samples,
+            "time_range": time_range,
+            "confidence": confidence,
+        }
 
     # ================================================================
     # 엔티티 컨텍스트 로딩
@@ -203,11 +298,50 @@ class OntologyEngine:
         total_confidence = 1.0
         evidence = {"entities_processed": [], "rules_applied": []}
 
+        # 0. 정의 질문인지 확인 (값 없이 엔티티만 있는 경우)
+        has_value = any(e.get("entity_type") == "Value" for e in entities)
+        is_definition_query = self._is_definition_query(query)
+        is_comparison_query = self._is_comparison_query(query)
+
+        # 0-1. 비교 질문 처리 (여러 엔티티 비교)
+        if is_comparison_query and not has_value:
+            axis_entities = [e for e in entities if e.get("entity_type") == "MeasurementAxis"]
+            if len(axis_entities) >= 2:
+                result = self._process_comparison(axis_entities, query)
+                if result:
+                    reasoning_chain.extend(result.get("reasoning", []))
+                    conclusions.extend(result.get("conclusions", []))
+                    ontology_paths.extend(result.get("paths", []))
+                    evidence["entities_processed"].extend([e.get("entity_id") for e in axis_entities])
+                    # 비교 질문 처리 완료 시 조기 반환
+                    return ReasoningResult(
+                        query=query,
+                        entities=entities,
+                        reasoning_chain=reasoning_chain,
+                        conclusions=conclusions,
+                        predictions=predictions,
+                        recommendations=recommendations,
+                        ontology_paths=list(set(ontology_paths)),
+                        confidence=result.get("confidence", 0.9),
+                        evidence=evidence,
+                    )
+
         # 1. 엔티티별 컨텍스트 로딩 및 처리
         for entity_info in entities:
             entity_id = entity_info.get("entity_id", "")
             entity_type = entity_info.get("entity_type", "")
             entity_text = entity_info.get("text", "")
+
+            # 정의 질문 처리 (값 없이 "Fy가 뭐야?", "UR5e가 뭐야?" 같은 질문)
+            definition_entity_types = ("MeasurementAxis", "Robot", "Sensor", "Equipment")
+            if entity_type in definition_entity_types and not has_value and is_definition_query:
+                result = self._process_entity_definition(entity_id, entity_type)
+                if result:
+                    reasoning_chain.extend(result.get("reasoning", []))
+                    conclusions.extend(result.get("conclusions", []))
+                    ontology_paths.extend(result.get("paths", []))
+                    evidence["entities_processed"].append(entity_id)
+                continue
 
             # MeasurementAxis + Value 조합 처리
             if entity_type == "MeasurementAxis":
@@ -270,6 +404,245 @@ class OntologyEngine:
             confidence=total_confidence,
             evidence=evidence,
         )
+
+    def _is_definition_query(self, query: str) -> bool:
+        """정의 질문인지 확인"""
+        import re
+        definition_patterns = [
+            r"(뭐|무엇|무슨|어떤|뜻|의미|정의)",
+            # "사용법", "설명해" 등은 구체적인 절차나 문맥이 필요하므로 RAG 검색으로 넘깁니다.
+            # 단순 정의 질문(What is)에만 온톨로지 엔진이 개입하도록 완화합니다.
+        ]
+        for pattern in definition_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                return True
+        return False
+
+    def _is_comparison_query(self, query: str) -> bool:
+        """비교 질문인지 확인"""
+        import re
+        comparison_patterns = [
+            r"(비교|차이|다른|다르)",
+            r"(compare|difference|different|vs)",
+        ]
+        for pattern in comparison_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                return True
+        return False
+
+    def _process_comparison(self, axis_entities: List[Dict], query: str) -> Optional[Dict]:
+        """엔티티 비교 처리 (Fx와 Fz 비교 등)"""
+        if len(axis_entities) < 2:
+            return None
+
+        reasoning = []
+        conclusions = []
+        paths = []
+
+        # 비교할 엔티티들의 정보 수집
+        comparison_data = []
+        for entity_info in axis_entities:
+            entity_id = entity_info.get("entity_id", "")
+            entity = self.ontology.get_entity(entity_id)
+            if entity:
+                props = entity.properties or {}
+                comparison_data.append({
+                    "entity_id": entity_id,
+                    "name": entity.name or entity_id,
+                    "unit": props.get("unit", ""),
+                    "normal_range": props.get("normal_range"),
+                    "range": props.get("range"),
+                    "measurement_type": props.get("measurement_type", ""),
+                    "axis": props.get("axis", ""),
+                })
+                paths.append(f"Ontology → {entity_id}")
+
+        if len(comparison_data) < 2:
+            return None
+
+        reasoning.append({
+            "step": "comparison_analysis",
+            "description": f"엔티티 비교 분석: {', '.join([d['entity_id'] for d in comparison_data])}",
+            "result": comparison_data,
+        })
+
+        # 비교 결과 텍스트 생성
+        comparison_text_parts = []
+        for i, data in enumerate(comparison_data):
+            entity_id = data["entity_id"]
+            axis = data["axis"].upper() if data["axis"] else ""
+            mtype = data["measurement_type"]
+
+            if mtype == "force":
+                type_desc = f"{axis}축 힘(Force)"
+            elif mtype == "torque":
+                type_desc = f"{axis}축 토크(Torque)"
+            else:
+                type_desc = entity_id
+
+            nr = data.get("normal_range")
+            spec_r = data.get("range")  # 스펙상 측정 범위
+            unit = data.get("unit", "")
+            
+            desc = f"- {entity_id}: {type_desc}"
+            if nr:
+                desc += f", 정상 범위 {nr[0]}~{nr[1]} {unit}"
+            if spec_r:
+                desc += f", 측정 한계(Spec) {spec_r[0]}~{spec_r[1]} {unit}"
+            comparison_text_parts.append(desc)
+
+        # 차이점 분석
+        diff_parts = []
+        if len(comparison_data) == 2:
+            d1, d2 = comparison_data[0], comparison_data[1]
+            # 측정 유형 비교
+            if d1.get("measurement_type") != d2.get("measurement_type"):
+                t1 = "힘" if d1.get("measurement_type") == "force" else "토크"
+                t2 = "힘" if d2.get("measurement_type") == "force" else "토크"
+                diff_parts.append(f"측정 유형이 다릅니다 ({d1['entity_id']}: {t1}, {d2['entity_id']}: {t2})")
+            
+            # 1. 정상 범위(Maintenance) 비교
+            nr1, nr2 = d1.get("normal_range"), d2.get("normal_range")
+            if nr1 and nr2:
+                # 범위가 완전히 같은지 확인
+                if nr1 == nr2:
+                    diff_parts.append(f"정상 범위가 동일합니다 ({nr1[0]}~{nr1[1]}).")
+                else:
+                    # Min/Max 비교
+                    if nr1[1] != nr2[1]:
+                        larger = d1['entity_id'] if nr1[1] > nr2[1] else d2['entity_id']
+                        smaller = d2['entity_id'] if nr1[1] > nr2[1] else d1['entity_id']
+                        max_val = max(nr1[1], nr2[1])
+                        min_val = min(nr1[1], nr2[1])
+                        diff_parts.append(f"{larger}의 정상 허용치가 {smaller}보다 높습니다 ({max_val} > {min_val}).")
+                    
+                    # 폭(Range Width) 비교
+                    width1 = nr1[1] - nr1[0]
+                    width2 = nr2[1] - nr2[0]
+                    if abs(width1 - width2) > 1:
+                         larger_width = d1['entity_id'] if width1 > width2 else d2['entity_id']
+                         diff_parts.append(f"{larger_width}의 정상 범위 폭이 더 넓습니다 ({width1} vs {width2}).")
+            
+            # 2. 측정 한계(Spec) 비교
+            sr1, sr2 = d1.get("range"), d2.get("range")
+            if sr1 and sr2:
+                # 스펙 최대값 비교
+                if sr1[1] != sr2[1]:
+                    larger_spec = d1['entity_id'] if sr1[1] > sr2[1] else d2['entity_id']
+                    smaller_spec = d2['entity_id'] if sr1[1] > sr2[1] else d1['entity_id']
+                    diff_parts.append(f"{larger_spec}가 측정 가능한 최대 한계(Spec)가 더 큽니다 ({max(sr1[1], sr2[1])} vs {min(sr1[1], sr2[1])}).")
+
+        # 최종 비교 설명 조합
+        comparison_desc = "\n".join(comparison_text_parts)
+        if diff_parts:
+            comparison_desc += "\n\n" + "차이점:\n" + "\n".join([f"- {d}" for d in diff_parts])
+
+        conclusions.append({
+            "type": "comparison",
+            "entities": [d["entity_id"] for d in comparison_data],
+            "description": comparison_desc,
+            "comparison_data": comparison_data,
+            "confidence": 0.95,
+        })
+
+        return {
+            "reasoning": reasoning,
+            "conclusions": conclusions,
+            "paths": paths,
+            "confidence": 0.95,
+        }
+
+    def _process_entity_definition(self, entity_id: str, entity_type: str = "") -> Optional[Dict]:
+        """엔티티 정의 질문 처리 (Fx, Fy, UR5e, Axia80 등 기본 설명)"""
+        entity = self.ontology.get_entity(entity_id)
+        if not entity:
+            return None
+
+        reasoning = []
+        conclusions = []
+        paths = []
+
+        # 엔티티 속성 추출
+        props = entity.properties or {}
+        entity_name = entity.name or entity_id
+        entity_type_str = entity.type.value if hasattr(entity.type, 'value') else str(entity.type)
+
+        # 엔티티 타입별 설명 생성
+        description_parts = []
+
+        # MeasurementAxis (Fx, Fy, Fz, Tx, Ty, Tz)
+        if props.get("measurement_type") == "force":
+            axis = props.get("axis", "").upper()
+            description_parts.append(f"{entity_id}는 {axis}축 방향의 힘(Force)을 측정하는 센서 축이에요.")
+        elif props.get("measurement_type") == "torque":
+            axis = props.get("axis", "").upper()
+            description_parts.append(f"{entity_id}는 {axis}축의 토크(Torque, 회전력)를 측정하는 센서 축이에요.")
+
+        # Robot (UR5e)
+        elif entity_type in ("Robot",) or entity_type_str == "Robot":
+            manufacturer = props.get("manufacturer", "")
+            payload = props.get("payload_kg", "")
+            reach = props.get("reach_mm", "")
+            joints = props.get("joints", "")
+            description_parts.append(f"{entity_name}은(는) {manufacturer}에서 제조한 협동로봇이에요.")
+            if payload:
+                description_parts.append(f"최대 {payload}kg까지 들 수 있고,")
+            if reach:
+                description_parts.append(f"작업 반경은 {reach}mm입니다.")
+            if joints:
+                description_parts.append(f"{joints}축 로봇으로 다양한 작업이 가능해요.")
+
+        # Sensor (Axia80)
+        elif entity_type in ("Sensor",) or entity_type_str == "Sensor":
+            manufacturer = props.get("manufacturer", "")
+            sampling = props.get("sampling_hz", "")
+            description_parts.append(f"{entity_name}은(는) {manufacturer}에서 제조한 6축 힘/토크 센서예요.")
+            description_parts.append("로봇 끝단에 장착되어 힘(Fx, Fy, Fz)과 토크(Tx, Ty, Tz)를 실시간으로 측정합니다.")
+            if sampling:
+                description_parts.append(f"샘플링 주파수는 {sampling}Hz입니다.")
+
+        # 일반 엔티티 (fallback)
+        else:
+            description_parts.append(f"{entity_name}은(는) {entity_type_str} 타입의 엔티티입니다.")
+
+        if props.get("unit"):
+            description_parts.append(f"단위는 {props['unit']}입니다.")
+
+        if props.get("normal_range"):
+            nr = props["normal_range"]
+            description_parts.append(f"정상 범위는 {nr[0]}~{nr[1]} {props.get('unit', '')}이에요.")
+
+        if props.get("range"):
+            r = props["range"]
+            description_parts.append(f"측정 가능 범위는 {r[0]}~{r[1]} {props.get('unit', '')}입니다.")
+
+        reasoning.append({
+            "step": "entity_definition",
+            "description": f"온톨로지에서 {entity_id} 정의 조회",
+            "result": {
+                "entity_id": entity_id,
+                "entity_name": entity_name,
+                "entity_type": entity_type_str,
+                "properties": props,
+            }
+        })
+
+        conclusions.append({
+            "type": "definition",
+            "entity_id": entity_id,
+            "entity_name": entity_name,
+            "description": " ".join(description_parts),
+            "properties": props,
+            "confidence": 0.95,
+        })
+
+        paths.append(f"Ontology → {entity_id}")
+
+        return {
+            "reasoning": reasoning,
+            "conclusions": conclusions,
+            "paths": paths,
+        }
 
     def _process_measurement(
         self,
@@ -421,6 +794,33 @@ class OntologyEngine:
             resolved_pattern_id = pattern_mapping.get(pattern_text.lower(), "")
         if not resolved_pattern_id:
             return None
+
+        # 시간 컨텍스트(최근/어제/오늘 등)가 있으면 '원인/예측'이 아니라 '이력/존재 여부'로 응답
+        if context.get("has_temporal_context"):
+            history = self._build_pattern_history(resolved_pattern_id)
+            return {
+                "reasoning": [
+                    {
+                        "step": "pattern_history",
+                        "description": f"패턴 이력 조회: {resolved_pattern_id}",
+                        "result": history,
+                    }
+                ],
+                "conclusions": [
+                    {
+                        "type": "pattern_history",
+                        "pattern": resolved_pattern_id,
+                        "count": history.get("count", 0),
+                        "latest_timestamp": history.get("latest_timestamp", ""),
+                        "samples": history.get("samples", []),
+                        "time_range": history.get("time_range", {}),
+                        "description": history.get("description", ""),
+                        "confidence": history.get("confidence", 0.5),
+                    }
+                ],
+                "recommendations": [],
+                "paths": [f"SensorLog → detected_patterns.json → {resolved_pattern_id}"],
+            }
 
         reasoning = []
         conclusions = []

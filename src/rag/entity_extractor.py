@@ -44,8 +44,12 @@ class EntityExtractor:
         re.IGNORECASE,
     )
 
-    # 시간 패턴 (예: 14시, 14:00, 어제, 오늘)
-    TIME_PATTERN = re.compile(r'(\d{1,2}시|\d{1,2}:\d{2}|어제|오늘|내일|그제|모레)', re.IGNORECASE)
+    # 시간 패턴 (예: 14시, 14:00, 어제, 오늘, 최근)
+    # NOTE: "최근"류 질의(이력/존재 여부)는 센서 이벤트/패턴 로그 조회로 처리할 수 있도록 포함
+    TIME_PATTERN = re.compile(
+        r'(\d{1,2}시|\d{1,2}:\d{2}|어제|오늘|내일|그제|모레|최근|최근에|요즘|근래|방금)',
+        re.IGNORECASE,
+    )
 
     # 패턴 타입 패턴
     PATTERN_TYPE_KEYWORDS = {
@@ -68,6 +72,12 @@ class EntityExtractor:
         "PART-B": ["PART-B", "파트B", "제품B", "B제품"],
         "PART-C": ["PART-C", "파트C", "제품C", "C제품"],
     }
+
+    # 장비 패턴 (UR5e, Axia80 등 - 한국어 조사 지원)
+    EQUIPMENT_PATTERN = re.compile(
+        r'(UR5e|Axia80|Axia)' + KOREAN_PARTICLES,
+        re.IGNORECASE
+    )
 
     def __init__(self, ontology: Optional[OntologySchema] = None):
         """초기화
@@ -129,7 +139,10 @@ class EntityExtractor:
         # 7. 제품 추출
         entities.extend(self._extract_products(query))
 
-        # 8. 온톨로지 엔티티 직접 매칭
+        # 8. 장비 추출 (UR5e, Axia80)
+        entities.extend(self._extract_equipment(query))
+
+        # 9. 온톨로지 엔티티 직접 매칭
         entities.extend(self._extract_ontology_entities(query))
 
         # 중복 제거
@@ -161,9 +174,22 @@ class EntityExtractor:
     def _extract_values(self, query: str) -> List[ExtractedEntity]:
         """수치값 추출"""
         entities = []
+        # 장비명 내부 숫자를 제외하기 위한 패턴 (UR5e, Axia80 등)
+        equipment_pattern = re.compile(r'(UR5e|Axia80)', re.IGNORECASE)
+        equipment_spans = [(m.start(), m.end()) for m in equipment_pattern.finditer(query)]
+
         for match in self.VALUE_PATTERN.finditer(query):
             # 에러 코드 "C153" 같은 토큰 내부 숫자(153)를 값으로 오인하지 않도록 필터링
             if match.start() > 0 and query[match.start() - 1] in ("C", "c"):
+                continue
+
+            # 장비명 내부 숫자(UR5e의 "5", Axia80의 "80")를 값으로 오인하지 않도록 필터링
+            match_start, match_end = match.start(), match.end()
+            is_inside_equipment = any(
+                eq_start <= match_start < eq_end
+                for eq_start, eq_end in equipment_spans
+            )
+            if is_inside_equipment:
                 continue
 
             value_str = match.group(1)
@@ -256,6 +282,30 @@ class EntityExtractor:
                         confidence=0.9,
                     ))
                     break
+        return entities
+
+    def _extract_equipment(self, query: str) -> List[ExtractedEntity]:
+        """장비 추출 (UR5e, Axia80 등 - 한국어 조사 지원)"""
+        entities = []
+        for match in self.EQUIPMENT_PATTERN.finditer(query):
+            equipment = match.group(1)
+            # 표준화
+            if equipment.lower() == "ur5e":
+                equipment_id = "UR5e"
+                equipment_type = "Robot"
+            elif equipment.lower() in ("axia80", "axia"):
+                equipment_id = "Axia80"
+                equipment_type = "Sensor"
+            else:
+                equipment_id = equipment
+                equipment_type = "Equipment"
+
+            entities.append(ExtractedEntity(
+                text=equipment,
+                entity_id=equipment_id,
+                entity_type=equipment_type,
+                confidence=1.0,
+            ))
         return entities
 
     def _extract_ontology_entities(self, query: str) -> List[ExtractedEntity]:

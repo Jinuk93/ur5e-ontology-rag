@@ -23,6 +23,16 @@ class QueryClassifier:
 
     # 온톨로지성 질문 지표 (관계/맥락 추론 필요)
     ONTOLOGY_INDICATORS = {
+        # 온톨로지 엔티티 정의 질문 (Fx, Fy, Fz, UR5e, Axia80 등 기본 정의)
+        # NOTE: "사용법", "설명해" 패턴은 문맥 파장이 필요한 절차적 질문이므로 제거함. (RAG/Hybrid로 이관)
+        "entity_definition_question": {
+            "patterns": [
+                r"(Fz|Fx|Fy|Tx|Ty|Tz|UR5e|Axia80)(?:가|이|는|은|의|란|이란)?\s*(뭐|무엇|무슨|어떤|뜻|의미|정의)",
+                r"(뭐|무엇|무슨).{0,5}(Fz|Fx|Fy|Tx|Ty|Tz)",
+                r"(힘|토크|Force|Torque).{0,5}(센서|축|뭐|무엇)",
+            ],
+            "weight": 0.95,
+        },
         # 센서 값 + 질문 패턴
         "sensor_value_question": {
             "patterns": [
@@ -67,6 +77,15 @@ class QueryClassifier:
             "patterns": [
                 r"(관계|연결|연관|영향|관련).{0,10}(뭐|있|알려)",
                 r"(무엇이|어떤것이).{0,10}(영향|관련|연결)",
+            ],
+            "weight": 0.9,
+        },
+        # 엔티티 비교 질문 (Fx와 Fz 비교, 정상 범위 차이 등)
+        "entity_comparison_question": {
+            "patterns": [
+                r"(Fz|Fx|Fy|Tx|Ty|Tz).{0,10}(와|과|랑).{0,10}(Fz|Fx|Fy|Tx|Ty|Tz).{0,10}(비교|차이|다른)",
+                r"(비교|차이).{0,10}(Fz|Fx|Fy|Tx|Ty|Tz).{0,10}(Fz|Fx|Fy|Tx|Ty|Tz)",
+                r"(Fz|Fx|Fy|Tx|Ty|Tz).{0,5}(Fz|Fx|Fy|Tx|Ty|Tz).{0,10}(비교|차이|다른)",
             ],
             "weight": 0.9,
         },

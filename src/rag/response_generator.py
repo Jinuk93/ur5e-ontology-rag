@@ -323,14 +323,8 @@ class ResponseGenerator:
                 "timeframe": pred.get("timeframe", ""),
             }
 
-        # 2) conclusions의 triggered_error도 예측으로 간주
-        for conclusion in reasoning.conclusions:
-            if conclusion.get("type") == "triggered_error":
-                return {
-                    "error_code": conclusion.get("error", ""),
-                    "probability": conclusion.get("confidence", 0),
-                    "timeframe": conclusion.get("timeframe", ""),
-                }
+        # 2) triggered_error는 '관계 기반 연결'일 수 있어 예측으로 취급하지 않음
+        #    (시간/확률 근거가 있는 경우에만 predictions로 들어오도록 설계)
 
         return None
 
@@ -550,12 +544,56 @@ class ResponseGenerator:
 
         LLM이 없으면 템플릿 기반 응답 생성
         """
+        # 1. LLM 클라이언트가 있고, 설정되어 있는지 확인
         if self.llm_client:
-            return self._generate_with_llm(classification, reasoning)
+            # 2. 강제 템플릿 사용 조건이 아니라면 LLM 시도
+            # (여기서는 모든 질문에 대해 LLM 시도)
+            try:
+                return self._generate_with_llm(classification, reasoning)
+            except Exception as e:
+                logger.error(f"LLM 생성 실패 (Fallback to Template): {e}")
+                # 실패 시 템플릿으로 넘어감
 
         return self._generate_template_response(
             classification, reasoning, analysis, prediction, recommendation
         )
+
+    # 영어 → 한글 번역 맵
+    CAUSE_TRANSLATIONS = {
+        "Joint Wear": "관절 마모",
+        "Loose Bolts": "볼트 풀림",
+        "Physical Contact": "물리적 접촉",
+        "Collision": "충돌",
+        "Payload Exceeded": "페이로드 초과",
+        "Grip Position": "그립 위치 이상",
+        "Tool Wear": "툴 마모",
+        "Sensor Drift": "센서 드리프트",
+        "Overload": "과부하",
+        "Vibration": "진동",
+        "Mechanical Stress": "기계적 스트레스",
+        "Cable Issue": "케이블 문제",
+    }
+
+    PATTERN_TRANSLATIONS = {
+        "Collision": "충돌",
+        "Overload": "과부하",
+        "Drift": "드리프트",
+        "Vibration": "진동",
+    }
+
+    def _translate_cause(self, cause_eng: str) -> str:
+        """영어 원인명을 한글로 번역 (영어도 함께 표시)"""
+        kr = self.CAUSE_TRANSLATIONS.get(cause_eng)
+        if kr:
+            return f"{cause_eng} ({kr})"
+        return cause_eng
+
+    def _translate_pattern(self, pattern_eng: str) -> str:
+        """영어 패턴명을 한글로 번역 (영어도 함께 표시)"""
+        kr = self.PATTERN_TRANSLATIONS.get(pattern_eng)
+        if kr:
+            return f"{pattern_eng} ({kr})"
+        return pattern_eng
 
     def _generate_template_response(
         self,
@@ -565,10 +603,16 @@ class ResponseGenerator:
         prediction: Optional[Dict[str, Any]],
         recommendation: Dict[str, Any]
     ) -> str:
-        """템플릿 기반 응답 생성 (LLM 없이)"""
-        parts: List[str] = []
+        """템플릿 기반 응답 생성 (LLM 없이)
 
-        # 1. 상태 분석
+        대화체로 친근하게 설명하고, 근거는 아래에 정리합니다.
+        """
+        # 대화체 설명
+        intro_parts: List[str] = []
+        # 구조화된 근거
+        evidence_parts: List[str] = []
+
+        # 1. 상태 분석 - 대화체로 설명
         if "entity" in analysis and "state" in analysis:
             entity = analysis["entity"]
             state = analysis["state"]
@@ -576,46 +620,119 @@ class ResponseGenerator:
 
             if value:
                 unit = analysis.get("unit", "")
-                parts.append(f"{entity} 값 {value}{unit}은(는) {state} 상태입니다.")
+                if state in ("Warning", "Critical", "CRITICAL", "WARNING"):
+                    intro_parts.append(f"현재 {entity} 값이 {value}{unit}로, 정상 범위를 벗어났네요.")
+                else:
+                    intro_parts.append(f"{entity} 값은 {value}{unit}로 정상 범위입니다.")
             else:
-                parts.append(f"{entity}은(는) {state} 상태입니다.")
+                if state in ("Warning", "Critical", "CRITICAL", "WARNING"):
+                    intro_parts.append(f"{entity}에서 이상 징후가 감지되었어요.")
+                else:
+                    intro_parts.append(f"{entity}는 현재 정상 상태입니다.")
 
             if "deviation" in analysis:
-                parts.append(f"({analysis['deviation']})")
+                intro_parts.append(f"({analysis['deviation']})")
 
-            if "normal_range" in analysis:
-                nr = analysis["normal_range"]
-                parts.append(f"정상 범위: {nr[0]}~{nr[1]}")
+        # 2. 패턴/원인/정의 분석 수집
+        patterns_found: List[Dict] = []
+        causes_found: List[Dict] = []
+        definitions_found: List[Dict] = []
 
-        # 2. 패턴/원인 분석
         for conclusion in reasoning.conclusions:
             c_type = conclusion.get("type", "")
             if c_type == "pattern":
                 pattern = conclusion.get("pattern", "")
                 conf = conclusion.get("confidence", 0)
                 pattern_name = pattern.replace("PAT_", "").replace("_", " ").title()
-                parts.append(f"감지된 패턴: {pattern_name} (신뢰도: {conf:.0%})")
+                patterns_found.append({"name": pattern_name, "confidence": conf})
             elif c_type == "cause":
                 cause = conclusion.get("cause", "")
                 conf = conclusion.get("confidence", 0)
                 cause_name = cause.replace("CAUSE_", "").replace("_", " ").title()
-                parts.append(f"추정 원인: {cause_name} (신뢰도: {conf:.0%})")
+                causes_found.append({"name": cause_name, "confidence": conf})
+            elif c_type == "definition":
+                definitions_found.append({
+                    "entity_id": conclusion.get("entity_id", ""),
+                    "entity_name": conclusion.get("entity_name", ""),
+                    "description": conclusion.get("description", ""),
+                    "properties": conclusion.get("properties", {}),
+                })
+            elif c_type == "comparison":
+                # 비교 결론은 바로 반환
+                return conclusion.get("description", "비교 결과를 생성할 수 없습니다.")
+            elif c_type == "pattern_history":
+                # 최근/이력 질문은 요약 결과를 바로 반환
+                return conclusion.get("description", "최근 패턴 이력 정보를 생성할 수 없습니다.")
 
-        # 3. 예측
+        # 정의 질문 응답 (definitions_found가 있으면 바로 반환)
+        if definitions_found:
+            def_parts = []
+            for defn in definitions_found:
+                def_parts.append(defn["description"])
+                props = defn.get("properties", {})
+                if props.get("normal_range"):
+                    nr = props["normal_range"]
+                    unit = props.get("unit", "")
+                    def_parts.append(f"\n- 정상 범위: {nr[0]} ~ {nr[1]} {unit}")
+                if props.get("range"):
+                    r = props["range"]
+                    unit = props.get("unit", "")
+                    def_parts.append(f"- 측정 범위: {r[0]} ~ {r[1]} {unit}")
+            return "".join(def_parts)
+
+        # 3. 대화체 설명 추가
+        if patterns_found:
+            pattern = patterns_found[0]
+            pattern_kr = self._translate_pattern(pattern["name"])
+            intro_parts.append(f"{pattern_kr} 패턴이 감지되었어요.")
+
+        if causes_found:
+            intro_parts.append("원인을 분석해보니, 다음과 같은 가능성이 있습니다.")
+
+        # 4. 구조화된 근거 (세로 정렬)
+        for cause in causes_found:
+            cause_kr = self._translate_cause(cause["name"])
+            evidence_parts.append(f"- 추정 원인: {cause_kr} (신뢰도: {cause['confidence']:.0%})")
+
+        # 관계 기반 연관 에러(=예측 아님) 표기
+        related_errors: List[Dict[str, Any]] = []
+        for conclusion in reasoning.conclusions:
+            if conclusion.get("type") == "triggered_error":
+                related_errors.append({
+                    "error": conclusion.get("error", ""),
+                    "confidence": conclusion.get("confidence", 0),
+                })
+        for item in related_errors:
+            if item.get("error"):
+                evidence_parts.append(
+                    f"- 관련 가능 에러: {item['error']} (관계 기반, 신뢰도: {item.get('confidence', 0):.0%})"
+                )
+
         if prediction:
             error = prediction.get("error_code", "")
             prob = prediction.get("probability", 0)
             timeframe = prediction.get("timeframe", "")
             if error and prob:
-                parts.append(f"예측: {error} 발생 확률 {prob:.0%}{f' ({timeframe})' if timeframe else ''}")
+                timeframe_str = f", {timeframe}" if timeframe else ""
+                evidence_parts.append(f"- 예측: {error} 발생 확률 {prob:.0%}{timeframe_str}")
 
-        # 4. 권장사항
         if recommendation.get("immediate"):
-            parts.append(f"권장 조치: {recommendation['immediate']}")
+            evidence_parts.append(f"- 권장 조치: {recommendation['immediate']}")
         if recommendation.get("reference"):
-            parts.append(f"참고: {recommendation['reference']}")
+            evidence_parts.append(f"- 참고: {recommendation['reference']}")
 
-        return " ".join(parts)
+        # 5. 최종 조합
+        result_parts: List[str] = []
+
+        # 대화체 부분
+        if intro_parts:
+            result_parts.append(" ".join(intro_parts))
+
+        # 근거 부분 (줄바꿈으로 정리)
+        if evidence_parts:
+            result_parts.append("\n" + "\n".join(evidence_parts))
+
+        return "".join(result_parts) if result_parts else "분석 결과를 생성할 수 없습니다."
 
     def _generate_with_llm(
         self,
