@@ -367,7 +367,50 @@
 **i18n 변경** (`frontend/messages/ko.json`, `frontend/messages/en.json`):
 - Axia80 센서 설명 변경: "ATI 6축 힘/토크 센서" → "Fz, Fx, Fy + 이벤트 감지"
 
-### 2.26 잔여 작업
+### 2.26 API 키 관리 시스템 (P8 신규)
+
+**apiKeyStore.ts** (`frontend/src/stores/apiKeyStore.ts`):
+- Zustand + persist 기반 API 키 상태 관리
+- LocalStorage에 저장 (새로고침해도 유지)
+- `apiKey`: 현재 등록된 API 키
+- `isKeyRegistered`: 키 등록 여부
+- `showKeyModal`: 모달 표시 상태
+- `setApiKey(key)`, `clearApiKey()`, `openKeyModal()`, `closeKeyModal()` 액션
+
+**ApiKeyModal.tsx** (`frontend/src/components/chat/ApiKeyModal.tsx`):
+- API 키 등록/변경 모달 컴포넌트
+- Framer Motion 애니메이션 (fadeIn, scale)
+- **검증 규칙**:
+  - `sk-`로 시작해야 함
+  - 최소 20자 이상
+- 등록된 키 마스킹 표시 (`sk-...****...abc1`)
+- 눈 아이콘으로 입력 키 표시/숨김 토글
+- OpenAI 플랫폼 링크 제공
+
+**ChatPanel.tsx 변경** (`frontend/src/components/chat/ChatPanel.tsx`):
+- 상단에 **[🔑 API Key]** 버튼 추가
+- API 키 미등록 시:
+  - 입력창 비활성화
+  - "챗봇을 사용하려면 API 키를 등록해주세요" 안내 메시지
+- API 키 등록 시:
+  - 버튼에 체크 마크 표시 (`🔑 ✓`)
+  - 일반 채팅 기능 활성화
+
+**api.ts 변경** (`frontend/src/lib/api.ts`):
+- `sendChatMessage(request, apiKey?)` 함수 시그니처 변경
+- API 키가 있으면 `X-OpenAI-API-Key` 헤더로 전달
+- 요청 본문(body)이 아닌 헤더로 전송 (보안 강화)
+
+**useApi.ts 변경** (`frontend/src/hooks/useApi.ts`):
+- `useChatMutation()`에서 `useApiKeyStore` 연동
+- 자동으로 store의 API 키를 `sendChatMessage`에 전달
+
+**백엔드 연동** (`src/api/routes/chat.py`):
+- `X-OpenAI-API-Key` 헤더 수신
+- 우선순위: 헤더 > 서버 `.env`의 `OPENAI_API_KEY`
+- 둘 다 없으면 LLM 기능 없이 온톨로지 추론만 수행
+
+### 2.27 잔여 작업
 
 - 없음 (모든 기능 구현 완료 ✅)
 
@@ -440,10 +483,26 @@ PowerShell:
 - ~~(P3-5) 애니메이션 (Framer Motion)~~ ✅ 완료
   - `framer-motion` 설치
   - 뷰 전환, 메시지 추가, 카드 호버/탭 애니메이션 적용
+- ~~(P4) 이기종 결합 예측 및 통계 개선~~ ✅ 완료
+  - StatisticsSummary 리팩토링 (6축 평균, 예비보전 점수)
+  - EventList AI 예측 컬럼 개선
+- ~~(P5) 이상 감지 알림 시스템~~ ✅ 완료
+  - Toast 알림 + 경고음
+  - CorrelationTable → 실시간 예지보전 UI 개선
+- ~~(P6) UR5e + Axia80 센서 통합 모니터링 차트~~ ✅ 완료
+  - RealtimeChart에 UR5e 텔레메트리 추가
+  - EventDetectionCard 신규
+- ~~(P7) 이벤트 해결 관리 시스템~~ ✅ 완료
+  - eventResolveStore (Zustand + persist)
+  - EventList "해결완료" 체크박스
+- ~~(P8) API 키 관리 시스템~~ ✅ 완료
+  - apiKeyStore (Zustand + persist)
+  - ApiKeyModal 컴포넌트
+  - X-OpenAI-API-Key 헤더 전달
 
 ### 남은 항목
 
-- 없음 (P0~P3 모두 완료, UI 설계 명세서 Phase 3 항목 전체 구현)
+- 없음 (P0~P8 모두 완료, UI 설계 명세서 전체 구현)
 
 ---
 
@@ -521,3 +580,10 @@ PowerShell:
   - `frontend/src/components/live/EventList.tsx`: "해결완료" 체크박스 컬럼 추가, 컬럼 간격 균등화
   - `frontend/src/components/live/EventDetectionCard.tsx`: 해결된 이벤트 제외 카운트, 해결 건수 표시
   - `frontend/messages/ko.json`, `frontend/messages/en.json`: Axia80 센서 설명 변경 (Fz, Fx, Fy + 이벤트 감지)
+- **P8 완료** - API 키 관리 시스템 (2026-01-26)
+  - `frontend/src/stores/apiKeyStore.ts`: API 키 상태 관리 (Zustand + persist)
+  - `frontend/src/components/chat/ApiKeyModal.tsx`: API 키 등록/변경 모달
+  - `frontend/src/components/chat/ChatPanel.tsx`: API 키 버튼 추가, 미등록 시 입력 비활성화
+  - `frontend/src/lib/api.ts`: `X-OpenAI-API-Key` 헤더로 API 키 전달
+  - `frontend/src/hooks/useApi.ts`: `useChatMutation`에서 API 키 자동 주입
+  - `src/api/routes/chat.py`: `X-OpenAI-API-Key` 헤더 수신 및 우선순위 처리

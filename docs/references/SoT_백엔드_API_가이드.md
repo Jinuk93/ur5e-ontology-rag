@@ -91,12 +91,14 @@ PowerShell에서:
 
 [src/config.py](../../src/config.py)에서 `.env`를 로드합니다.
 
-- `OPENAI_API_KEY` (필요 시)
+- `OPENAI_API_KEY` (선택 - 프론트엔드에서 헤더로 전달 가능)
 - `NEO4J_URI` (기본: `bolt://localhost:7687`)
 - `NEO4J_USER` (기본: `neo4j`)
 - `NEO4J_PASSWORD`
 
 샘플: [.env.example](../../.env.example)
+
+> **참고**: OpenAI API 키는 프론트엔드에서 `X-OpenAI-API-Key` 헤더로 전달할 수 있습니다. 헤더로 전달된 키가 서버 환경변수보다 우선합니다. 자세한 내용은 [4.1 ChatRequest](#41-chatrequest-요청)를 참조하세요.
 
 ### 3.2 YAML 설정(configs/settings.yaml)
 
@@ -116,11 +118,30 @@ PowerShell에서:
 ### 4.1 ChatRequest (요청)
 
 - 엔드포인트: `POST /api/chat`
-- 스키마: [src/api/main.py](../../src/api/main.py)
+- 스키마: [src/api/routes/chat.py](../../src/api/routes/chat.py)
   - `query`(권장) 또는 `message`(하위호환) 중 하나는 필수
   - validator에서 `query` 우선, 없으면 `message`를 `query`로 승격
 
+#### API 키 전달 방식
+
+OpenAI API 키는 **HTTP 헤더**를 통해 전달합니다 (보안상 권장):
+
+- **헤더 이름**: `X-OpenAI-API-Key`
+- **우선순위**: 헤더 > 서버 `.env` 설정
+  - 헤더에 유효한 키(`sk-`로 시작)가 있으면 해당 키 사용
+  - 없으면 서버의 `OPENAI_API_KEY` 환경변수 사용
+  - 둘 다 없으면 LLM 기능 없이 온톨로지 추론만 수행
+
 요청 예시:
+
+```bash
+curl -X POST "http://127.0.0.1:8002/api/chat" \
+  -H "Content-Type: application/json" \
+  -H "X-OpenAI-API-Key: sk-..." \
+  -d '{"query": "Fz가 -350N인데 이게 뭐야?"}'
+```
+
+요청 본문 예시:
 
 ```json
 {
@@ -239,7 +260,9 @@ SSE 테스트 예시(터미널):
   - `data/sensor/raw/axia80_week_01.parquet` 경로/파일 존재 확인
 - 프론트가 API를 못 붙음:
   - 프론트 환경변수 `NEXT_PUBLIC_API_URL=http://127.0.0.1:8002`
-  - CORS는 현재 `allow_origins=["*"]`로 열려 있음(운영에서는 제한 필요)
+  - CORS 설정: 환경변수 `CORS_ORIGINS`로 허용 도메인 지정 (쉼표 구분)
+    - 예: `CORS_ORIGINS=http://localhost:3000,https://myapp.com`
+    - 미설정 시 기본값: `http://localhost:3000`, `http://127.0.0.1:3000`
 
 ---
 
