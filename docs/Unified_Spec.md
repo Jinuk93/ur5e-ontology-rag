@@ -567,28 +567,33 @@ Axia80:
 ## 6.2 주요 엔티티
 
 ### Equipment Domain
-| Entity | 설명 | 인스턴스 |
+| Entity | 설명 | 인스턴스 (v2.0 확장) |
 |--------|------|----------|
 | Robot | 협동로봇 | UR5e |
 | Joint | 로봇 관절 | Joint_0 ~ Joint_5 |
 | ControlBox | 제어박스 | CB_UR5e |
 | ToolFlange | 툴 플랜지 | TF_UR5e |
+| TeachPendant | 티치 펜던트 | PolyScope (v2.0 추가) |
+| SafetyBoard | 안전 보드 | SafetySys1, SafetySys2 (v2.0 추가) |
+| Motherboard | 마더보드 | Motherboard (v2.0 추가) |
 
 ### Measurement Domain
-| Entity | 설명 | 인스턴스 |
+| Entity | 설명 | 인스턴스 (v2.0 확장) |
 |--------|------|----------|
 | Sensor | 센서 | Axia80 |
 | MeasurementAxis | 측정축 | Fx, Fy, Fz, Tx, Ty, Tz |
 | State | 상태 | IDLE, NORMAL_LOAD, WARNING, CRITICAL |
-| Pattern | 이상패턴 | PAT_COLLISION, PAT_OVERLOAD, PAT_VIBRATION, PAT_DRIFT |
+| Pattern | 이상패턴 | **8개** (PAT_COLLISION, PAT_OVERLOAD, PAT_VIBRATION, PAT_DRIFT, PAT_COMMUNICATION_LOSS, PAT_OVERHEAT, PAT_SAFETY_VIOLATION, PAT_POSITION_DEVIATION) |
 
 ### Knowledge Domain
-| Entity | 설명 | 인스턴스 |
+| Entity | 설명 | 인스턴스 (v2.0 확장) |
 |--------|------|----------|
-| ErrorCode | 에러코드 | C153, C189, C119 |
-| Cause | 원인 | CAUSE_PHYSICAL_CONTACT, CAUSE_PAYLOAD_EXCEEDED |
-| Resolution | 해결책 | RES_CLEAR_OBSTRUCTION, RES_REDUCE_PAYLOAD |
+| ErrorCode | 에러코드 | **99개** (C0~C900, 27개 카테고리) |
+| Cause | 원인 | **20개** (CAUSE_COMMUNICATION_LOSS, CAUSE_OVERHEAT 등) |
+| Resolution | 해결책 | **15개** (RES_REBOOT, RES_UPDATE_FIRMWARE 등) |
 | Document | 문서 | UserManual, ServiceManual, ErrorCodes |
+
+> **Note (v2.0 확장)**: 벤치마크 QA 커버리지 향상을 위해 에러 코드를 14개에서 99개로 대폭 확장. 상세 내용은 [온톨로지_확장_v2.0.md](온톨로지_확장_v2.0.md) 참조.
 
 ### Context Domain
 | Entity | 설명 | 인스턴스 |

@@ -373,3 +373,30 @@ INVOLVES: {"source_types": [EntityType.EVENT, EntityType.PATTERN], ...}
 
 `loader.py`는 `ontology.json` + `lexicon.yaml`만 로드. `schema.yaml`은 참조 문서 역할.
 
+---
+
+## 11. 온톨로지 v2.0 확장 (2026-01-26)
+
+### 11.1 v2.0 확장 요약
+
+온톨로지 스키마를 대폭 확장하여 벤치마크 QA 커버리지를 100%로 향상했습니다.
+
+| 항목 | v1.0 | v2.0 | 변경 |
+|------|------|------|------|
+| EntityType | 16개 | 19개 | +3개 |
+| ErrorCode 커버리지 | 14개 | 99개 | +607% |
+| 에러 카테고리 | 5개 | 27개 | +440% |
+
+### 11.2 새로 추가된 엔티티 타입
+
+- **TeachPendant**: 티치 펜던트 (PolyScope UI)
+- **SafetyBoard**: Safety Control Board
+- **Motherboard**: 마더보드
+
+### 11.3 참고 문서
+
+상세 내용은 [온톨로지_확장_v2.0.md](../온톨로지_확장_v2.0.md)를 참조하세요.
+
+---
+
+*Phase 04 완료. Phase 05 (엔티티관계구축)으로 진행합니다.*

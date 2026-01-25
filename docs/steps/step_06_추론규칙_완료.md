@@ -293,10 +293,53 @@ print(f"State: {state.result_id}")  # State_Warning
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.0 |
+| 문서 버전 | v3.0 |
 | 설계서 참조 | [step_06_추론규칙_설계.md](step_06_추론규칙_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 6 |
 | Spec 섹션 | 2.2, 12.3 |
+
+---
+
+## 12. inference_rules.yaml v2.0 확장 (2026-01-26)
+
+### 12.1 확장 배경
+
+온톨로지 v2.0 확장에 따라 추론 규칙도 대폭 확장하여 더 많은 패턴, 원인, 에러 코드를 처리할 수 있도록 개선했습니다.
+
+### 12.2 확장 내용
+
+| 항목 | v1.0 | v2.0 | 변경 |
+|------|------|------|------|
+| state_rules | 1개 (Fz만) | 6개 (전 축) | +500% |
+| cause_rules | 4개 패턴 | 8개 패턴 | +100% |
+| prediction_rules | 3개 | 6개 | +100% |
+| pattern_error_mapping | 4개 | 8개 | +100% |
+| error_cause_resolution | 없음 | 17개 | 신규 |
+
+### 12.3 새로 추가된 예측 규칙
+
+- **COMMUNICATION_PREDICTION**: 통신 손실 패턴 → C103 예측
+- **OVERHEAT_PREDICTION**: 과열 패턴 → C77 예측
+- **SAFETY_PREDICTION**: 안전 위반 패턴 → C151 예측
+
+### 12.4 error_cause_resolution 섹션
+
+벤치마크 QA의 모든 에러 코드에 대해 원인-해결책 직접 매핑 추가:
+
+```yaml
+error_cause_resolution:
+  C103:
+    category: "joint_communication"
+    causes: ["CAUSE_COMMUNICATION_LOSS", "CAUSE_CABLE_FAULT"]
+    resolutions: ["RES_CHECK_CABLE", "RES_REBOOT"]
+    description: "조인트 통신 타임아웃"
+  # ... 17개 에러 코드 매핑
+```
+
+### 12.5 참고 문서
+
+- [온톨로지_확장_v2.0.md](../온톨로지_확장_v2.0.md) - 상세 확장 작업 보고서
+- [configs/inference_rules.yaml](../../configs/inference_rules.yaml) - 확장된 추론 규칙
 
 ---
 

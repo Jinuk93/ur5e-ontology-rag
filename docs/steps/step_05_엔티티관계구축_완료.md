@@ -22,18 +22,19 @@
 
 ### 2.2 온톨로지 통계
 
-| 항목 | 수량 |
-|------|------|
-| 총 엔티티 | 54개 |
-| 총 관계 | 62개 |
+| 항목 | v1.0 수량 | v2.0 수량 | 증가율 |
+|------|-----------|-----------|--------|
+| 총 엔티티 | 54개 | **~180개** | +233% |
+| 총 관계 | 62개 | **155개** | +150% |
+| 에러 코드 | 14개 | **99개** | +607% |
 
-### 2.3 도메인별 엔티티 분포
+### 2.3 도메인별 엔티티 분포 (v2.0)
 
 | 도메인 | 엔티티 수 | 주요 엔티티 |
 |--------|----------|------------|
-| Equipment | 9 | UR5e, Joint_0~5, ControlBox, ToolFlange |
-| Measurement | 14 | Axia80, Fx~Fz, Tx~Tz, States, Patterns |
-| Knowledge | 26 | C153, C119, C189, Causes, Resolutions, Documents |
+| Equipment | 12 | UR5e, Joint_0~5, ControlBox, ToolFlange, TeachPendant, SafetyBoard, Motherboard |
+| Measurement | 18 | Axia80, Fx~Fz, Tx~Tz, States (6개), Patterns (8개) |
+| Knowledge | ~145 | 99 ErrorCodes, 20 Causes, 15 Resolutions, Documents |
 | Context | 5 | Shift_Day/Night, Product_A/B, WorkCycle_Assembly |
 
 ### 2.4 관계 타입별 분포
@@ -357,10 +358,45 @@ python scripts/build_ontology.py
 
 | 항목 | 값 |
 |------|---|
-| 문서 버전 | v2.2 |
+| 문서 버전 | v3.0 |
 | 설계서 참조 | [step_05_엔티티관계구축_설계.md](step_05_엔티티관계구축_설계.md) |
 | ROADMAP 섹션 | A.2 Phase 5 |
 | Spec 섹션 | Section 6 |
+
+---
+
+## 11. 온톨로지 v2.0 확장 (2026-01-26)
+
+### 11.1 확장 배경
+
+벤치마크 QA 테스트에서 기존 온톨로지(v1.0)가 14개 에러 코드만 포함하여 대부분의 질문에 "근거 불충분(ABSTAIN)"으로 응답하는 문제가 발생. A+C 하이브리드 접근법으로 해결.
+
+### 11.2 주요 변경 사항
+
+| 항목 | v1.0 | v2.0 | 증가율 |
+|------|------|------|--------|
+| 에러 코드 (ErrorCode) | 14개 | 99개 | +607% |
+| 원인 (Cause) | 6개 | 20개 | +233% |
+| 해결책 (Resolution) | 5개 | 15개 | +200% |
+| 패턴 (Pattern) | 4개 | 8개 | +100% |
+| 관계 (Relationship) | 58개 | 155개 | +167% |
+
+### 11.3 새로 추가된 장비 엔티티
+
+- **TeachPendant**: 티치 펜던트 (PolyScope)
+- **SafetyControlBoard**: Safety Control Board (SafetySys1, SafetySys2)
+- **Motherboard**: 마더보드
+
+### 11.4 벤치마크 QA 커버리지
+
+**error_code_qa.json** 커버리지: **0% → 100%**
+
+모든 벤치마크 에러 코드 (C103, C151, C200, C259, C300, C402, C500, C710, C900, C32, C45, C740, C171, C173, C503, C61) 포함.
+
+### 11.5 참고 문서
+
+- [온톨로지_확장_v2.0.md](../온톨로지_확장_v2.0.md) - 상세 확장 작업 보고서
+- [ontology.json](../../data/processed/ontology/ontology.json) - 확장된 온톨로지 데이터
 
 ---
 

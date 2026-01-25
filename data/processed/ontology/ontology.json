@@ -1,6 +1,13 @@
 {
-  "version": "1.0",
-  "description": "UR5e 협동로봇 온톨로지 - 4-Domain Architecture",
+  "version": "2.0",
+  "description": "UR5e 협동로봇 온톨로지 - 4-Domain Architecture (확장판)",
+  "metadata": {
+    "created": "2024-01-26",
+    "error_codes_count": 99,
+    "causes_count": 20,
+    "resolutions_count": 15,
+    "patterns_count": 8
+  },
 
   "entities": [
     {
@@ -70,6 +77,27 @@
       "domain": "equipment",
       "name": "Tool Flange",
       "properties": {"diameter_mm": 63, "bolt_pattern": "M6x6"}
+    },
+    {
+      "id": "TeachPendant",
+      "type": "TeachPendant",
+      "domain": "equipment",
+      "name": "Teach Pendant",
+      "properties": {"model": "PolyScope"}
+    },
+    {
+      "id": "SafetyControlBoard",
+      "type": "SafetyBoard",
+      "domain": "equipment",
+      "name": "Safety Control Board",
+      "properties": {"processors": ["SafetySys1", "SafetySys2"]}
+    },
+    {
+      "id": "Motherboard",
+      "type": "Motherboard",
+      "domain": "equipment",
+      "name": "Motherboard",
+      "properties": {}
     },
 
     {
@@ -197,90 +225,925 @@
         "severity": "low"
       }
     },
+    {
+      "id": "PAT_COMMUNICATION_LOSS",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "통신 손실 패턴",
+      "properties": {
+        "description": "패킷 손실 또는 통신 두절",
+        "threshold": {"lost_packets": 2, "time_window_ms": 500},
+        "severity": "high"
+      }
+    },
+    {
+      "id": "PAT_OVERHEAT",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "과열 패턴",
+      "properties": {
+        "description": "조인트 온도 상승",
+        "threshold": {"temperature_C": 80, "duration_s": 60},
+        "severity": "high"
+      }
+    },
+    {
+      "id": "PAT_SAFETY_VIOLATION",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "안전 위반 패턴",
+      "properties": {
+        "description": "안전 한계 초과",
+        "threshold": {"limit_exceeded": true},
+        "severity": "critical"
+      }
+    },
+    {
+      "id": "PAT_POSITION_DEVIATION",
+      "type": "Pattern",
+      "domain": "measurement",
+      "name": "위치 편차 패턴",
+      "properties": {
+        "description": "경로 이탈",
+        "threshold": {"deviation_mm": 5},
+        "severity": "high"
+      }
+    },
 
     {
-      "id": "C153",
+      "id": "C0",
       "type": "ErrorCode",
       "domain": "knowledge",
-      "name": "C153 안전 정지",
-      "properties": {"category": "safety", "severity": "high", "recoverable": true}
+      "name": "C0 No error",
+      "properties": {"category": "system", "severity": "info", "recoverable": true, "description": "에러 없음"}
     },
     {
-      "id": "C119",
+      "id": "C1",
       "type": "ErrorCode",
       "domain": "knowledge",
-      "name": "C119 충돌 감지",
-      "properties": {"category": "safety", "severity": "high", "recoverable": true}
+      "name": "C1 Outbuffer overflow",
+      "properties": {"category": "communication", "severity": "medium", "recoverable": true, "description": "출력 버퍼 오버플로우"}
     },
     {
-      "id": "C189",
+      "id": "C2",
       "type": "ErrorCode",
       "domain": "knowledge",
-      "name": "C189 과부하 감지",
-      "properties": {"category": "overload", "severity": "high", "recoverable": true}
+      "name": "C2 Inbuffer overflow",
+      "properties": {"category": "communication", "severity": "medium", "recoverable": true, "description": "입력 버퍼 오버플로우"}
     },
     {
-      "id": "C204",
+      "id": "C3",
       "type": "ErrorCode",
       "domain": "knowledge",
-      "name": "C204 진동 이상",
-      "properties": {"category": "vibration", "severity": "medium", "recoverable": true}
-    },
-    {
-      "id": "C50",
-      "type": "ErrorCode",
-      "domain": "knowledge",
-      "name": "C50 Joint 0 통신 오류",
-      "properties": {"category": "joint_communication", "severity": "high", "joint": 0}
-    },
-    {
-      "id": "C51",
-      "type": "ErrorCode",
-      "domain": "knowledge",
-      "name": "C51 Joint 1 통신 오류",
-      "properties": {"category": "joint_communication", "severity": "high", "joint": 1}
-    },
-    {
-      "id": "C52",
-      "type": "ErrorCode",
-      "domain": "knowledge",
-      "name": "C52 Joint 2 통신 오류",
-      "properties": {"category": "joint_communication", "severity": "high", "joint": 2}
-    },
-    {
-      "id": "C53",
-      "type": "ErrorCode",
-      "domain": "knowledge",
-      "name": "C53 Joint 3 통신 오류",
-      "properties": {"category": "joint_communication", "severity": "high", "joint": 3}
-    },
-    {
-      "id": "C54",
-      "type": "ErrorCode",
-      "domain": "knowledge",
-      "name": "C54 Joint 4 통신 오류",
-      "properties": {"category": "joint_communication", "severity": "high", "joint": 4}
-    },
-    {
-      "id": "C55",
-      "type": "ErrorCode",
-      "domain": "knowledge",
-      "name": "C55 Joint 5 통신 오류",
-      "properties": {"category": "joint_communication", "severity": "high", "joint": 5}
+      "name": "C3 Processor overloaded",
+      "properties": {"category": "system", "severity": "high", "recoverable": true, "description": "프로세서 과부하"}
     },
     {
       "id": "C4",
       "type": "ErrorCode",
       "domain": "knowledge",
-      "name": "C4 통신 오류",
-      "properties": {"category": "communication", "severity": "high"}
+      "name": "C4 Communication issue",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "Safety Control Board와 Motherboard 간 통신 문제"}
+    },
+    {
+      "id": "C5",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C5 Heavy processor load warning",
+      "properties": {"category": "system", "severity": "warning", "recoverable": true, "description": "프로세서 부하 경고"}
     },
     {
       "id": "C10",
       "type": "ErrorCode",
       "domain": "knowledge",
-      "name": "C10 전원 오류",
-      "properties": {"category": "power", "severity": "high"}
+      "name": "C10 Controller communication issue",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "컨트롤러 통신 문제"}
+    },
+    {
+      "id": "C11",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C11 Bad CRC",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "조인트와 시리얼 통신 문제 - CRC 오류"}
+    },
+    {
+      "id": "C12",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C12 Unknown message error",
+      "properties": {"category": "communication", "severity": "medium", "recoverable": true, "description": "알 수 없는 메시지 오류"}
+    },
+    {
+      "id": "C14",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C14 Debug message",
+      "properties": {"category": "system", "severity": "info", "recoverable": true, "description": "디버그 메시지"}
+    },
+    {
+      "id": "C17",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C17 Communication error between Safety Control Board and Motherboard",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "Safety Control Board와 Motherboard 간 통신 오류"}
+    },
+    {
+      "id": "C25",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C25 Motor Encoder index missing",
+      "properties": {"category": "encoder", "severity": "high", "recoverable": false, "description": "모터 엔코더 인덱스 누락 - 조인트 수리/교체 필요"}
+    },
+    {
+      "id": "C26",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C26 Motor Encoder index drift detected",
+      "properties": {"category": "encoder", "severity": "high", "recoverable": false, "description": "모터 엔코더 인덱스 드리프트 - 조인트 수리/교체 필요"}
+    },
+    {
+      "id": "C27",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C27 Calibration data is invalid",
+      "properties": {"category": "calibration", "severity": "high", "recoverable": true, "description": "캘리브레이션 데이터 무효 - 셀프테스트 필요"}
+    },
+    {
+      "id": "C29",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C29 Online Calibration data checksum failed",
+      "properties": {"category": "calibration", "severity": "high", "recoverable": true, "description": "온라인 캘리브레이션 데이터 체크섬 실패"}
+    },
+    {
+      "id": "C30",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C30 Master received data from too many joints",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "마스터가 너무 많은 조인트로부터 데이터 수신"}
+    },
+    {
+      "id": "C31",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C31 Caught wrong message",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "잘못된 메시지 수신 - 조인트 커넥터/와이어 점검"}
+    },
+    {
+      "id": "C32",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C32 Flash write verify failed",
+      "properties": {"category": "memory", "severity": "high", "recoverable": false, "description": "플래시 쓰기 검증 실패"}
+    },
+    {
+      "id": "C33",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C33 Calibration flash checksum failed",
+      "properties": {"category": "memory", "severity": "high", "recoverable": false, "description": "캘리브레이션 플래시 체크섬 실패"}
+    },
+    {
+      "id": "C34",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C34 Program flash checksum failed",
+      "properties": {"category": "memory", "severity": "high", "recoverable": true, "description": "프로그램 플래시 체크섬 실패 - 펌웨어 업데이트 필요"}
+    },
+    {
+      "id": "C35",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C35 Joint ID is undefined",
+      "properties": {"category": "configuration", "severity": "high", "recoverable": true, "description": "조인트 ID 미정의"}
+    },
+    {
+      "id": "C36",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C36 Illegal bootloader command",
+      "properties": {"category": "system", "severity": "high", "recoverable": true, "description": "잘못된 부트로더 명령"}
+    },
+    {
+      "id": "C37",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C37 Inbuffer parse error",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "입력 버퍼 파싱 오류 - 조인트 커넥터/와이어 점검"}
+    },
+    {
+      "id": "C38",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C38 Online RAM test failed",
+      "properties": {"category": "memory", "severity": "high", "recoverable": false, "description": "온라인 RAM 테스트 실패 - 부품 교체 필요"}
+    },
+    {
+      "id": "C40",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C40 Output encoder index missing",
+      "properties": {"category": "encoder", "severity": "high", "recoverable": false, "description": "출력 엔코더 인덱스 누락"}
+    },
+    {
+      "id": "C45",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C45 Joint voltage error",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "조인트 전압 오류"}
+    },
+    {
+      "id": "C50",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C50 Joint 0 communication error",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 0, "recoverable": true, "description": "Joint 0 통신 오류"}
+    },
+    {
+      "id": "C51",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C51 Joint 1 communication error",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 1, "recoverable": true, "description": "Joint 1 통신 오류"}
+    },
+    {
+      "id": "C52",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C52 Joint 2 communication error",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 2, "recoverable": true, "description": "Joint 2 통신 오류"}
+    },
+    {
+      "id": "C53",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C53 Joint 3 communication error",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 3, "recoverable": true, "description": "Joint 3 통신 오류"}
+    },
+    {
+      "id": "C54",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C54 Joint 4 communication error",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 4, "recoverable": true, "description": "Joint 4 통신 오류"}
+    },
+    {
+      "id": "C55",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C55 Joint 5 communication error",
+      "properties": {"category": "joint_communication", "severity": "high", "joint": 5, "recoverable": true, "description": "Joint 5 통신 오류"}
+    },
+    {
+      "id": "C61",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C61 Joint position error",
+      "properties": {"category": "joint_position", "severity": "high", "recoverable": true, "description": "조인트 위치 오류 - 전원 끄고 5분 후 재시작"}
+    },
+    {
+      "id": "C70",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C70 Joint current limit",
+      "properties": {"category": "joint_current", "severity": "high", "recoverable": true, "description": "조인트 전류 한계 초과"}
+    },
+    {
+      "id": "C71",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C71 Joint speed limit",
+      "properties": {"category": "joint_speed", "severity": "high", "recoverable": true, "description": "조인트 속도 한계 초과"}
+    },
+    {
+      "id": "C72",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C72 Joint position limit",
+      "properties": {"category": "joint_position", "severity": "high", "recoverable": true, "description": "조인트 위치 한계 초과"}
+    },
+    {
+      "id": "C75",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C75 Joint temperature warning",
+      "properties": {"category": "joint_temperature", "severity": "warning", "recoverable": true, "description": "조인트 온도 경고"}
+    },
+    {
+      "id": "C77",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C77 Joint temperature critical",
+      "properties": {"category": "joint_temperature", "severity": "critical", "recoverable": true, "description": "조인트 온도 위험 - 냉각 필요"}
+    },
+    {
+      "id": "C103",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C103 Joint communication timeout",
+      "properties": {"category": "joint_communication", "severity": "high", "recoverable": true, "description": "조인트 통신 타임아웃 - 케이블 연결 확인 후 재부팅"}
+    },
+    {
+      "id": "C119",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C119 Safety limit violation",
+      "properties": {"category": "safety", "severity": "critical", "recoverable": true, "description": "안전 한계 위반"}
+    },
+    {
+      "id": "C151",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C151 Safety system error",
+      "properties": {"category": "safety", "severity": "critical", "recoverable": true, "description": "안전 시스템 오류 - 안전 설정 및 비상정지 상태 점검"}
+    },
+    {
+      "id": "C153",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C153 Position deviates from path",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true, "description": "경로 이탈 - 페이로드, 무게중심, 마찰력 점검"}
+    },
+    {
+      "id": "C154",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C154 Safety plane violation",
+      "properties": {"category": "safety", "severity": "critical", "recoverable": true, "description": "안전 평면 위반"}
+    },
+    {
+      "id": "C157",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C157 Safety I/O error",
+      "properties": {"category": "safety_io", "severity": "high", "recoverable": true, "description": "안전 I/O 오류"}
+    },
+    {
+      "id": "C159",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C159 Emergency stop active",
+      "properties": {"category": "safety", "severity": "critical", "recoverable": true, "description": "비상정지 활성화 상태"}
+    },
+    {
+      "id": "C160",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C160 Safeguard stop",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true, "description": "안전가드 정지"}
+    },
+    {
+      "id": "C171",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C171 Internal communication error",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "내부 통신 오류"}
+    },
+    {
+      "id": "C173",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C173 External communication error",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "외부 통신 오류"}
+    },
+    {
+      "id": "C174",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C174 Fieldbus communication error",
+      "properties": {"category": "communication", "severity": "high", "recoverable": true, "description": "필드버스 통신 오류"}
+    },
+    {
+      "id": "C189",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C189 Payload overload",
+      "properties": {"category": "overload", "severity": "high", "recoverable": true, "description": "페이로드 과부하"}
+    },
+    {
+      "id": "C191",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C191 Tool speed limit",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true, "description": "툴 속도 한계 초과"}
+    },
+    {
+      "id": "C192",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C192 Tool force limit",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true, "description": "툴 힘 한계 초과"}
+    },
+    {
+      "id": "C193",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C193 Elbow speed limit",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true, "description": "팔꿈치 속도 한계 초과"}
+    },
+    {
+      "id": "C194",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C194 Elbow force limit",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true, "description": "팔꿈치 힘 한계 초과"}
+    },
+    {
+      "id": "C200",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C200 System error",
+      "properties": {"category": "system", "severity": "high", "recoverable": true, "description": "시스템 오류 - 로그 확인 후 재부팅"}
+    },
+    {
+      "id": "C203",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C203 Robot not initialized",
+      "properties": {"category": "system", "severity": "high", "recoverable": true, "description": "로봇 미초기화"}
+    },
+    {
+      "id": "C204",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C204 Joint vibration warning",
+      "properties": {"category": "vibration", "severity": "medium", "recoverable": true, "description": "조인트 진동 경고"}
+    },
+    {
+      "id": "C207",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C207 Robot power on failed",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "로봇 전원 켜기 실패"}
+    },
+    {
+      "id": "C212",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C212 Robot brake release failed",
+      "properties": {"category": "mechanical", "severity": "high", "recoverable": true, "description": "브레이크 해제 실패"}
+    },
+    {
+      "id": "C216",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C216 Installation check error",
+      "properties": {"category": "installation", "severity": "high", "recoverable": true, "description": "설치 점검 오류"}
+    },
+    {
+      "id": "C220",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C220 Safety configuration error",
+      "properties": {"category": "safety", "severity": "high", "recoverable": true, "description": "안전 설정 오류"}
+    },
+    {
+      "id": "C259",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C259 Safety I/O configuration",
+      "properties": {"category": "safety_io", "severity": "high", "recoverable": true, "description": "안전 I/O 설정 오류 - 네트워크 연결 및 케이블 점검"}
+    },
+    {
+      "id": "C260",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C260 Safety digital input",
+      "properties": {"category": "safety_io", "severity": "high", "recoverable": true, "description": "안전 디지털 입력 오류"}
+    },
+    {
+      "id": "C261",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C261 Safety digital output",
+      "properties": {"category": "safety_io", "severity": "high", "recoverable": true, "description": "안전 디지털 출력 오류"}
+    },
+    {
+      "id": "C262",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C262 Safety analog input",
+      "properties": {"category": "safety_io", "severity": "high", "recoverable": true, "description": "안전 아날로그 입력 오류"}
+    },
+    {
+      "id": "C263",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C263 Safety analog output",
+      "properties": {"category": "safety_io", "severity": "high", "recoverable": true, "description": "안전 아날로그 출력 오류"}
+    },
+    {
+      "id": "C264",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C264 Tool digital input",
+      "properties": {"category": "tool_io", "severity": "medium", "recoverable": true, "description": "툴 디지털 입력 오류"}
+    },
+    {
+      "id": "C265",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C265 Tool digital output",
+      "properties": {"category": "tool_io", "severity": "medium", "recoverable": true, "description": "툴 디지털 출력 오류"}
+    },
+    {
+      "id": "C266",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C266 Tool analog input",
+      "properties": {"category": "tool_io", "severity": "medium", "recoverable": true, "description": "툴 아날로그 입력 오류"}
+    },
+    {
+      "id": "C267",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C267 Tool analog output",
+      "properties": {"category": "tool_io", "severity": "medium", "recoverable": true, "description": "툴 아날로그 출력 오류"}
+    },
+    {
+      "id": "C269",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C269 Configurable digital input",
+      "properties": {"category": "io", "severity": "medium", "recoverable": true, "description": "설정 가능 디지털 입력 오류"}
+    },
+    {
+      "id": "C270",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C270 Configurable digital output",
+      "properties": {"category": "io", "severity": "medium", "recoverable": true, "description": "설정 가능 디지털 출력 오류"}
+    },
+    {
+      "id": "C273",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C273 Standard digital input",
+      "properties": {"category": "io", "severity": "medium", "recoverable": true, "description": "표준 디지털 입력 오류"}
+    },
+    {
+      "id": "C275",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C275 Standard digital output",
+      "properties": {"category": "io", "severity": "medium", "recoverable": true, "description": "표준 디지털 출력 오류"}
+    },
+    {
+      "id": "C277",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C277 Standard analog input",
+      "properties": {"category": "io", "severity": "medium", "recoverable": true, "description": "표준 아날로그 입력 오류"}
+    },
+    {
+      "id": "C278",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C278 Standard analog output",
+      "properties": {"category": "io", "severity": "medium", "recoverable": true, "description": "표준 아날로그 출력 오류"}
+    },
+    {
+      "id": "C279",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C279 I/O voltage error",
+      "properties": {"category": "io", "severity": "high", "recoverable": true, "description": "I/O 전압 오류"}
+    },
+    {
+      "id": "C281",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C281 Tool voltage error",
+      "properties": {"category": "tool", "severity": "high", "recoverable": true, "description": "툴 전압 오류"}
+    },
+    {
+      "id": "C282",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C282 Tool current error",
+      "properties": {"category": "tool", "severity": "high", "recoverable": true, "description": "툴 전류 오류"}
+    },
+    {
+      "id": "C283",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C283 Tool temperature warning",
+      "properties": {"category": "tool", "severity": "warning", "recoverable": true, "description": "툴 온도 경고"}
+    },
+    {
+      "id": "C284",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C284 Tool temperature critical",
+      "properties": {"category": "tool", "severity": "critical", "recoverable": true, "description": "툴 온도 위험"}
+    },
+    {
+      "id": "C285",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C285 Control box fan error",
+      "properties": {"category": "control_box", "severity": "high", "recoverable": true, "description": "컨트롤 박스 팬 오류"}
+    },
+    {
+      "id": "C286",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C286 Control box temperature warning",
+      "properties": {"category": "control_box", "severity": "warning", "recoverable": true, "description": "컨트롤 박스 온도 경고"}
+    },
+    {
+      "id": "C289",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C289 Control box temperature critical",
+      "properties": {"category": "control_box", "severity": "critical", "recoverable": true, "description": "컨트롤 박스 온도 위험"}
+    },
+    {
+      "id": "C290",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C290 Robot not powered",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "로봇 전원 없음"}
+    },
+    {
+      "id": "C292",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C292 Robot 48V error",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "로봇 48V 전원 오류"}
+    },
+    {
+      "id": "C293",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C293 Robot 24V error",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "로봇 24V 전원 오류"}
+    },
+    {
+      "id": "C295",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C295 Robot current error",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "로봇 전류 오류"}
+    },
+    {
+      "id": "C296",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C296 Robot power supply error",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "로봇 전원 공급 오류"}
+    },
+    {
+      "id": "C297",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C297 Robot ground fault",
+      "properties": {"category": "power", "severity": "critical", "recoverable": true, "description": "로봇 접지 결함"}
+    },
+    {
+      "id": "C299",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C299 Low voltage detected",
+      "properties": {"category": "power", "severity": "high", "recoverable": true, "description": "저전압 감지"}
+    },
+    {
+      "id": "C300",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C300 Control Box error",
+      "properties": {"category": "control_box", "severity": "high", "recoverable": true, "description": "컨트롤 박스 오류 - 상태 점검 후 전원 재시작"}
+    },
+    {
+      "id": "C301",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C301 Safety Control Board error",
+      "properties": {"category": "safety_board", "severity": "critical", "recoverable": true, "description": "Safety Control Board 오류"}
+    },
+    {
+      "id": "C303",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C303 Safety board A error",
+      "properties": {"category": "safety_board", "severity": "critical", "recoverable": true, "description": "Safety Board A 오류"}
+    },
+    {
+      "id": "C304",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C304 Safety board B error",
+      "properties": {"category": "safety_board", "severity": "critical", "recoverable": true, "description": "Safety Board B 오류"}
+    },
+    {
+      "id": "C305",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C305 Safety board disagreement",
+      "properties": {"category": "safety_board", "severity": "critical", "recoverable": true, "description": "Safety Board 불일치"}
+    },
+    {
+      "id": "C306",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C306 Safety board watchdog",
+      "properties": {"category": "safety_board", "severity": "critical", "recoverable": true, "description": "Safety Board 워치독 오류"}
+    },
+    {
+      "id": "C309",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C309 Safety board firmware",
+      "properties": {"category": "safety_board", "severity": "high", "recoverable": true, "description": "Safety Board 펌웨어 오류"}
+    },
+    {
+      "id": "C312",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C312 Motherboard error",
+      "properties": {"category": "motherboard", "severity": "high", "recoverable": true, "description": "Motherboard 오류"}
+    },
+    {
+      "id": "C314",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C314 Motherboard communication",
+      "properties": {"category": "motherboard", "severity": "high", "recoverable": true, "description": "Motherboard 통신 오류"}
+    },
+    {
+      "id": "C315",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C315 Motherboard firmware",
+      "properties": {"category": "motherboard", "severity": "high", "recoverable": true, "description": "Motherboard 펌웨어 오류"}
+    },
+    {
+      "id": "C316",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C316 Teach Pendant error",
+      "properties": {"category": "teach_pendant", "severity": "high", "recoverable": true, "description": "Teach Pendant 오류"}
+    },
+    {
+      "id": "C319",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C319 Teach Pendant communication",
+      "properties": {"category": "teach_pendant", "severity": "high", "recoverable": true, "description": "Teach Pendant 통신 오류"}
+    },
+    {
+      "id": "C320",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C320 Teach Pendant disconnected",
+      "properties": {"category": "teach_pendant", "severity": "high", "recoverable": true, "description": "Teach Pendant 연결 해제"}
+    },
+    {
+      "id": "C321",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C321 Teach Pendant firmware",
+      "properties": {"category": "teach_pendant", "severity": "high", "recoverable": true, "description": "Teach Pendant 펌웨어 오류"}
+    },
+    {
+      "id": "C323",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C323 External I/O error",
+      "properties": {"category": "io", "severity": "high", "recoverable": true, "description": "외부 I/O 오류"}
+    },
+    {
+      "id": "C325",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C325 EUROMAP67 error",
+      "properties": {"category": "euromap", "severity": "high", "recoverable": true, "description": "EUROMAP67 오류"}
+    },
+    {
+      "id": "C326",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C326 EUROMAP67 communication",
+      "properties": {"category": "euromap", "severity": "high", "recoverable": true, "description": "EUROMAP67 통신 오류"}
+    },
+    {
+      "id": "C328",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C328 EUROMAP67 firmware",
+      "properties": {"category": "euromap", "severity": "high", "recoverable": true, "description": "EUROMAP67 펌웨어 오류"}
+    },
+    {
+      "id": "C330",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C330 Hardware version mismatch",
+      "properties": {"category": "configuration", "severity": "high", "recoverable": true, "description": "하드웨어 버전 불일치"}
+    },
+    {
+      "id": "C333",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C333 Software version mismatch",
+      "properties": {"category": "configuration", "severity": "high", "recoverable": true, "description": "소프트웨어 버전 불일치"}
+    },
+    {
+      "id": "C337",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C337 Configuration error",
+      "properties": {"category": "configuration", "severity": "high", "recoverable": true, "description": "설정 오류"}
+    },
+    {
+      "id": "C338",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C338 Installation mismatch",
+      "properties": {"category": "configuration", "severity": "high", "recoverable": true, "description": "설치 불일치"}
+    },
+    {
+      "id": "C402",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C402 Hardware error",
+      "properties": {"category": "hardware", "severity": "high", "recoverable": false, "description": "하드웨어 오류 - 부품 점검 후 서비스 센터 문의"}
+    },
+    {
+      "id": "C450",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C450 Hardware initialization",
+      "properties": {"category": "hardware", "severity": "high", "recoverable": true, "description": "하드웨어 초기화 오류"}
+    },
+    {
+      "id": "C500",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C500 Software error",
+      "properties": {"category": "software", "severity": "high", "recoverable": true, "description": "소프트웨어 오류 - 업데이트 상태 확인 후 재설치 고려"}
+    },
+    {
+      "id": "C501",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C501 Script error",
+      "properties": {"category": "software", "severity": "medium", "recoverable": true, "description": "스크립트 오류"}
+    },
+    {
+      "id": "C503",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C503 Program error",
+      "properties": {"category": "software", "severity": "high", "recoverable": true, "description": "프로그램 오류 - 반복 발생 시 하드웨어 결함/케이블 손상 점검"}
+    },
+    {
+      "id": "C506",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C506 Runtime error",
+      "properties": {"category": "software", "severity": "high", "recoverable": true, "description": "런타임 오류"}
+    },
+    {
+      "id": "C509",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C509 Memory error",
+      "properties": {"category": "software", "severity": "high", "recoverable": true, "description": "메모리 오류"}
+    },
+    {
+      "id": "C513",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C513 File system error",
+      "properties": {"category": "software", "severity": "high", "recoverable": true, "description": "파일 시스템 오류"}
+    },
+    {
+      "id": "C517",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C517 Network error",
+      "properties": {"category": "software", "severity": "medium", "recoverable": true, "description": "네트워크 오류"}
+    },
+    {
+      "id": "C710",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C710 Sensor error",
+      "properties": {"category": "sensor", "severity": "high", "recoverable": true, "description": "센서 오류 - 연결 상태와 캘리브레이션 확인"}
+    },
+    {
+      "id": "C740",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C740 Force sensor error",
+      "properties": {"category": "sensor", "severity": "high", "recoverable": true, "description": "힘 센서 오류 - 작동 중단 후 안전 구역 확보, 원인 파악 후 재시작"}
+    },
+    {
+      "id": "C900",
+      "type": "ErrorCode",
+      "domain": "knowledge",
+      "name": "C900 Critical system error",
+      "properties": {"category": "system", "severity": "critical", "recoverable": false, "description": "시스템 크리티컬 오류 - 즉시 작업 중단, 기술 지원팀 연락"}
     },
 
     {
@@ -325,6 +1188,104 @@
       "name": "캘리브레이션 필요",
       "properties": {"category": "sensor", "description": "센서 캘리브레이션 이상"}
     },
+    {
+      "id": "CAUSE_COMMUNICATION_LOSS",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "통신 손실",
+      "properties": {"category": "electrical", "description": "통신 연결 끊김 또는 패킷 손실"}
+    },
+    {
+      "id": "CAUSE_POWER_ISSUE",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "전원 문제",
+      "properties": {"category": "electrical", "description": "전원 공급 불안정 또는 접지 불량"}
+    },
+    {
+      "id": "CAUSE_OVERHEAT",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "과열",
+      "properties": {"category": "thermal", "description": "조인트 또는 컨트롤 박스 과열"}
+    },
+    {
+      "id": "CAUSE_SOFTWARE_BUG",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "소프트웨어 오류",
+      "properties": {"category": "software", "description": "소프트웨어 버그 또는 설정 오류"}
+    },
+    {
+      "id": "CAUSE_ENCODER_FAULT",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "엔코더 결함",
+      "properties": {"category": "mechanical", "description": "모터 또는 출력 엔코더 결함"}
+    },
+    {
+      "id": "CAUSE_SAFETY_CONFIG",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "안전 설정 오류",
+      "properties": {"category": "configuration", "description": "안전 설정 불일치 또는 오류"}
+    },
+    {
+      "id": "CAUSE_IO_FAULT",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "I/O 결함",
+      "properties": {"category": "electrical", "description": "입출력 포트 결함"}
+    },
+    {
+      "id": "CAUSE_HARDWARE_FAILURE",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "하드웨어 고장",
+      "properties": {"category": "hardware", "description": "보드 또는 부품 하드웨어 고장"}
+    },
+    {
+      "id": "CAUSE_FIRMWARE_ISSUE",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "펌웨어 문제",
+      "properties": {"category": "software", "description": "펌웨어 손상 또는 버전 불일치"}
+    },
+    {
+      "id": "CAUSE_MEMORY_FAULT",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "메모리 결함",
+      "properties": {"category": "hardware", "description": "RAM 또는 플래시 메모리 결함"}
+    },
+    {
+      "id": "CAUSE_POSITION_ERROR",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "위치 오차",
+      "properties": {"category": "mechanical", "description": "경로 이탈 또는 위치 편차"}
+    },
+    {
+      "id": "CAUSE_PROGRAM_ERROR",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "프로그램 오류",
+      "properties": {"category": "software", "description": "로봇 프로그램 경로 또는 로직 오류"}
+    },
+    {
+      "id": "CAUSE_EMERGENCY_STOP",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "비상정지 활성화",
+      "properties": {"category": "safety", "description": "비상정지 버튼이 눌린 상태"}
+    },
+    {
+      "id": "CAUSE_EXTERNAL_FORCE",
+      "type": "Cause",
+      "domain": "knowledge",
+      "name": "외부 힘 작용",
+      "properties": {"category": "physical", "description": "예상치 못한 외부 힘 작용"}
+    },
 
     {
       "id": "RES_CLEAR_PATH",
@@ -361,6 +1322,76 @@
       "name": "센서 캘리브레이션",
       "properties": {"steps": ["센서 초기화", "제로 포인트 설정", "캘리브레이션 검증"]}
     },
+    {
+      "id": "RES_REBOOT",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "시스템 재부팅",
+      "properties": {"steps": ["전원 끄기", "5분 대기", "전원 켜기", "시스템 점검"]}
+    },
+    {
+      "id": "RES_UPDATE_FIRMWARE",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "펌웨어 업데이트",
+      "properties": {"steps": ["최신 펌웨어 다운로드", "백업 생성", "펌웨어 업데이트 실행", "검증"]}
+    },
+    {
+      "id": "RES_CHECK_POWER",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "전원 점검",
+      "properties": {"steps": ["전원 케이블 연결 확인", "전압 측정", "접지 상태 확인", "전원 공급 장치 점검"]}
+    },
+    {
+      "id": "RES_COOLING",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "냉각 조치",
+      "properties": {"steps": ["로봇 작동 중지", "냉각 시간 확보 (15-30분)", "환기 상태 확인", "팬 작동 점검"]}
+    },
+    {
+      "id": "RES_SAFETY_CHECK",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "안전 설정 점검",
+      "properties": {"steps": ["안전 설정 검토", "비상정지 상태 확인", "안전 I/O 점검", "설정 재저장"]}
+    },
+    {
+      "id": "RES_CHECK_SAFETY_IO",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "안전 I/O 점검",
+      "properties": {"steps": ["안전 입력 상태 확인", "안전 출력 상태 확인", "배선 점검", "설정 확인"]}
+    },
+    {
+      "id": "RES_REPLACE_JOINT",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "조인트 교체",
+      "properties": {"steps": ["서비스 센터 연락", "조인트 진단", "교체 부품 수령", "조인트 교체 및 캘리브레이션"]}
+    },
+    {
+      "id": "RES_CONTACT_SUPPORT",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "기술 지원 요청",
+      "properties": {"steps": ["에러 로그 저장", "Universal Robots 지원 연락", "상황 설명", "지시 따르기"]}
+    },
+    {
+      "id": "RES_CHECK_ENCODER",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "엔코더 점검",
+      "properties": {"steps": ["엔코더 상태 확인", "리더 헤드 청소", "셀프테스트 실행", "필요 시 교체"]}
+    },
+    {
+      "id": "RES_REINSTALL_SOFTWARE",
+      "type": "Resolution",
+      "domain": "knowledge",
+      "name": "소프트웨어 재설치",
+      "properties": {"steps": ["데이터 백업", "소프트웨어 업데이트 확인", "재설치 실행", "설정 복원"]}
+    },
 
     {
       "id": "DOC_USER_MANUAL",
@@ -375,6 +1406,13 @@
       "domain": "knowledge",
       "name": "UR5e 서비스 매뉴얼",
       "properties": {"type": "service", "language": "ko", "version": "5.0"}
+    },
+    {
+      "id": "DOC_ERROR_CODES",
+      "type": "Document",
+      "domain": "knowledge",
+      "name": "UR5e 에러 코드 문서",
+      "properties": {"type": "error_codes", "language": "en", "version": "2025"}
     },
     {
       "id": "DOC_AXIA80_MANUAL",
@@ -430,6 +1468,9 @@
     {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "Joint_5"},
     {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "ControlBox"},
     {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "ToolFlange"},
+    {"source": "UR5e", "relation": "HAS_COMPONENT", "target": "TeachPendant"},
+    {"source": "ControlBox", "relation": "HAS_COMPONENT", "target": "SafetyControlBoard"},
+    {"source": "ControlBox", "relation": "HAS_COMPONENT", "target": "Motherboard"},
 
     {"source": "Axia80", "relation": "MOUNTED_ON", "target": "ToolFlange"},
 
@@ -460,33 +1501,141 @@
 
     {"source": "PAT_DRIFT", "relation": "INDICATES", "target": "CAUSE_CALIBRATION", "properties": {"confidence": 0.8}},
 
-    {"source": "C153", "relation": "CAUSED_BY", "target": "CAUSE_COLLISION"},
-    {"source": "C119", "relation": "CAUSED_BY", "target": "CAUSE_COLLISION"},
-    {"source": "C189", "relation": "CAUSED_BY", "target": "CAUSE_OVERLOAD"},
-    {"source": "C204", "relation": "CAUSED_BY", "target": "CAUSE_JOINT_WEAR"},
-    {"source": "C204", "relation": "CAUSED_BY", "target": "CAUSE_LOOSE_BOLTS"},
+    {"source": "PAT_COMMUNICATION_LOSS", "relation": "INDICATES", "target": "CAUSE_COMMUNICATION_LOSS", "properties": {"confidence": 0.95}},
+    {"source": "PAT_COMMUNICATION_LOSS", "relation": "INDICATES", "target": "CAUSE_CABLE_FAULT", "properties": {"confidence": 0.7}},
+    {"source": "PAT_COMMUNICATION_LOSS", "relation": "TRIGGERS", "target": "C4", "properties": {"probability": 0.9}},
+    {"source": "PAT_COMMUNICATION_LOSS", "relation": "TRIGGERS", "target": "C103", "properties": {"probability": 0.85}},
+
+    {"source": "PAT_OVERHEAT", "relation": "INDICATES", "target": "CAUSE_OVERHEAT", "properties": {"confidence": 0.9}},
+    {"source": "PAT_OVERHEAT", "relation": "TRIGGERS", "target": "C77", "properties": {"probability": 0.85}},
+    {"source": "PAT_OVERHEAT", "relation": "TRIGGERS", "target": "C289", "properties": {"probability": 0.8}},
+
+    {"source": "PAT_SAFETY_VIOLATION", "relation": "INDICATES", "target": "CAUSE_SAFETY_CONFIG", "properties": {"confidence": 0.7}},
+    {"source": "PAT_SAFETY_VIOLATION", "relation": "INDICATES", "target": "CAUSE_POSITION_ERROR", "properties": {"confidence": 0.6}},
+    {"source": "PAT_SAFETY_VIOLATION", "relation": "TRIGGERS", "target": "C119", "properties": {"probability": 0.9}},
+    {"source": "PAT_SAFETY_VIOLATION", "relation": "TRIGGERS", "target": "C151", "properties": {"probability": 0.85}},
+
+    {"source": "PAT_POSITION_DEVIATION", "relation": "INDICATES", "target": "CAUSE_POSITION_ERROR", "properties": {"confidence": 0.85}},
+    {"source": "PAT_POSITION_DEVIATION", "relation": "INDICATES", "target": "CAUSE_OVERLOAD", "properties": {"confidence": 0.6}},
+    {"source": "PAT_POSITION_DEVIATION", "relation": "TRIGGERS", "target": "C153", "properties": {"probability": 0.9}},
+
+    {"source": "C4", "relation": "CAUSED_BY", "target": "CAUSE_COMMUNICATION_LOSS"},
+    {"source": "C4", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C10", "relation": "CAUSED_BY", "target": "CAUSE_COMMUNICATION_LOSS"},
+    {"source": "C11", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C17", "relation": "CAUSED_BY", "target": "CAUSE_COMMUNICATION_LOSS"},
+    {"source": "C25", "relation": "CAUSED_BY", "target": "CAUSE_ENCODER_FAULT"},
+    {"source": "C26", "relation": "CAUSED_BY", "target": "CAUSE_ENCODER_FAULT"},
+    {"source": "C27", "relation": "CAUSED_BY", "target": "CAUSE_CALIBRATION"},
+    {"source": "C32", "relation": "CAUSED_BY", "target": "CAUSE_MEMORY_FAULT"},
+    {"source": "C38", "relation": "CAUSED_BY", "target": "CAUSE_MEMORY_FAULT"},
+    {"source": "C45", "relation": "CAUSED_BY", "target": "CAUSE_POWER_ISSUE"},
     {"source": "C50", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
     {"source": "C51", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
     {"source": "C52", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
     {"source": "C53", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
     {"source": "C54", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
     {"source": "C55", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C61", "relation": "CAUSED_BY", "target": "CAUSE_POSITION_ERROR"},
+    {"source": "C70", "relation": "CAUSED_BY", "target": "CAUSE_OVERLOAD"},
+    {"source": "C71", "relation": "CAUSED_BY", "target": "CAUSE_PROGRAM_ERROR"},
+    {"source": "C72", "relation": "CAUSED_BY", "target": "CAUSE_PROGRAM_ERROR"},
+    {"source": "C75", "relation": "CAUSED_BY", "target": "CAUSE_OVERHEAT"},
+    {"source": "C77", "relation": "CAUSED_BY", "target": "CAUSE_OVERHEAT"},
+    {"source": "C103", "relation": "CAUSED_BY", "target": "CAUSE_COMMUNICATION_LOSS"},
+    {"source": "C103", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C119", "relation": "CAUSED_BY", "target": "CAUSE_COLLISION"},
+    {"source": "C119", "relation": "CAUSED_BY", "target": "CAUSE_SAFETY_CONFIG"},
+    {"source": "C151", "relation": "CAUSED_BY", "target": "CAUSE_SAFETY_CONFIG"},
+    {"source": "C151", "relation": "CAUSED_BY", "target": "CAUSE_EMERGENCY_STOP"},
+    {"source": "C153", "relation": "CAUSED_BY", "target": "CAUSE_COLLISION"},
+    {"source": "C153", "relation": "CAUSED_BY", "target": "CAUSE_OVERLOAD"},
+    {"source": "C153", "relation": "CAUSED_BY", "target": "CAUSE_POSITION_ERROR"},
+    {"source": "C159", "relation": "CAUSED_BY", "target": "CAUSE_EMERGENCY_STOP"},
+    {"source": "C171", "relation": "CAUSED_BY", "target": "CAUSE_COMMUNICATION_LOSS"},
+    {"source": "C173", "relation": "CAUSED_BY", "target": "CAUSE_COMMUNICATION_LOSS"},
+    {"source": "C189", "relation": "CAUSED_BY", "target": "CAUSE_OVERLOAD"},
+    {"source": "C200", "relation": "CAUSED_BY", "target": "CAUSE_SOFTWARE_BUG"},
+    {"source": "C204", "relation": "CAUSED_BY", "target": "CAUSE_JOINT_WEAR"},
+    {"source": "C204", "relation": "CAUSED_BY", "target": "CAUSE_LOOSE_BOLTS"},
+    {"source": "C259", "relation": "CAUSED_BY", "target": "CAUSE_IO_FAULT"},
+    {"source": "C259", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C285", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
+    {"source": "C286", "relation": "CAUSED_BY", "target": "CAUSE_OVERHEAT"},
+    {"source": "C289", "relation": "CAUSED_BY", "target": "CAUSE_OVERHEAT"},
+    {"source": "C290", "relation": "CAUSED_BY", "target": "CAUSE_POWER_ISSUE"},
+    {"source": "C292", "relation": "CAUSED_BY", "target": "CAUSE_POWER_ISSUE"},
+    {"source": "C293", "relation": "CAUSED_BY", "target": "CAUSE_POWER_ISSUE"},
+    {"source": "C297", "relation": "CAUSED_BY", "target": "CAUSE_POWER_ISSUE"},
+    {"source": "C300", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
+    {"source": "C301", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
+    {"source": "C309", "relation": "CAUSED_BY", "target": "CAUSE_FIRMWARE_ISSUE"},
+    {"source": "C315", "relation": "CAUSED_BY", "target": "CAUSE_FIRMWARE_ISSUE"},
+    {"source": "C316", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
+    {"source": "C320", "relation": "CAUSED_BY", "target": "CAUSE_CABLE_FAULT"},
+    {"source": "C330", "relation": "CAUSED_BY", "target": "CAUSE_FIRMWARE_ISSUE"},
+    {"source": "C333", "relation": "CAUSED_BY", "target": "CAUSE_SOFTWARE_BUG"},
+    {"source": "C402", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
+    {"source": "C500", "relation": "CAUSED_BY", "target": "CAUSE_SOFTWARE_BUG"},
+    {"source": "C503", "relation": "CAUSED_BY", "target": "CAUSE_SOFTWARE_BUG"},
+    {"source": "C503", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
+    {"source": "C710", "relation": "CAUSED_BY", "target": "CAUSE_CALIBRATION"},
+    {"source": "C740", "relation": "CAUSED_BY", "target": "CAUSE_CALIBRATION"},
+    {"source": "C740", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
+    {"source": "C900", "relation": "CAUSED_BY", "target": "CAUSE_HARDWARE_FAILURE"},
 
     {"source": "CAUSE_COLLISION", "relation": "RESOLVED_BY", "target": "RES_CLEAR_PATH"},
     {"source": "CAUSE_OVERLOAD", "relation": "RESOLVED_BY", "target": "RES_REDUCE_PAYLOAD"},
+    {"source": "CAUSE_JOINT_WEAR", "relation": "RESOLVED_BY", "target": "RES_REPLACE_JOINT"},
     {"source": "CAUSE_LOOSE_BOLTS", "relation": "RESOLVED_BY", "target": "RES_CHECK_BOLTS"},
     {"source": "CAUSE_CABLE_FAULT", "relation": "RESOLVED_BY", "target": "RES_CHECK_CABLE"},
     {"source": "CAUSE_CALIBRATION", "relation": "RESOLVED_BY", "target": "RES_CALIBRATE_SENSOR"},
+    {"source": "CAUSE_COMMUNICATION_LOSS", "relation": "RESOLVED_BY", "target": "RES_CHECK_CABLE"},
+    {"source": "CAUSE_COMMUNICATION_LOSS", "relation": "RESOLVED_BY", "target": "RES_REBOOT"},
+    {"source": "CAUSE_POWER_ISSUE", "relation": "RESOLVED_BY", "target": "RES_CHECK_POWER"},
+    {"source": "CAUSE_OVERHEAT", "relation": "RESOLVED_BY", "target": "RES_COOLING"},
+    {"source": "CAUSE_SOFTWARE_BUG", "relation": "RESOLVED_BY", "target": "RES_REINSTALL_SOFTWARE"},
+    {"source": "CAUSE_ENCODER_FAULT", "relation": "RESOLVED_BY", "target": "RES_CHECK_ENCODER"},
+    {"source": "CAUSE_SAFETY_CONFIG", "relation": "RESOLVED_BY", "target": "RES_SAFETY_CHECK"},
+    {"source": "CAUSE_IO_FAULT", "relation": "RESOLVED_BY", "target": "RES_CHECK_SAFETY_IO"},
+    {"source": "CAUSE_HARDWARE_FAILURE", "relation": "RESOLVED_BY", "target": "RES_CONTACT_SUPPORT"},
+    {"source": "CAUSE_FIRMWARE_ISSUE", "relation": "RESOLVED_BY", "target": "RES_UPDATE_FIRMWARE"},
+    {"source": "CAUSE_MEMORY_FAULT", "relation": "RESOLVED_BY", "target": "RES_CONTACT_SUPPORT"},
+    {"source": "CAUSE_POSITION_ERROR", "relation": "RESOLVED_BY", "target": "RES_CLEAR_PATH"},
+    {"source": "CAUSE_POSITION_ERROR", "relation": "RESOLVED_BY", "target": "RES_REDUCE_PAYLOAD"},
+    {"source": "CAUSE_PROGRAM_ERROR", "relation": "RESOLVED_BY", "target": "RES_CLEAR_PATH"},
+    {"source": "CAUSE_EMERGENCY_STOP", "relation": "RESOLVED_BY", "target": "RES_SAFETY_CHECK"},
+    {"source": "CAUSE_EXTERNAL_FORCE", "relation": "RESOLVED_BY", "target": "RES_CLEAR_PATH"},
 
     {"source": "RES_CLEAR_PATH", "relation": "PREVENTS", "target": "C153"},
     {"source": "RES_CLEAR_PATH", "relation": "PREVENTS", "target": "C119"},
     {"source": "RES_REDUCE_PAYLOAD", "relation": "PREVENTS", "target": "C189"},
     {"source": "RES_CHECK_BOLTS", "relation": "PREVENTS", "target": "C204"},
+    {"source": "RES_CHECK_CABLE", "relation": "PREVENTS", "target": "C4"},
+    {"source": "RES_CHECK_CABLE", "relation": "PREVENTS", "target": "C103"},
+    {"source": "RES_COOLING", "relation": "PREVENTS", "target": "C77"},
+    {"source": "RES_COOLING", "relation": "PREVENTS", "target": "C289"},
+    {"source": "RES_SAFETY_CHECK", "relation": "PREVENTS", "target": "C151"},
+    {"source": "RES_CHECK_POWER", "relation": "PREVENTS", "target": "C290"},
+    {"source": "RES_CHECK_POWER", "relation": "PREVENTS", "target": "C297"},
 
-    {"source": "C153", "relation": "DOCUMENTED_IN", "target": "DOC_USER_MANUAL"},
-    {"source": "C119", "relation": "DOCUMENTED_IN", "target": "DOC_USER_MANUAL"},
-    {"source": "C189", "relation": "DOCUMENTED_IN", "target": "DOC_USER_MANUAL"},
+    {"source": "C4", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C103", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C119", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C151", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C153", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C189", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C200", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C204", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C259", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C300", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C402", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C500", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C710", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C740", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
+    {"source": "C900", "relation": "DOCUMENTED_IN", "target": "DOC_ERROR_CODES"},
     {"source": "Axia80", "relation": "DOCUMENTED_IN", "target": "DOC_AXIA80_MANUAL"},
+    {"source": "UR5e", "relation": "DOCUMENTED_IN", "target": "DOC_USER_MANUAL"},
 
     {"source": "C50", "relation": "AFFECTS", "target": "Joint_0"},
     {"source": "C51", "relation": "AFFECTS", "target": "Joint_1"},
@@ -494,8 +1643,47 @@
     {"source": "C53", "relation": "AFFECTS", "target": "Joint_3"},
     {"source": "C54", "relation": "AFFECTS", "target": "Joint_4"},
     {"source": "C55", "relation": "AFFECTS", "target": "Joint_5"},
+    {"source": "C300", "relation": "AFFECTS", "target": "ControlBox"},
+    {"source": "C301", "relation": "AFFECTS", "target": "SafetyControlBoard"},
+    {"source": "C312", "relation": "AFFECTS", "target": "Motherboard"},
+    {"source": "C316", "relation": "AFFECTS", "target": "TeachPendant"},
+    {"source": "C320", "relation": "AFFECTS", "target": "TeachPendant"},
+    {"source": "C710", "relation": "AFFECTS", "target": "Axia80"},
+    {"source": "C740", "relation": "AFFECTS", "target": "Axia80"},
 
     {"source": "PAT_COLLISION", "relation": "OCCURS_DURING", "target": "Shift_Day", "properties": {"frequency": "occasional"}},
     {"source": "PAT_OVERLOAD", "relation": "INVOLVES", "target": "Product_B", "properties": {"frequency": "rare"}}
-  ]
+  ],
+
+  "error_code_categories": {
+    "communication": ["C1", "C2", "C4", "C10", "C11", "C12", "C17", "C30", "C31", "C37", "C171", "C173", "C174"],
+    "system": ["C0", "C3", "C5", "C14", "C36", "C200", "C203", "C900"],
+    "encoder": ["C25", "C26", "C40"],
+    "calibration": ["C27", "C29"],
+    "memory": ["C32", "C33", "C34", "C38"],
+    "configuration": ["C35", "C330", "C333", "C337", "C338"],
+    "power": ["C45", "C207", "C290", "C292", "C293", "C295", "C296", "C297", "C299"],
+    "joint_communication": ["C50", "C51", "C52", "C53", "C54", "C55", "C103"],
+    "joint_position": ["C61", "C72"],
+    "joint_current": ["C70"],
+    "joint_speed": ["C71"],
+    "joint_temperature": ["C75", "C77"],
+    "safety": ["C119", "C151", "C153", "C154", "C159", "C160", "C191", "C192", "C193", "C194", "C220"],
+    "safety_io": ["C157", "C259", "C260", "C261", "C262", "C263"],
+    "io": ["C269", "C270", "C273", "C275", "C277", "C278", "C279", "C323"],
+    "tool_io": ["C264", "C265", "C266", "C267"],
+    "tool": ["C281", "C282", "C283", "C284"],
+    "control_box": ["C285", "C286", "C289", "C300"],
+    "safety_board": ["C301", "C303", "C304", "C305", "C306", "C309"],
+    "motherboard": ["C312", "C314", "C315"],
+    "teach_pendant": ["C316", "C319", "C320", "C321"],
+    "euromap": ["C325", "C326", "C328"],
+    "overload": ["C189"],
+    "vibration": ["C204"],
+    "mechanical": ["C212"],
+    "installation": ["C216"],
+    "hardware": ["C402", "C450"],
+    "software": ["C500", "C501", "C503", "C506", "C509", "C513", "C517"],
+    "sensor": ["C710", "C740"]
+  }
 }

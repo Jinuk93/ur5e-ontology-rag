@@ -1,5 +1,5 @@
 # ============================================================
-# inference_rules.yaml - 온톨로지 추론 규칙
+# inference_rules.yaml - 온톨로지 추론 규칙 (확장판)
 # ============================================================
 # Phase 6: 추론 규칙 정의
 # - state_rules: 센서 값 → 상태
@@ -7,7 +7,7 @@
 # - prediction_rules: 패턴 반복 → 에러 예측
 # ============================================================
 
-version: "1.0"
+version: "2.0"
 
 # ============================================================
 # 상태 추론 규칙 (State Rules)
@@ -83,6 +83,76 @@ state_rules:
         label: "경고"
         severity: "warning"
 
+  # Tx (X축 토크) 상태 매핑
+  - name: "TX_STATE_MAPPING"
+    axis: "Tx"
+    unit: "Nm"
+    mappings:
+      - range: [-2, 2]
+        state: "State_Normal"
+        label: "정상"
+        severity: "normal"
+      - range: [-5, -2]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+      - range: [2, 5]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+      - range: [-20, -5]
+        state: "State_Critical"
+        label: "위험"
+        severity: "critical"
+      - range: [5, 20]
+        state: "State_Critical"
+        label: "위험"
+        severity: "critical"
+
+  # Ty (Y축 토크) 상태 매핑
+  - name: "TY_STATE_MAPPING"
+    axis: "Ty"
+    unit: "Nm"
+    mappings:
+      - range: [-2, 2]
+        state: "State_Normal"
+        label: "정상"
+        severity: "normal"
+      - range: [-5, -2]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+      - range: [2, 5]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+      - range: [-20, -5]
+        state: "State_Critical"
+        label: "위험"
+        severity: "critical"
+      - range: [5, 20]
+        state: "State_Critical"
+        label: "위험"
+        severity: "critical"
+
+  # Tz (Z축 토크) 상태 매핑
+  - name: "TZ_STATE_MAPPING"
+    axis: "Tz"
+    unit: "Nm"
+    mappings:
+      - range: [-2, 2]
+        state: "State_Normal"
+        label: "정상"
+        severity: "normal"
+      - range: [-5, -2]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+      - range: [2, 5]
+        state: "State_Warning"
+        label: "경고"
+        severity: "warning"
+
 # ============================================================
 # 원인 추론 규칙 (Cause Rules)
 # ============================================================
@@ -102,6 +172,9 @@ cause_rules:
       - cause_id: "CAUSE_PROGRAM_ERROR"
         base_confidence: 0.70
         description: "프로그램 경로 오류"
+      - cause_id: "CAUSE_EXTERNAL_FORCE"
+        base_confidence: 0.60
+        description: "외부 힘 작용"
 
   - pattern: "PAT_OVERLOAD"
     causes:
@@ -111,9 +184,9 @@ cause_rules:
         context_boost:
           - condition: "product_weight > 4.0"
             boost: 0.05
-      - cause_id: "CAUSE_GRIP_ERROR"
+      - cause_id: "CAUSE_POSITION_ERROR"
         base_confidence: 0.60
-        description: "그립 위치 불량"
+        description: "위치 오차로 인한 추가 부하"
 
   - pattern: "PAT_VIBRATION"
     causes:
@@ -129,6 +202,48 @@ cause_rules:
       - cause_id: "CAUSE_CALIBRATION"
         base_confidence: 0.80
         description: "센서 캘리브레이션 필요"
+
+  - pattern: "PAT_COMMUNICATION_LOSS"
+    causes:
+      - cause_id: "CAUSE_COMMUNICATION_LOSS"
+        base_confidence: 0.95
+        description: "통신 손실"
+      - cause_id: "CAUSE_CABLE_FAULT"
+        base_confidence: 0.70
+        description: "케이블 불량"
+
+  - pattern: "PAT_OVERHEAT"
+    causes:
+      - cause_id: "CAUSE_OVERHEAT"
+        base_confidence: 0.90
+        description: "과열"
+        context_boost:
+          - condition: "continuous_operation > 8h"
+            boost: 0.05
+
+  - pattern: "PAT_SAFETY_VIOLATION"
+    causes:
+      - cause_id: "CAUSE_SAFETY_CONFIG"
+        base_confidence: 0.70
+        description: "안전 설정 오류"
+      - cause_id: "CAUSE_POSITION_ERROR"
+        base_confidence: 0.60
+        description: "위치 오차"
+      - cause_id: "CAUSE_COLLISION"
+        base_confidence: 0.55
+        description: "충돌로 인한 안전 위반"
+
+  - pattern: "PAT_POSITION_DEVIATION"
+    causes:
+      - cause_id: "CAUSE_POSITION_ERROR"
+        base_confidence: 0.85
+        description: "경로 이탈"
+      - cause_id: "CAUSE_OVERLOAD"
+        base_confidence: 0.60
+        description: "과부하로 인한 위치 편차"
+      - cause_id: "CAUSE_COLLISION"
+        base_confidence: 0.50
+        description: "충돌로 인한 위치 편차"
 
 # ============================================================
 # 예측 추론 규칙 (Prediction Rules)
@@ -149,7 +264,7 @@ prediction_rules:
       error_id: "C189"
       probability: 0.85
       time_horizon_days: 1
-      message: "지난 3일간 과부하 패턴이 3회 발생. 내일 C189 에러 발생 가능성 높음."
+      message: "지난 4일간 과부하 패턴이 3회 발생. 내일 C189 에러 발생 가능성 높음."
 
   - name: "COLLISION_PREDICTION"
     description: "충돌 패턴 반복 시 C153 예측"
@@ -178,6 +293,45 @@ prediction_rules:
       time_horizon_days: 3
       message: "지난 7일간 진동 패턴 강도가 20% 이상 증가. C204 에러 발생 가능성 있음."
 
+  - name: "COMMUNICATION_PREDICTION"
+    description: "통신 손실 패턴 반복 시 C4/C103 예측"
+    pattern: "PAT_COMMUNICATION_LOSS"
+    condition:
+      type: "frequency"
+      count: 5
+      time_window_days: 1
+    prediction:
+      error_id: "C103"
+      probability: 0.80
+      time_horizon_days: 1
+      message: "지난 1일간 통신 손실이 5회 발생. C103 조인트 통신 오류 발생 가능성 높음."
+
+  - name: "OVERHEAT_PREDICTION"
+    description: "과열 패턴 반복 시 C77 예측"
+    pattern: "PAT_OVERHEAT"
+    condition:
+      type: "frequency"
+      count: 2
+      time_window_days: 3
+    prediction:
+      error_id: "C77"
+      probability: 0.85
+      time_horizon_days: 1
+      message: "지난 3일간 과열 패턴이 2회 발생. C77 조인트 온도 위험 발생 가능성 높음."
+
+  - name: "SAFETY_PREDICTION"
+    description: "안전 위반 패턴 반복 시 C151 예측"
+    pattern: "PAT_SAFETY_VIOLATION"
+    condition:
+      type: "frequency"
+      count: 3
+      time_window_days: 7
+    prediction:
+      error_id: "C151"
+      probability: 0.75
+      time_horizon_days: 2
+      message: "지난 7일간 안전 위반 패턴이 3회 발생. C151 안전 시스템 오류 발생 가능성 있음."
+
 # ============================================================
 # 패턴 → 에러 매핑 (TRIGGERS 관계)
 # ============================================================
@@ -190,7 +344,7 @@ pattern_error_mapping:
     triggers:
       - error_id: "C153"
         probability: 0.95
-        description: "Safety Stop"
+        description: "Position deviates from path"
       - error_id: "C119"
         probability: 0.80
         description: "Safety Limit Violation"
@@ -200,6 +354,9 @@ pattern_error_mapping:
       - error_id: "C189"
         probability: 0.90
         description: "Payload Overload"
+      - error_id: "C70"
+        probability: 0.70
+        description: "Joint Current Limit"
 
   PAT_VIBRATION:
     triggers:
@@ -209,3 +366,204 @@ pattern_error_mapping:
 
   PAT_DRIFT:
     triggers: []  # 드리프트는 에러보다 캘리브레이션 권고
+
+  PAT_COMMUNICATION_LOSS:
+    triggers:
+      - error_id: "C4"
+        probability: 0.90
+        description: "Communication Issue"
+      - error_id: "C103"
+        probability: 0.85
+        description: "Joint Communication Timeout"
+      - error_id: "C50"
+        probability: 0.70
+        description: "Joint 0 Communication Error"
+
+  PAT_OVERHEAT:
+    triggers:
+      - error_id: "C77"
+        probability: 0.85
+        description: "Joint Temperature Critical"
+      - error_id: "C75"
+        probability: 0.90
+        description: "Joint Temperature Warning"
+      - error_id: "C289"
+        probability: 0.75
+        description: "Control Box Temperature Critical"
+
+  PAT_SAFETY_VIOLATION:
+    triggers:
+      - error_id: "C119"
+        probability: 0.90
+        description: "Safety Limit Violation"
+      - error_id: "C151"
+        probability: 0.85
+        description: "Safety System Error"
+      - error_id: "C154"
+        probability: 0.80
+        description: "Safety Plane Violation"
+      - error_id: "C159"
+        probability: 0.70
+        description: "Emergency Stop Active"
+
+  PAT_POSITION_DEVIATION:
+    triggers:
+      - error_id: "C153"
+        probability: 0.90
+        description: "Position Deviates from Path"
+      - error_id: "C61"
+        probability: 0.70
+        description: "Joint Position Error"
+      - error_id: "C72"
+        probability: 0.65
+        description: "Joint Position Limit"
+
+# ============================================================
+# 에러 코드별 원인-해결 매핑
+# ============================================================
+# 주요 에러 코드에 대한 원인과 해결책 직접 연결
+# ============================================================
+
+error_cause_resolution:
+  C103:
+    category: "joint_communication"
+    causes:
+      - "CAUSE_COMMUNICATION_LOSS"
+      - "CAUSE_CABLE_FAULT"
+    resolutions:
+      - "RES_CHECK_CABLE"
+      - "RES_REBOOT"
+    description: "조인트 통신 타임아웃 - 케이블 연결 확인 후 재부팅"
+
+  C151:
+    category: "safety"
+    causes:
+      - "CAUSE_SAFETY_CONFIG"
+      - "CAUSE_EMERGENCY_STOP"
+    resolutions:
+      - "RES_SAFETY_CHECK"
+    description: "안전 시스템 오류 - 안전 설정 및 비상정지 상태 점검"
+
+  C200:
+    category: "system"
+    causes:
+      - "CAUSE_SOFTWARE_BUG"
+    resolutions:
+      - "RES_REBOOT"
+      - "RES_REINSTALL_SOFTWARE"
+    description: "시스템 오류 - 로그 확인 후 재부팅"
+
+  C259:
+    category: "safety_io"
+    causes:
+      - "CAUSE_IO_FAULT"
+      - "CAUSE_CABLE_FAULT"
+    resolutions:
+      - "RES_CHECK_SAFETY_IO"
+      - "RES_CHECK_CABLE"
+    description: "안전 I/O 설정 오류 - 네트워크 연결 및 케이블 점검"
+
+  C300:
+    category: "control_box"
+    causes:
+      - "CAUSE_HARDWARE_FAILURE"
+    resolutions:
+      - "RES_REBOOT"
+      - "RES_CONTACT_SUPPORT"
+    description: "컨트롤 박스 오류 - 상태 점검 후 전원 재시작"
+
+  C402:
+    category: "hardware"
+    causes:
+      - "CAUSE_HARDWARE_FAILURE"
+    resolutions:
+      - "RES_CONTACT_SUPPORT"
+    description: "하드웨어 오류 - 부품 점검 후 서비스 센터 문의"
+
+  C500:
+    category: "software"
+    causes:
+      - "CAUSE_SOFTWARE_BUG"
+    resolutions:
+      - "RES_REINSTALL_SOFTWARE"
+      - "RES_UPDATE_FIRMWARE"
+    description: "소프트웨어 오류 - 업데이트 상태 확인 후 재설치 고려"
+
+  C710:
+    category: "sensor"
+    causes:
+      - "CAUSE_CALIBRATION"
+    resolutions:
+      - "RES_CALIBRATE_SENSOR"
+      - "RES_CHECK_CABLE"
+    description: "센서 오류 - 연결 상태와 캘리브레이션 확인"
+
+  C740:
+    category: "sensor"
+    causes:
+      - "CAUSE_CALIBRATION"
+      - "CAUSE_HARDWARE_FAILURE"
+    resolutions:
+      - "RES_CALIBRATE_SENSOR"
+      - "RES_CONTACT_SUPPORT"
+    description: "힘 센서 오류 - 작동 중단 후 안전 구역 확보, 원인 파악 후 재시작"
+
+  C900:
+    category: "system"
+    causes:
+      - "CAUSE_HARDWARE_FAILURE"
+    resolutions:
+      - "RES_CONTACT_SUPPORT"
+    description: "시스템 크리티컬 오류 - 즉시 작업 중단, 기술 지원팀 연락"
+
+  C32:
+    category: "memory"
+    causes:
+      - "CAUSE_MEMORY_FAULT"
+    resolutions:
+      - "RES_CONTACT_SUPPORT"
+    description: "플래시 쓰기 검증 실패"
+
+  C45:
+    category: "power"
+    causes:
+      - "CAUSE_POWER_ISSUE"
+    resolutions:
+      - "RES_CHECK_POWER"
+    description: "조인트 전압 오류"
+
+  C61:
+    category: "joint_position"
+    causes:
+      - "CAUSE_POSITION_ERROR"
+    resolutions:
+      - "RES_REBOOT"
+    description: "조인트 위치 오류 - 전원 끄고 5분 후 재시작"
+
+  C171:
+    category: "communication"
+    causes:
+      - "CAUSE_COMMUNICATION_LOSS"
+    resolutions:
+      - "RES_CHECK_CABLE"
+      - "RES_REBOOT"
+    description: "내부 통신 오류"
+
+  C173:
+    category: "communication"
+    causes:
+      - "CAUSE_COMMUNICATION_LOSS"
+    resolutions:
+      - "RES_CHECK_CABLE"
+      - "RES_REBOOT"
+    description: "외부 통신 오류"
+
+  C503:
+    category: "software"
+    causes:
+      - "CAUSE_SOFTWARE_BUG"
+      - "CAUSE_HARDWARE_FAILURE"
+    resolutions:
+      - "RES_REINSTALL_SOFTWARE"
+      - "RES_CHECK_CABLE"
+    description: "프로그램 오류 - 반복 발생 시 하드웨어 결함/케이블 손상 점검"
