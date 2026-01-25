@@ -75,6 +75,7 @@ export function LiveView() {
     data: integratedData,
     latestData: latestIntegratedData,
     isConnected: integratedConnected,
+    reconnect: integratedReconnect,
   } = useIntegratedSSE({
     interval: 0.5,
     bufferSize: 60,
@@ -101,8 +102,9 @@ export function LiveView() {
   // Use readings based on stream mode
   const readings = streamMode === 'sse' ? sseReadings : pollingReadings;
   const isLoading = streamMode === 'polling' && pollingLoading;
-  const isError = streamMode === 'sse' ? !!sseError : pollingError;
-  const isConnected = streamMode === 'sse' ? sseConnected : !pollingError;
+  // SSE 연결 상태: integratedSSE가 연결되면 연결된 것으로 표시 (통합 스트림 우선)
+  const isError = streamMode === 'sse' ? (!!sseError && !integratedConnected) : pollingError;
+  const isConnected = streamMode === 'sse' ? (sseConnected || integratedConnected) : !pollingError;
 
   // Build entities with i18n names/descriptions
   const baseEntities: EntityInfo[] = useMemo(() => {
@@ -124,15 +126,27 @@ export function LiveView() {
   }, [t]);
 
   // Derive entity states from latest reading
+  // 우선순위: integratedData (통합 스트림) > sseReadings (레거시)
   const entities: EntityInfo[] = useMemo(() => {
+    // integratedData에서 Axia80 값 사용 (시뮬레이션 포함)
+    const latestAxia80 = latestIntegratedData?.axia80;
     const latestReading = readings[readings.length - 1];
-    if (!latestReading) return baseEntities;
+
+    // 둘 다 없으면 기본값 반환
+    if (!latestAxia80 && !latestReading) return baseEntities;
 
     return baseEntities.map((entity) => {
       if (entity.type !== 'MEASUREMENT_AXIS') return entity;
 
       const axisKey = entity.id.charAt(0).toUpperCase() + entity.id.slice(1) as keyof SensorReading;
-      const value = latestReading[axisKey] as number;
+
+      // integratedData에서 먼저 값 가져오기, 없으면 sseReadings에서
+      let value: number | undefined;
+      if (latestAxia80) {
+        value = latestAxia80[axisKey as keyof typeof latestAxia80] as number;
+      } else if (latestReading) {
+        value = latestReading[axisKey] as number;
+      }
 
       if (typeof value !== 'number') return entity;
 
@@ -146,7 +160,7 @@ export function LiveView() {
         state,
       };
     });
-  }, [readings, baseEntities]);
+  }, [readings, baseEntities, latestIntegratedData]);
 
   // Derive sensor state for Axia80 card
   const sensorState: NodeState = useMemo(() => {
@@ -295,6 +309,12 @@ export function LiveView() {
     setStreamMode((prev) => (prev === 'sse' ? 'polling' : 'sse'));
   };
 
+  // 모든 SSE 재연결
+  const handleReconnect = () => {
+    sseReconnect();
+    integratedReconnect();
+  };
+
   if (isLoading && readings.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -369,11 +389,11 @@ export function LiveView() {
               {streamMode === 'sse' ? t('sseMode') : t('pollingMode')}
             </Badge>
             <span className="text-sm font-medium text-slate-300">{t('title')}</span>
-            {streamMode === 'sse' && !sseConnected && (
+            {streamMode === 'sse' && !isConnected && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={sseReconnect}
+                onClick={handleReconnect}
                 className="text-xs text-red-400 border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
               >
                 <RefreshCw className="h-3 w-3 mr-1" />

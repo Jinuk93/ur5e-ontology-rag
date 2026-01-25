@@ -34,8 +34,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/sensors", tags=["Sensors"])
 
-# 센서 데이터 경로
-SENSOR_DATA_DIR = Path(__file__).parent.parent.parent.parent / "data" / "sensor"
+# 센서 데이터 경로 (절대 경로 사용)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+SENSOR_DATA_DIR = _PROJECT_ROOT / "data" / "sensor"
 
 # 센서 데이터 캐시
 _sensor_df: Optional[pd.DataFrame] = None
@@ -62,6 +63,8 @@ def load_sensor_data() -> pd.DataFrame:
     global _sensor_df
     if _sensor_df is None:
         parquet_path = SENSOR_DATA_DIR / "raw" / "axia80_week_01.parquet"
+        logger.info(f"Attempting to load sensor data from: {parquet_path}")
+        logger.info(f"Path exists: {parquet_path.exists()}")
         if parquet_path.exists():
             try:
                 _sensor_df = pd.read_parquet(parquet_path)
