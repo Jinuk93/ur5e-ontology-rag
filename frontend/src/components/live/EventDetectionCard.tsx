@@ -15,14 +15,14 @@ interface EventDetectionCardProps {
   onClick?: () => void;
 }
 
-// 이벤트 타입별 설정
+// Event type configuration
 const eventTypeConfig: Record<string, { label: string; color: string; icon: typeof AlertTriangle }> = {
   collision: { label: '충돌', color: 'text-red-400', icon: AlertTriangle },
   overload: { label: '과부하', color: 'text-orange-400', icon: AlertCircle },
   drift: { label: '드리프트', color: 'text-yellow-400', icon: Activity },
 };
 
-// 이벤트 상태 설정 (미해결 이벤트 기반)
+// Event status configuration (based on unresolved events)
 const eventStatusConfig = {
   critical: { label: '위험', color: 'text-red-400', bgColor: 'bg-red-500/20', borderColor: 'border-red-500/50', icon: AlertTriangle },
   warning: { label: '경고', color: 'text-yellow-400', bgColor: 'bg-yellow-500/20', borderColor: 'border-yellow-500/50', icon: AlertCircle },
@@ -74,17 +74,17 @@ export function EventDetectionCard({ events, onClick }: EventDetectionCardProps)
           'border border-slate-700/50 hover:border-slate-500/70'
         )}
         style={{
-          // 그라데이션 없는 단색 배경 (경고/위험은 투명도 높임)
-          backgroundColor: cardStatus === 'critical'
-            ? 'rgba(127, 29, 29, 0.35)'  // 진한 빨간색 (투명도 증가)
+          // 상태별 그라데이션 배경
+          background: cardStatus === 'critical'
+            ? 'linear-gradient(135deg, rgba(153, 27, 27, 0.95) 0%, rgba(127, 29, 29, 0.9) 50%, rgba(69, 10, 10, 0.95) 100%)'
             : cardStatus === 'warning'
-            ? 'rgba(113, 63, 18, 0.35)'  // 진한 노란색/주황색 (투명도 증가)
-            : 'rgba(30, 41, 59, 0.9)',  // 슬레이트
+            ? 'linear-gradient(135deg, rgba(146, 64, 14, 0.95) 0%, rgba(113, 63, 18, 0.9) 50%, rgba(69, 26, 3, 0.95) 100%)'
+            : 'linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(30, 41, 59, 0.9) 50%, rgba(15, 23, 42, 0.95) 100%)',
           boxShadow: cardStatus === 'critical'
-            ? '0 2px 6px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(255,255,255,0.04)'
+            ? '0 4px 12px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255,255,255,0.06)'
             : cardStatus === 'warning'
-            ? '0 2px 6px rgba(234, 179, 8, 0.15), inset 0 1px 0 rgba(255,255,255,0.04)'
-            : '0 2px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04)',
+            ? '0 4px 12px rgba(234, 179, 8, 0.2), inset 0 1px 0 rgba(255,255,255,0.06)'
+            : '0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
         }}
       >
         <div className="flex flex-col h-full relative">
@@ -136,7 +136,7 @@ export function EventDetectionCard({ events, onClick }: EventDetectionCardProps)
                       <div key={type} className="flex items-center gap-1">
                         <Icon className={cn('h-3.5 w-3.5', config.color)} />
                         <span className={cn('text-xs font-medium', config.color)}>
-                          {config.label} {count}건
+                          {config.label} {count}
                         </span>
                       </div>
                     );
@@ -148,7 +148,7 @@ export function EventDetectionCard({ events, onClick }: EventDetectionCardProps)
                     미해결 {analysis.total}건 (위험 {analysis.critical}, 경고 {analysis.warning})
                   </p>
                   {analysis.resolvedCount > 0 && (
-                    <p className="text-xs text-green-500 mt-0.5">해결 {analysis.resolvedCount}건</p>
+                    <p className="text-xs text-green-500 mt-0.5">해결됨 {analysis.resolvedCount}건</p>
                   )}
                 </div>
               </>

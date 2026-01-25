@@ -1,6 +1,5 @@
 'use client';
 
-import { Globe } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
 import { Button } from '@/components/ui/button';
 import { useLocaleStore } from '@/stores/localeStore';
@@ -26,8 +25,7 @@ export function LanguageToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="sm" className="text-muted-foreground gap-1.5">
-        <Globe className="h-4 w-4" />
+      <Button variant="ghost" size="sm" className="text-muted-foreground">
         <span className="text-xs">KO</span>
       </Button>
     );
@@ -38,10 +36,9 @@ export function LanguageToggle() {
       variant="ghost"
       size="sm"
       onClick={toggleLocale}
-      className="text-muted-foreground hover:text-foreground gap-1.5"
+      className="text-muted-foreground hover:text-foreground"
       title={locale === 'ko' ? 'Switch to English' : '한국어로 전환'}
     >
-      <Globe className="h-4 w-4" />
       <span className="text-xs">{localeLabels[locale]}</span>
     </Button>
   );

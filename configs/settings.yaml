@@ -118,3 +118,34 @@ logging:
                                    # ERROR: 에러만
 
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+
+# ------------------------------------------------------------
+# [8] 관리 감독자 대시보드 목표치(운영 기준선)
+# ------------------------------------------------------------
+# 목적:
+#   - 프론트 통계 요약에서 "목표 대비"를 보여주기 위한 운영 기준 값
+#   - 현장/라인/공정에 따라 코드 수정 없이 튜닝 가능
+supervisor_targets:
+  # 정상 운영률 목표(%)
+  normal_rate_min: 90
+
+  # 힘 크기(|F|) 분포 목표(N)
+  # - p95가 올라가면 "평상시"가 거칠어졌다고 해석 가능
+  force_magnitude_p95_max: 90
+  force_magnitude_mean_max: 60
+
+  # Fz 분포 목표(N)
+  fz_p95_max_abs: 120
+
+  # 이벤트 운영 목표(일 평균)
+  events_daily_max: 2.0
+  collision_daily_max: 0.5
+  overload_daily_max: 0.5
+  drift_daily_max: 0.3
+
+  # MTBE 목표(분)
+  mtbe_min_minutes: 60
+
+  # 미해결 이벤트 백로그 허용치
+  unresolved_events_max: 5

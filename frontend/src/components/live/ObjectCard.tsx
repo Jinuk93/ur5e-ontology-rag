@@ -83,19 +83,19 @@ export function ObjectCard({ entity, isSelected, onClick }: ObjectCardProps) {
           isSelected && 'ring-2 ring-blue-500 border-blue-500/50'
         )}
         style={{
-          // 상태별 배경색 (실시간 변경)
-          backgroundColor: entity.state === 'critical'
-            ? 'rgba(127, 29, 29, 0.35)'  // 빨간색 (위험)
+          // 상태별 그라데이션 배경 (실시간 변경)
+          background: entity.state === 'critical'
+            ? 'linear-gradient(135deg, rgba(153, 27, 27, 0.95) 0%, rgba(127, 29, 29, 0.9) 50%, rgba(69, 10, 10, 0.95) 100%)'
             : entity.state === 'warning'
-            ? 'rgba(113, 63, 18, 0.35)'  // 노란색/주황색 (경고)
-            : 'rgba(30, 41, 59, 0.9)',   // 기본 슬레이트 (정상)
+            ? 'linear-gradient(135deg, rgba(146, 64, 14, 0.95) 0%, rgba(113, 63, 18, 0.9) 50%, rgba(69, 26, 3, 0.95) 100%)'
+            : 'linear-gradient(135deg, rgba(51, 65, 85, 0.95) 0%, rgba(30, 41, 59, 0.9) 50%, rgba(15, 23, 42, 0.95) 100%)',
           boxShadow: isSelected
-            ? '0 4px 12px rgba(59, 130, 246, 0.15), 0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
+            ? '0 4px 12px rgba(59, 130, 246, 0.15), 0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)'
             : entity.state === 'critical'
-            ? '0 2px 6px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(255,255,255,0.04)'
+            ? '0 4px 12px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255,255,255,0.06)'
             : entity.state === 'warning'
-            ? '0 2px 6px rgba(234, 179, 8, 0.15), inset 0 1px 0 rgba(255,255,255,0.04)'
-            : '0 2px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04)',
+            ? '0 4px 12px rgba(234, 179, 8, 0.2), inset 0 1px 0 rgba(255,255,255,0.06)'
+            : '0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
         }}
       >
         <div className="flex flex-col h-full relative">

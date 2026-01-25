@@ -1,10 +1,9 @@
 'use client';
 
-import { Activity, Network, Settings, MessageCircle, Wifi, WifiOff } from 'lucide-react';
+import { Activity, Network, MessageCircle, Wifi, WifiOff } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useUIStore } from '@/stores/uiStore';
 import { useHealth } from '@/hooks/useApi';
 import { cn } from '@/lib/utils';
@@ -62,8 +61,18 @@ export function Header() {
         </nav>
 
         {/* Right side */}
-        <div className="flex items-center gap-1">
-          {/* Connection status */}
+        <div className="flex items-center gap-2">
+          {/* Mobile chat toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setChatOpen(!isChatOpen)}
+            className="md:hidden text-muted-foreground hover:text-foreground"
+          >
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+
+          {/* Connection status - 우측 끝 */}
           <Badge
             variant="outline"
             className={cn(
@@ -80,27 +89,6 @@ export function Header() {
             )}
             {isLoading ? t('connecting') : isConnected ? t('connected') : t('disconnected')}
           </Badge>
-
-          {/* Language toggle */}
-          <LanguageToggle />
-
-          {/* Mobile chat toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setChatOpen(!isChatOpen)}
-            className="md:hidden text-muted-foreground hover:text-foreground"
-          >
-            <MessageCircle className="h-5 w-5" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
         </div>
       </div>
     </header>

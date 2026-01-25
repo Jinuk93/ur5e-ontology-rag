@@ -37,21 +37,21 @@ const eventConfig = {
     icon: AlertTriangle,
     color: 'text-red-400',
     bgColor: 'bg-red-500/10',
-    label: '위험',
+    label: 'Critical',
     labelEn: 'Critical',
   },
   warning: {
     icon: AlertCircle,
     color: 'text-yellow-400',
     bgColor: 'bg-yellow-500/10',
-    label: '경고',
+    label: 'Warning',
     labelEn: 'Warning',
   },
   info: {
     icon: AlertCircle,
     color: 'text-green-400',
     bgColor: 'bg-green-500/10',
-    label: '정상',
+    label: 'Normal',
     labelEn: 'Normal',
   },
 };
@@ -115,7 +115,7 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
   };
 
   const getAction = (event: EventItem) => {
-    if (event.errorCode) return 'Safety Stop';
+    if (event.errorCode) return '안전 정지';
     if (event.eventType === 'overload') return '모니터링';
     return '-';
   };
@@ -131,55 +131,55 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
       // 온톨로지 경로 기반 예측 메시지 생성
       let message = pred.recommendation || '';
       if (!message && pred.cause) {
-        // cause 기반 메시지
+        // cause-based message
         const causeMessages: Record<string, string> = {
-          'CAUSE_COLLISION': '충돌 원인 분석 완료',
-          'CAUSE_OVERLOAD': '과부하 원인 감지',
-          'CAUSE_DRIFT': '센서 드리프트 감지',
+          'CAUSE_COLLISION': '충돌 원인 분석됨',
+          'CAUSE_OVERLOAD': '과부하 원인 감지됨',
+          'CAUSE_DRIFT': '센서 드리프트 감지됨',
         };
         message = causeMessages[pred.cause] || `${pred.error_code} 예측`;
       }
       if (!message) {
-        message = prob > 0.8 ? '즉시 점검 필요' : prob > 0.5 ? '주의 관찰' : '모니터링';
+        message = prob > 0.8 ? '즉시 점검 필요' : prob > 0.5 ? '주의 필요' : '모니터링';
       }
 
       return { text: message, fromOntology: true, probability: prob };
     }
 
-    // Fallback: 기존 하드코딩 로직
-    let fallbackText = '모니터링 중';
+    // Fallback: hardcoded logic
+    let fallbackText = '모니터링';
     if (event.eventType === 'collision') {
       if (event.errorCode === 'C153') {
-        fallbackText = '재발 가능성 높음';
+        fallbackText = '재발 위험 높음';
       } else if (event.context?.fzPeakN && event.context.fzPeakN > 500) {
         fallbackText = '그리퍼 점검 필요';
       } else {
-        fallbackText = '작업 경로 검토';
+        fallbackText = '작업 경로 점검';
       }
     } else if (event.eventType === 'overload') {
       if (event.errorCode) {
-        fallbackText = '부품 마모 주의';
+        fallbackText = '부품 마모 경고';
       } else if (event.context?.fzValueN && event.context.fzValueN > 200) {
-        fallbackText = '축 부하 증가 추세';
+        fallbackText = '축 부하 증가 중';
       } else {
-        fallbackText = '하중 분산 검토';
+        fallbackText = '부하 분포 점검';
       }
     } else if (event.eventType === 'drift' || event.eventType?.includes('drift')) {
-      fallbackText = '센서 교정 필요';
+      fallbackText = '센서 보정 필요';
     } else if (event.errorCode) {
       const errorPredictions: Record<string, string> = {
         C153: '동일 위치 재발 주의',
-        C154: '보호 영역 침범 주의',
+        C154: '보호구역 침범 경고',
         C155: '긴급 점검 필요',
         C189: '과전류 재발 가능',
         C200: '충돌 패턴 분석 필요',
-        C201: '부하 한계 초과 주의',
+        C201: '부하 한계 초과 경고',
       };
-      fallbackText = errorPredictions[event.errorCode] || '패턴 분석 중';
+      fallbackText = errorPredictions[event.errorCode] || '패턴 분석';
     } else if (event.context?.fzPeakN && event.context.fzPeakN > 800) {
       fallbackText = '충돌 위험 증가';
     } else if (event.context?.fzValueN && event.context.fzValueN > 300) {
-      fallbackText = '과부하 주의';
+      fallbackText = '과부하 경고';
     }
 
     return { text: fallbackText, fromOntology: false };
@@ -192,39 +192,45 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
       C153: '안전 정지',
       C154: '보호 정지',
       C155: '비상 정지',
-      C200: '충돌 감지',
-      C201: '과부하 감지',
+      C200: '충돌 감지됨',
+      C201: '과부하 감지됨',
     };
     return {
       code: event.errorCode,
-      description: errorDescriptions[event.errorCode] || '알 수 없는 에러',
+      description: errorDescriptions[event.errorCode] || '알 수 없는 오류',
     };
   };
 
   return (
-    <div
-      className="rounded-lg border border-slate-700/50 bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-sm"
-      style={{
-        boxShadow: '0 4px 16px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)',
-      }}
-    >
-      <div className="px-3 py-2 border-b border-slate-700/50">
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-slate-400" />
-          <h3 className="text-sm font-medium text-white">최근 이벤트</h3>
+    <div>
+      {/* AI description */}
+      <p className="text-xs text-red-400 mb-1.5">
+        AI가 UR5e 오류 코드와 Axia80 센서 이벤트 간의 상관관계를 분석하여 예측 및 조치 권고를 제공합니다.
+      </p>
+      <div
+        className="rounded-lg border border-slate-700/50 bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-sm"
+        style={{
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)',
+        }}
+      >
+        <div className="px-3 py-2 border-b border-slate-700/50">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-slate-400" />
+            <h3 className="text-sm font-medium text-white">최근 이벤트</h3>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-medium flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              AI 예측
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            센서가 감지한 이상 패턴입니다. 클릭하면 상세 분석을 볼 수 있습니다.
+          </p>
         </div>
-        <p className="text-xs text-slate-500 mt-1">
-          센서에서 감지된 이상 패턴 기록입니다. 클릭하면 상세 분석을 볼 수 있습니다.
-        </p>
-        <p className="text-xs text-red-400 mt-1">
-          AI가 UR5e 에러코드와 Axia80 센서 이벤트의 상관관계를 분석하여 예측 및 조치를 제안합니다.
-        </p>
-      </div>
 
       <ScrollArea style={{ height: maxHeight }}>
         {events.length === 0 ? (
           <p className="text-sm text-slate-500 text-center py-4">
-            이벤트가 없습니다
+            이벤트 없음
           </p>
         ) : (
           <table className="w-full text-xs table-fixed">
@@ -241,11 +247,11 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
             <tr className="border-b border-slate-700/50">
               <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">시간</th>
               <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">상태</th>
-              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">감지 이벤트</th>
-              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">에러코드</th>
+              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">이벤트 유형</th>
+              <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">오류 코드</th>
               <th className="text-center py-2 px-1.5 text-slate-400 font-semibold">조치</th>
               <th className="text-center py-2 px-1.5 text-blue-300 font-semibold bg-blue-950/50">AI 예측</th>
-              <th className="text-center py-2 px-1.5 text-green-300 font-semibold bg-green-950/30">해결완료</th>
+              <th className="text-center py-2 px-1.5 text-green-300 font-semibold bg-green-950/30">해결</th>
             </tr>
           </thead>
           <tbody>
@@ -346,6 +352,7 @@ export function EventList({ events, predictions, onEventClick, maxHeight = '200p
           </table>
         )}
       </ScrollArea>
+      </div>
     </div>
   );
 }

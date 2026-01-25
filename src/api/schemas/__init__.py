@@ -4,7 +4,7 @@ API 스키마 모듈
 Pydantic 모델 정의
 """
 
-from .common import HealthResponse
+from .common import HealthResponse, SupervisorTargetsResponse
 from .chat import (
     ChatRequest,
     ChatResponse,
@@ -40,6 +40,7 @@ from .sensor import (
 __all__ = [
     # Common
     "HealthResponse",
+    "SupervisorTargetsResponse",
     # Chat
     "ChatRequest",
     "ChatResponse",

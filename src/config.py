@@ -77,6 +77,32 @@ class LoggingSettings:
 
 
 @dataclass
+class SupervisorTargetsSettings:
+    """관리 감독자 대시보드 목표치(운영 기준)"""
+    # 정상 운영률 목표(%)
+    normal_rate_min: float = 90.0
+
+    # 힘 크기(|F|) 분포 목표(N)
+    force_magnitude_p95_max: float = 90.0
+    force_magnitude_mean_max: float = 60.0
+
+    # Fz 분포 목표(N)
+    fz_p95_max_abs: float = 120.0
+
+    # 이벤트 운영 목표(일 평균)
+    events_daily_max: float = 2.0
+    collision_daily_max: float = 0.5
+    overload_daily_max: float = 0.5
+    drift_daily_max: float = 0.3
+
+    # MTBE 목표(분)
+    mtbe_min_minutes: float = 60.0
+
+    # 미해결 이벤트 백로그 허용치
+    unresolved_events_max: int = 5
+
+
+@dataclass
 class PathSettings:
     """경로 설정"""
     project_root: Path = field(default_factory=lambda: PROJECT_ROOT)
@@ -114,6 +140,7 @@ class Settings:
     verifier: VerifierSettings = field(default_factory=VerifierSettings)
     api: APISettings = field(default_factory=APISettings)
     logging: LoggingSettings = field(default_factory=LoggingSettings)
+    supervisor_targets: SupervisorTargetsSettings = field(default_factory=SupervisorTargetsSettings)
     paths: PathSettings = field(default_factory=PathSettings)
 
 
@@ -163,6 +190,9 @@ def _create_settings() -> Settings:
 
     if "logging" in yaml_config:
         settings.logging = LoggingSettings(**yaml_config["logging"])
+
+    if "supervisor_targets" in yaml_config:
+        settings.supervisor_targets = SupervisorTargetsSettings(**yaml_config["supervisor_targets"])
 
     return settings
 

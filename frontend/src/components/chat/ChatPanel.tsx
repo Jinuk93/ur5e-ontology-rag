@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, Bot, User, FileText, Network, ChevronDown, ChevronUp, ExternalLink, HelpCircle, AlertCircle, Lightbulb } from 'lucide-react';
+import { Send, Loader2, Bot, User, FileText, Network, ChevronDown, ChevronUp, ExternalLink, HelpCircle, AlertCircle, Lightbulb, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -78,8 +78,56 @@ export function ChatPanel() {
       });
     } catch (error) {
       updateMessage(assistantId, {
-        content: '죄송합니다. 요청 처리 중 오류가 발생했습니다.',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        content: '죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : '알 수 없는 오류',
+        isLoading: false,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 예시 질문 클릭 시 바로 전송
+  const handleDirectSubmit = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    const userMessage = text.trim();
+
+    // Add user message
+    addMessage({ role: 'user', content: userMessage });
+
+    // Add assistant placeholder
+    const assistantId = addMessage({
+      role: 'assistant',
+      content: '',
+      isLoading: true,
+    });
+
+    setLoading(true);
+
+    try {
+      const response = await chatMutation.mutateAsync({
+        query: userMessage,
+        context: {
+          selectedEntity: selectedEntity?.id,
+          currentValue: selectedEntity?.currentValue,
+          currentView,
+        },
+      });
+
+      if (response.traceId) {
+        prefetchEvidence(response.traceId);
+      }
+
+      updateMessage(assistantId, {
+        content: response.answer,
+        response,
+        isLoading: false,
+      });
+    } catch (error) {
+      updateMessage(assistantId, {
+        content: '죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : '알 수 없는 오류',
         isLoading: false,
       });
     } finally {
@@ -88,11 +136,19 @@ export function ChatPanel() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" style={{ backgroundColor: '#0a0f1a' }}>
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-slate-700/50 px-4 py-3">
-        <Bot className="h-5 w-5 text-blue-400" />
-        <span className="font-medium text-white">AI 어시스턴트</span>
+      <div className="flex items-center gap-2 border-b border-slate-700/50 px-4 py-3" style={{ backgroundColor: '#0d1320' }}>
+        <div
+          className="relative flex h-7 w-7 items-center justify-center rounded-lg"
+          style={{
+            background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 2px rgba(0,0,0,0.2)'
+          }}
+        >
+          <Sparkles className="h-4 w-4 text-white drop-shadow-sm" />
+        </div>
+        <span className="font-semibold text-white">AI Assistant</span>
         {selectedEntity && (
           <Badge variant="outline" className="ml-auto text-xs text-slate-400 border-slate-600">
             {selectedEntity.name} 선택됨
@@ -113,13 +169,18 @@ export function ChatPanel() {
               className="flex flex-col items-center justify-center h-full text-center"
             >
               <Bot className="h-12 w-12 text-slate-600 mb-3" />
-              <p className="text-slate-400 text-sm">
-                UR5e 로봇과 센서에 대해 질문해보세요.
+              <p className="text-slate-300 text-base font-semibold">
+                &ldquo;UR5e 로봇과 센서에 대해 질문하세요.
+              </p>
+              <p className="text-slate-300 text-base font-semibold mt-1">
+                아래는 질문 예시입니다. 클릭하세요.&rdquo;
               </p>
               <div className="mt-4 space-y-2">
-                <SuggestedQuestion text="Fz가 -350N인데 이게 뭐야?" onClick={setInput} />
-                <SuggestedQuestion text="C153 에러 해결 방법 알려줘" onClick={setInput} />
-                <SuggestedQuestion text="최근 충돌 패턴이 있어?" onClick={setInput} />
+                <SuggestedQuestion text="&quot;현재 Fz가 -350N인데, 무슨 의미인가요?&quot;" onClick={handleDirectSubmit} />
+                <SuggestedQuestion text="&quot;C153 에러가 발생했어요. 어떻게 해결하나요?&quot;" onClick={handleDirectSubmit} />
+                <SuggestedQuestion text="&quot;최근 충돌 패턴이 있나요?&quot;" onClick={handleDirectSubmit} />
+                <SuggestedQuestion text="&quot;조인트 토크가 높을 때 어떻게 대처하나요?&quot;" onClick={handleDirectSubmit} />
+                <SuggestedQuestion text="&quot;Axia80 센서의 정상 범위가 어떻게 되나요?&quot;" onClick={handleDirectSubmit} />
               </div>
             </motion.div>
           )}
@@ -133,7 +194,7 @@ export function ChatPanel() {
               variants={chatMessage}
               layout
             >
-              <MessageBubble message={msg} onOpenEvidence={handleOpenEvidence} onSuggestedQuestion={setInput} />
+              <MessageBubble message={msg} onOpenEvidence={handleOpenEvidence} onSuggestedQuestion={handleDirectSubmit} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -147,17 +208,25 @@ export function ChatPanel() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="메시지 입력..."
+            placeholder="메시지를 입력하세요..."
             disabled={isLoading}
             className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="flex h-10 w-10 items-center justify-center rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            style={{
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2)'
+            }}
+          >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin text-white" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4 text-white" />
             )}
-          </Button>
+          </button>
         </div>
       </form>
 
@@ -241,7 +310,7 @@ function MessageBubble({
 
         {/* Error display */}
         {message.error && (
-          <span className="mt-1 text-xs text-red-400">오류: {message.error}</span>
+          <span className="mt-1 text-xs text-red-400">Error: {message.error}</span>
         )}
       </div>
 
@@ -382,7 +451,7 @@ function AbstainMessage({
         <HelpCircle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-amber-300">
-            확실한 답변을 드리기 어렵습니다.
+            신뢰할 수 있는 답변을 제공하기 어렵습니다.
           </p>
           {response.abstainReason && (
             <p className="text-xs text-slate-400 mt-1">
@@ -399,7 +468,7 @@ function AbstainMessage({
             <div>
               <div className="flex items-center gap-1 text-xs text-green-400 mb-1">
                 <AlertCircle className="h-3 w-3" />
-                확인된 정보
+                찾은 정보
               </div>
               <ul className="text-xs text-slate-300 space-y-0.5 ml-4">
                 {response.partialEvidence.found.map((item, i) => (
@@ -429,7 +498,7 @@ function AbstainMessage({
         <div className="space-y-1.5">
           <div className="flex items-center gap-1 text-xs text-blue-400">
             <Lightbulb className="h-3 w-3" />
-            이렇게 질문해보세요
+            이렇게 질문해 보세요
           </div>
           <div className="space-y-1">
             {response.suggestedQuestions.map((question, i) => (
@@ -448,7 +517,7 @@ function AbstainMessage({
       {/* If there's still an answer, show it */}
       {response.answer && response.answer.trim() !== '' && (
         <div className="border-t border-slate-700/50 pt-2 mt-2">
-          <p className="text-xs text-slate-400 mb-1">참고할 수 있는 내용:</p>
+          <p className="text-xs text-slate-400 mb-1">참고 정보:</p>
           <p className="text-sm text-slate-300 whitespace-pre-wrap">{response.answer}</p>
         </div>
       )}

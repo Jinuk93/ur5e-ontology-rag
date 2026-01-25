@@ -8,7 +8,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from src.config import get_settings
-from src.api.schemas import HealthResponse
+from src.api.schemas import HealthResponse, SupervisorTargetsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -71,3 +71,22 @@ async def get_ontology_summary():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/config/supervisor-targets", response_model=SupervisorTargetsResponse)
+async def get_supervisor_targets():
+    """관리 감독자 대시보드 목표치(운영 기준) 반환"""
+    settings = get_settings()
+    t = settings.supervisor_targets
+    return SupervisorTargetsResponse(
+        normal_rate_min=float(t.normal_rate_min),
+        force_magnitude_p95_max=float(t.force_magnitude_p95_max),
+        force_magnitude_mean_max=float(t.force_magnitude_mean_max),
+        fz_p95_max_abs=float(t.fz_p95_max_abs),
+        events_daily_max=float(t.events_daily_max),
+        collision_daily_max=float(t.collision_daily_max),
+        overload_daily_max=float(t.overload_daily_max),
+        drift_daily_max=float(t.drift_daily_max),
+        mtbe_min_minutes=float(t.mtbe_min_minutes),
+        unresolved_events_max=int(t.unresolved_events_max),
+    )

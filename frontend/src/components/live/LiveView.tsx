@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { RiskAlertBar } from './RiskAlertBar';
 import { ObjectCard } from './ObjectCard';
 import { EventDetectionCard } from './EventDetectionCard';
+import { PredictiveMaintenanceCard } from './PredictiveMaintenanceCard';
 import { RealtimeChart } from './RealtimeChart';
 import { EventList, EventItem } from './EventList';
 import { StatisticsSummary } from './StatisticsSummary';
@@ -183,6 +184,28 @@ export function LiveView() {
     }));
   }, [eventsData]);
 
+  // 예지보전 카드 상태 계산
+  const predictiveCardStatus: NodeState = useMemo(() => {
+    if (!latestIntegratedData) return 'normal';
+    const { correlation, risk, axia80 } = latestIntegratedData;
+    if (
+      correlation.anomaly_detected ||
+      risk.contact_risk_score > 0.5 ||
+      risk.collision_risk_score > 0.5 ||
+      axia80.force_spike
+    ) {
+      return 'critical';
+    }
+    if (
+      correlation.torque_force_ratio > 2 ||
+      risk.contact_risk_score > 0.3 ||
+      risk.collision_risk_score > 0.3
+    ) {
+      return 'warning';
+    }
+    return 'normal';
+  }, [latestIntegratedData]);
+
   // Generate alerts from current state + events (이벤트 감지 연동)
   const alerts: RiskAlert[] = useMemo(() => {
     const result: RiskAlert[] = [];
@@ -199,48 +222,54 @@ export function LiveView() {
     // EventDetectionCard 상태 결정 (이벤트 기반)
     const eventCardStatus = criticalEvents.length > 0 ? 'critical' : warningEvents.length > 0 ? 'warning' : 'normal';
 
-    // 긴급 (센서 + EventDetectionCard가 critical이면 +1)
-    const criticalCount = criticalEntities.length + (eventCardStatus === 'critical' ? 1 : 0);
+    // 긴급 (센서 + EventDetectionCard + PredictiveMaintenanceCard가 critical이면 +1)
+    const criticalCount = criticalEntities.length
+      + (eventCardStatus === 'critical' ? 1 : 0)
+      + (predictiveCardStatus === 'critical' ? 1 : 0);
     if (criticalCount > 0) {
       result.push({
         id: 'critical',
         severity: 'critical',
         title: criticalEntities.length > 0
-          ? `${criticalEntities.map((e) => e.name).join(', ')} 위험`
-          : `이벤트 ${criticalEvents.length}건`,
+          ? `${criticalEntities.map((e) => e.name).join(', ')} Critical`
+          : `${criticalEvents.length} Event(s)`,
         timestamp: new Date().toISOString(),
         entityId: criticalEntities[0]?.id,
         count: criticalCount,
       });
     }
 
-    // 경고 (센서 + EventDetectionCard가 warning이면 +1)
-    const warningCount = warningEntities.length + (eventCardStatus === 'warning' ? 1 : 0);
+    // 경고 (센서 + EventDetectionCard + PredictiveMaintenanceCard가 warning이면 +1)
+    const warningCount = warningEntities.length
+      + (eventCardStatus === 'warning' ? 1 : 0)
+      + (predictiveCardStatus === 'warning' ? 1 : 0);
     if (warningCount > 0) {
       result.push({
         id: 'warning',
         severity: 'warning',
         title: warningEntities.length > 0
-          ? `${warningEntities.map((e) => e.name).join(', ')} 경고`
-          : `이벤트 ${warningEvents.length}건`,
+          ? `${warningEntities.map((e) => e.name).join(', ')} Warning`
+          : `${warningEvents.length} Event(s)`,
         timestamp: new Date().toISOString(),
         entityId: warningEntities[0]?.id,
         count: warningCount,
       });
     }
 
-    // 정상 (센서 + EventDetectionCard가 normal이면 +1)
-    const normalCount = enrichedEntities.filter((e) => e.state === 'normal').length + (eventCardStatus === 'normal' ? 1 : 0);
+    // 정상 (센서 + EventDetectionCard + PredictiveMaintenanceCard가 normal이면 +1)
+    const normalCount = enrichedEntities.filter((e) => e.state === 'normal').length
+      + (eventCardStatus === 'normal' ? 1 : 0)
+      + (predictiveCardStatus === 'normal' ? 1 : 0);
     result.push({
       id: 'normal',
       severity: 'info',
-      title: '정상 동작',
+      title: '정상 운전',
       timestamp: new Date().toISOString(),
       count: normalCount,
     });
 
     return result;
-  }, [enrichedEntities, events, resolvedEventIds]);
+  }, [enrichedEntities, events, resolvedEventIds, predictiveCardStatus]);
 
   const handleEntityClick = (entity: EntityInfo) => {
     setSelectedEntity(entity);
@@ -302,6 +331,15 @@ export function LiveView() {
             normalNames.push('이벤트 감지');
           }
 
+          // Add predictive maintenance card status
+          if (predictiveCardStatus === 'critical') {
+            criticalNames.push('예지보전');
+          } else if (predictiveCardStatus === 'warning') {
+            warningNames.push('예지보전');
+          } else {
+            normalNames.push('예지보전');
+          }
+
           return {
             critical: criticalNames,
             warning: warningNames,
@@ -333,11 +371,12 @@ export function LiveView() {
             <span className="text-sm font-medium text-slate-300">{t('title')}</span>
             {streamMode === 'sse' && !sseConnected && (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={sseReconnect}
-                className="text-xs text-slate-400 hover:text-white"
+                className="text-xs text-red-400 border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
               >
+                <RefreshCw className="h-3 w-3 mr-1" />
                 {t('reconnect')}
               </Button>
             )}
@@ -349,7 +388,7 @@ export function LiveView() {
               size="sm"
               onClick={() => updateSettings({ toastEnabled: !settings.toastEnabled })}
               className={settings.toastEnabled ? 'text-green-400' : 'text-slate-500'}
-              title={settings.toastEnabled ? '알림 끄기' : '알림 켜기'}
+              title={settings.toastEnabled ? '알림 비활성화' : '알림 활성화'}
             >
               {settings.toastEnabled ? (
                 <Bell className="h-4 w-4" />
@@ -362,7 +401,7 @@ export function LiveView() {
               size="sm"
               onClick={() => updateSettings({ soundEnabled: !settings.soundEnabled })}
               className={settings.soundEnabled ? 'text-green-400' : 'text-slate-500'}
-              title={settings.soundEnabled ? '소리 끄기' : '소리 켜기'}
+              title={settings.soundEnabled ? '소리 비활성화' : '소리 활성화'}
             >
               {settings.soundEnabled ? (
                 <Volume2 className="h-4 w-4" />
@@ -401,6 +440,11 @@ export function LiveView() {
             ))}
             {/* 이벤트 감지 카드 - 실제 발생한 이벤트 (충돌/과부하/드리프트) */}
             <EventDetectionCard events={events} />
+            {/* 예지보전 카드 - AI 예측 기반 실시간 위험 분석 */}
+            <PredictiveMaintenanceCard
+              latestData={latestIntegratedData}
+              isConnected={integratedConnected}
+            />
           </div>
         </div>
 
@@ -465,10 +509,8 @@ export function LiveView() {
 
         {/* UR5e + Axia80 실시간 상관분석 (Simulated) */}
         <CorrelationTable
-          data={integratedData}
           latestData={latestIntegratedData}
           isConnected={integratedConnected}
-          maxHeight="300px"
         />
       </div>
     </div>

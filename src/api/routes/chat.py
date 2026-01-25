@@ -1,3 +1,5 @@
+import httpx
+from datetime import datetime, timedelta
 """
 채팅 라우트
 
@@ -81,6 +83,55 @@ def _enrich_graph_node(node: Dict[str, Any], analysis: Dict[str, Any]) -> GraphN
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
+    # --- 이벤트 통계 fetch 유틸 ---
+    async def fetch_7d_stats():
+        """7일치 이벤트/센서/정량 데이터 API로 집계"""
+        try:
+            async with httpx.AsyncClient() as client:
+                # 1. 이벤트(충돌 등) 7일치
+                events_resp = await client.get("http://localhost:8000/api/sensors/events?limit=1000")
+                events_resp.raise_for_status()
+                events_data = events_resp.json()
+                now = datetime.now()
+                def is_within_7d(dtstr):
+                    try:
+                        t = datetime.fromisoformat(dtstr)
+                        return (now - t) <= timedelta(days=7)
+                    except Exception:
+                        return False
+                events_7d = [e for e in events_data["events"] if is_within_7d(e.get("start_time", ""))]
+                collision_events = [e for e in events_7d if e.get("event_type") == "collision"]
+                collision_count = len(collision_events)
+                # 2. 센서 데이터 7일치
+                sensor_resp = await client.get("http://localhost:8000/api/sensors/readings/range?hours=168&samples=500")
+                sensor_resp.raise_for_status()
+                sensor_data = sensor_resp.json()
+                readings = sensor_data.get("readings", [])
+                def safe_float(val):
+                    try: return float(val)
+                    except: return 0.0
+                fz_vals = [safe_float(r.get("Fz")) for r in readings if "Fz" in r]
+                fx_vals = [safe_float(r.get("Fx")) for r in readings if "Fx" in r]
+                fy_vals = [safe_float(r.get("Fy")) for r in readings if "Fy" in r]
+                fz_avg = sum(fz_vals)/len(fz_vals) if fz_vals else 0.0
+                fz_max = max(fz_vals) if fz_vals else 0.0
+                fz_min = min(fz_vals) if fz_vals else 0.0
+                fz_last = fz_vals[-1] if fz_vals else 0.0
+                # 기타 축/센서도 필요시 추가
+                return {
+                    "collision_count": collision_count,
+                    "events_7d": len(events_7d),
+                    "fz_avg": fz_avg,
+                    "fz_max": fz_max,
+                    "fz_min": fz_min,
+                    "fz_last": fz_last,
+                    "fx_avg": sum(fx_vals)/len(fx_vals) if fx_vals else 0.0,
+                    "fy_avg": sum(fy_vals)/len(fy_vals) if fy_vals else 0.0,
+                }
+        except Exception as ex:
+            logger.error(f"7d stats fetch error: {ex}")
+            return None
+
     """
     채팅 API (Phase12 엔진 연동)
 
@@ -97,6 +148,14 @@ async def chat(request: ChatRequest):
         # 1. 질문 분류
         classifier = _get_classifier()
         classification = classifier.classify(request.query)
+
+        # --- 충돌 패턴 질문이면 이벤트 통계 fetch ---
+        is_collision_query = any(
+            kw in (classification.query or "").lower() for kw in ["충돌", "collision", "센서", "이벤트", "정량", "패턴", "이상"]
+        )
+        stats = None
+        if is_collision_query:
+            stats = await fetch_7d_stats()
 
         # 2. 온톨로지 추론
         engine = _get_engine()
@@ -121,11 +180,20 @@ async def chat(request: ChatRequest):
         # 5. Evidence Store에 저장
         _evidence_store[response.trace_id] = response_dict
 
-        # 6. ChatResponse 구성
+        # 6. ChatResponse 구성 (충돌 패턴 질문이면 통계 기반 답변 오버라이드)
+        answer = response.answer
+        if is_collision_query and stats:
+            answer = (
+                f"최근 7일 내 충돌 이벤트 {stats['collision_count']}건, "
+                f"Fz 평균 {stats['fz_avg']:.1f}N, 최대 {stats['fz_max']:.1f}N, 최소 {stats['fz_min']:.1f}N, 실시간 {stats['fz_last']:.1f}N. "
+                f"Fx 평균 {stats['fx_avg']:.1f}N, Fy 평균 {stats['fy_avg']:.1f}N. "
+                f"(7일 내 이벤트 총 {stats['events_7d']}건)"
+            )
+
         chat_response = ChatResponse(
             trace_id=response.trace_id,
             query_type=response.query_type,
-            answer=response.answer,
+            answer=answer,
             analysis=AnalysisInfo(**response.analysis) if response.analysis else None,
             reasoning=ReasoningInfo(
                 confidence=response.reasoning.get("confidence", 0.0),

@@ -268,9 +268,18 @@ class UR5eTelemetryGenerator:
 
         # Check protective stop state
         if self._protective_stop.is_active:
-            base.safety_mode = SafetyMode.PROTECTIVE_STOP
-            base.program_state = ProgramState.PAUSED
-            base.tcp_speed = 0.0
+            # Calculate simple risk estimate for recovery check
+            # Use base force magnitude as proxy for current risk
+            risk_estimate = base.force_magnitude / 150.0  # Normalize to 0-1 range
+
+            # Try to recover if conditions are met
+            if self._protective_stop.can_recover(risk_estimate):
+                self._protective_stop.recover()
+            else:
+                # Stay in protective stop
+                base.safety_mode = SafetyMode.PROTECTIVE_STOP
+                base.program_state = ProgramState.PAUSED
+                base.tcp_speed = 0.0
 
         # Apply noise
         tcp_speed = max(0, self._apply_noise(base.tcp_speed))
