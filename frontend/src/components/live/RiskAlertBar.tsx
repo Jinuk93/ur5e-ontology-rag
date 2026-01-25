@@ -10,7 +10,11 @@ import { staggerContainer, staggerItem } from '@/lib/animations';
 interface RiskAlertBarProps {
   alerts: RiskAlert[];
   onAlertClick?: (alert: RiskAlert) => void;
-  entityNames?: string[];
+  entityNamesBySeverity?: {
+    critical: string[];
+    warning: string[];
+    normal: string[];
+  };
 }
 
 const severityConfig = {
@@ -31,7 +35,7 @@ const severityConfig = {
   },
 };
 
-export function RiskAlertBar({ alerts, onAlertClick, entityNames = [] }: RiskAlertBarProps) {
+export function RiskAlertBar({ alerts, onAlertClick, entityNamesBySeverity }: RiskAlertBarProps) {
   const t = useTranslations('alert');
   const [hoveredSeverity, setHoveredSeverity] = useState<string | null>(null);
 
@@ -95,31 +99,41 @@ export function RiskAlertBar({ alerts, onAlertClick, entityNames = [] }: RiskAle
               </span>
             </button>
 
-            {/* Hover tooltip - entity list */}
+            {/* Hover tooltip - 해당 상태의 카드 목록 표시 */}
             <AnimatePresence>
-              {isHovered && count > 0 && entityNames.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute top-full left-0 mt-1 z-50 min-w-[140px]"
-                >
-                  <div className="bg-slate-800 border border-slate-600 rounded-lg shadow-xl py-2 px-3">
-                    <div className="space-y-1">
-                      {entityNames.map((name, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-2 text-sm text-slate-300"
-                        >
-                          <div className={cn('w-1.5 h-1.5 rounded-full', config.dotColor)} />
-                          {name}
-                        </div>
-                      ))}
+              {isHovered && count > 0 && entityNamesBySeverity && (() => {
+                const names = severity === 'critical'
+                  ? entityNamesBySeverity.critical
+                  : severity === 'warning'
+                  ? entityNamesBySeverity.warning
+                  : entityNamesBySeverity.normal;
+
+                if (names.length === 0) return null;
+
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 mt-1 z-50 min-w-[120px]"
+                  >
+                    <div className="bg-slate-800 border border-slate-600 rounded-lg shadow-xl py-2 px-3">
+                      <div className="space-y-1">
+                        {names.map((name, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 text-sm text-slate-300"
+                          >
+                            <div className={cn('w-1.5 h-1.5 rounded-full', config.dotColor)} />
+                            {name}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                );
+              })()}
             </AnimatePresence>
           </motion.div>
         );

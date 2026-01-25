@@ -204,6 +204,33 @@ export async function getOntologySummary() {
 }
 
 // ============================================================
+// Config API (Supervisor Targets)
+// ============================================================
+
+export interface SupervisorTargetsResponse {
+  normal_rate_min: number;
+  force_magnitude_p95_max: number;
+  force_magnitude_mean_max: number;
+  fz_p95_max_abs: number;
+  events_daily_max: number;
+  collision_daily_max: number;
+  overload_daily_max: number;
+  drift_daily_max: number;
+  mtbe_min_minutes: number;
+  unresolved_events_max: number;
+}
+
+export async function getSupervisorTargets(): Promise<SupervisorTargetsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/config/supervisor-targets`);
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// ============================================================
 // Sensor API
 // ============================================================
 

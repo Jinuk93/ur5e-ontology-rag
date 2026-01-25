@@ -237,3 +237,20 @@ export interface IntegratedStreamData {
   risk: RiskAssessment;
   data_source: 'simulated' | 'live';
 }
+
+// ============================================================
+// Supervisor Dashboard Targets (운영 목표치)
+// ============================================================
+
+export interface SupervisorTargets {
+  normal_rate_min: number;
+  force_magnitude_p95_max: number;
+  force_magnitude_mean_max: number;
+  fz_p95_max_abs: number;
+  events_daily_max: number;
+  collision_daily_max: number;
+  overload_daily_max: number;
+  drift_daily_max: number;
+  mtbe_min_minutes: number;
+  unresolved_events_max: number;
+}

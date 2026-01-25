@@ -7,6 +7,7 @@ import {
   getOntologySummary,
   getEvidence,
   sendChatMessage,
+  getSupervisorTargets,
   getSensorReadings,
   getSensorPatterns,
   getSensorEvents,
@@ -28,12 +29,26 @@ export const queryKeys = {
   ontologyNeighbors: (entityId: string, direction: string) => ['ontology', 'neighbors', entityId, direction] as const,
   ontologyGraph: (centerId: string, depth: number, direction: string) => ['ontology', 'graph', centerId, depth, direction] as const,
   evidence: (traceId: string) => ['evidence', traceId] as const,
+  supervisorTargets: ['config', 'supervisorTargets'] as const,
   sensorReadings: (limit: number, offset: number) => ['sensors', 'readings', limit, offset] as const,
   sensorReadingsRange: (hours: number, samples: number) => ['sensors', 'readings', 'range', hours, samples] as const,
   sensorPatterns: (limit: number) => ['sensors', 'patterns', limit] as const,
   sensorEvents: (limit: number) => ['sensors', 'events', limit] as const,
   predictions: (limit: number) => ['sensors', 'predictions', limit] as const,
 };
+
+// ============================================================
+// Config Hooks
+// ============================================================
+
+export function useSupervisorTargets(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.supervisorTargets,
+    queryFn: () => getSupervisorTargets(),
+    enabled,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
 
 /**
  * Health check hook - polls every 30 seconds

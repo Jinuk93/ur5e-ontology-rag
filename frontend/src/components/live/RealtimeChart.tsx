@@ -15,7 +15,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useSensorReadingsRange } from '@/hooks/useApi';
 import type { SensorReading, IntegratedStreamData } from '@/types/api';
 
@@ -169,7 +169,7 @@ export function RealtimeChart({ data, integratedData, axis, axes, thresholds, ti
     <Card
       className="p-4 border-slate-700/50 bg-gradient-to-br from-slate-800/60 via-slate-800/40 to-slate-900/60 backdrop-blur-sm"
       style={{
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)',
       }}
     >
       <div className="flex items-center justify-between mb-0">
@@ -248,14 +248,6 @@ export function RealtimeChart({ data, integratedData, axis, axes, thresholds, ti
             </>
           )}
         </div>
-      </div>
-
-      {/* Demo notice */}
-      <div className="flex items-center gap-1.5 -mt-0.5 -mb-1">
-        <Info className="h-3.5 w-3.5 text-red-400 shrink-0" />
-        <span className="text-xs text-red-400">
-          데모 버전: 2024-01-15 ~ 2024-01-21 (7일) 샘플 데이터가 제공됩니다.
-        </span>
       </div>
 
       <div className="h-[200px]">

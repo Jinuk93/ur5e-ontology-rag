@@ -75,29 +75,49 @@ export function ObjectCard({ entity, isSelected, onClick }: ObjectCardProps) {
       <Card
         onClick={onClick}
         className={cn(
-          'w-[260px] h-[165px] p-3.5 cursor-pointer transition-all duration-200',
-          'bg-gradient-to-br from-slate-800/80 via-slate-800/60 to-slate-900/80',
+          'w-[260px] h-[165px] p-3.5 cursor-pointer transition-all duration-300',
+          // 상태별 테두리
+          entity.state === 'critical' && 'ring-1 ring-red-500/30 border-red-500/30',
+          entity.state === 'warning' && 'ring-1 ring-yellow-500/30 border-yellow-500/30',
           'border border-slate-700/50 hover:border-slate-500/70',
-          'shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30',
-          'backdrop-blur-sm',
-          isSelected && 'ring-2 ring-blue-500 border-blue-500/50 shadow-blue-500/20'
+          isSelected && 'ring-2 ring-blue-500 border-blue-500/50'
         )}
         style={{
+          // 상태별 배경색 (실시간 변경)
+          backgroundColor: entity.state === 'critical'
+            ? 'rgba(127, 29, 29, 0.35)'  // 빨간색 (위험)
+            : entity.state === 'warning'
+            ? 'rgba(113, 63, 18, 0.35)'  // 노란색/주황색 (경고)
+            : 'rgba(30, 41, 59, 0.9)',   // 기본 슬레이트 (정상)
           boxShadow: isSelected
-            ? '0 8px 24px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
-            : '0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+            ? '0 4px 12px rgba(59, 130, 246, 0.15), 0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
+            : entity.state === 'critical'
+            ? '0 2px 6px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(255,255,255,0.04)'
+            : entity.state === 'warning'
+            ? '0 2px 6px rgba(234, 179, 8, 0.15), inset 0 1px 0 rgba(255,255,255,0.04)'
+            : '0 2px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
         <div className="flex flex-col h-full relative">
           {/* Header */}
           <div className="flex items-start gap-3">
             <div
-              className="p-2 rounded-lg shrink-0 bg-gradient-to-br from-slate-600/50 to-slate-700/50"
+              className={cn(
+                'p-2 rounded-lg shrink-0 bg-gradient-to-br',
+                entity.state === 'critical' ? 'from-red-600/30 to-red-700/30' :
+                entity.state === 'warning' ? 'from-yellow-600/30 to-yellow-700/30' :
+                'from-slate-600/50 to-slate-700/50'
+              )}
               style={{
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.2)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 2px rgba(0,0,0,0.1)',
               }}
             >
-              <Icon className="h-5 w-5 text-slate-300 drop-shadow-sm" />
+              <Icon className={cn(
+                'h-5 w-5 drop-shadow-sm',
+                entity.state === 'critical' ? 'text-red-400' :
+                entity.state === 'warning' ? 'text-yellow-400' :
+                'text-slate-300'
+              )} />
             </div>
             <div className="min-w-0 flex-1 pr-2">
               <h3 className="text-sm font-medium text-white">{entity.name}</h3>

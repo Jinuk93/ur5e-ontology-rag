@@ -1,347 +1,846 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { BarChart3, Zap, AlertTriangle, TrendingUp, Activity, Target, Wrench } from 'lucide-react';
+import { useMemo } from 'react';
+import {
+  Activity, AlertTriangle, CheckCircle, XCircle, Minus,
+  Wrench, Sparkles, Zap, Gauge, RotateCcw, Info, ArrowRight
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useSensorPatterns, useSensorReadingsRange } from '@/hooks/useApi';
+import { useSensorReadingsRange, useSensorEvents } from '@/hooks/useApi';
+import { useEventResolveStore } from '@/stores/eventResolveStore';
+import type { SensorReading, IntegratedStreamData } from '@/types/api';
+import type { EventItem } from './EventList';
 
 interface StatisticsSummaryProps {
+  sseReadings?: SensorReading[];
+  integratedData?: IntegratedStreamData[];
+  latestIntegratedData?: IntegratedStreamData | null;
+  events?: EventItem[];
   predictions?: {
     total_patterns: number;
     high_risk_count: number;
   };
 }
 
-type Period = '24h' | '7d';
+export function StatisticsSummary({
+  sseReadings = [],
+  integratedData = [],
+  latestIntegratedData,
+  events = [],
+  predictions
+}: StatisticsSummaryProps) {
+  const { resolvedEventIds } = useEventResolveStore();
 
-export function StatisticsSummary({ predictions }: StatisticsSummaryProps) {
-  const [period, setPeriod] = useState<Period>('24h');
+  const { data: dayRangeData } = useSensorReadingsRange(24, 500);
+  const { data: eventsData } = useSensorEvents(500);
 
-  // 패턴 데이터 (7일치)
-  const { data: patternsData } = useSensorPatterns(100);
-
-  // 기간별 센서 데이터 가져오기
-  const hours = period === '24h' ? 24 : 168; // 24시간 또는 7일(168시간)
-  const { data: rangeData } = useSensorReadingsRange(hours, 500);
-
-  // Calculate statistics
   const stats = useMemo(() => {
-    const now = new Date();
-    const cutoff = period === '24h'
-      ? new Date(now.getTime() - 24 * 60 * 60 * 1000)
-      : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    // === 실시간 값 (SSE) ===
+    const latestSSE = sseReadings[sseReadings.length - 1];
+    const fzLive = latestSSE?.Fz ?? null;
+    const fxLive = latestSSE?.Fx ?? null;
+    const fyLive = latestSSE?.Fy ?? null;
+    const forceMagLive = (fxLive != null && fyLive != null && fzLive != null)
+      ? Math.sqrt(fxLive * fxLive + fyLive * fyLive + fzLive * fzLive)
+      : null;
 
-    // 패턴 필터링
-    const patterns = patternsData?.patterns || [];
-    const filteredPatterns = patterns.filter(p => new Date(p.timestamp) >= cutoff);
+    // === UR5e 실시간 값 ===
+    const tcpSpeedLive = latestIntegratedData?.ur5e?.tcp_speed ?? null;
+    const jointTorqueLive = latestIntegratedData?.ur5e?.joint_torque_sum ?? null;
+    const jointCurrentLive = latestIntegratedData?.ur5e?.joint_current_avg ?? null;
 
-    // Pattern counts by type
-    const collisionCount = filteredPatterns.filter(p => p.type === 'collision').length;
-    const overloadCount = filteredPatterns.filter(p => p.type === 'overload').length;
-    const driftCount = filteredPatterns.filter(p =>
-      p.type === 'drift' || p.type?.includes('drift')
-    ).length;
+    // UR5e 힘 크기 (통합 스트림에서)
+    const ur5eForceMagLive = latestIntegratedData?.axia80
+      ? Math.sqrt(
+          (latestIntegratedData.axia80.Fx || 0) ** 2 +
+          (latestIntegratedData.axia80.Fy || 0) ** 2 +
+          (latestIntegratedData.axia80.Fz || 0) ** 2
+        )
+      : null;
 
-    // 센서 데이터 통계 (rangeData 사용)
-    const readings = rangeData?.readings || [];
-
-    // 각 축별 평균 계산
-    const fxValues = readings.map(r => r.Fx).filter((v): v is number => typeof v === 'number');
-    const fyValues = readings.map(r => r.Fy).filter((v): v is number => typeof v === 'number');
-    const fzValues = readings.map(r => r.Fz).filter((v): v is number => typeof v === 'number');
-    const txValues = readings.map(r => r.Tx).filter((v): v is number => typeof v === 'number');
-    const tyValues = readings.map(r => r.Ty).filter((v): v is number => typeof v === 'number');
-    const tzValues = readings.map(r => r.Tz).filter((v): v is number => typeof v === 'number');
+    // === 24시간 평균 (7일 평균은 제거) ===
+    const dayReadings = dayRangeData?.readings || [];
 
     const calcAvg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-    const calcMin = (arr: number[]) => arr.length > 0 ? Math.min(...arr) : 0;
-    const calcMax = (arr: number[]) => arr.length > 0 ? Math.max(...arr) : 0;
-    const calcStdDev = (arr: number[]) => {
+    const calcP95 = (arr: number[]) => {
       if (arr.length === 0) return 0;
-      const avg = calcAvg(arr);
-      const squareDiffs = arr.map(v => Math.pow(v - avg, 2));
-      return Math.sqrt(calcAvg(squareDiffs));
+      const sorted = [...arr].sort((a, b) => a - b);
+      return sorted[Math.floor(sorted.length * 0.95)] || 0;
     };
 
-    const fxAvg = calcAvg(fxValues);
-    const fyAvg = calcAvg(fyValues);
-    const fzAvg = calcAvg(fzValues);
-    const txAvg = calcAvg(txValues);
-    const tyAvg = calcAvg(tyValues);
-    const tzAvg = calcAvg(tzValues);
+    const fzValues24h = dayReadings.map(r => r.Fz).filter((v): v is number => typeof v === 'number');
+    const fxValues24h = dayReadings.map(r => r.Fx).filter((v): v is number => typeof v === 'number');
+    const fyValues24h = dayReadings.map(r => r.Fy).filter((v): v is number => typeof v === 'number');
 
-    const fzMin = calcMin(fzValues);
-    const fzStdDev = calcStdDev(fzValues);
+    const fzAvg24h = calcAvg(fzValues24h);
+    const fxAvg24h = calcAvg(fxValues24h);
+    const fyAvg24h = calcAvg(fyValues24h);
 
-    // Normal operation rate
-    const normalReadings = fzValues.filter(v => v >= -60 && v <= 0).length;
-    const normalRate = fzValues.length > 0
-      ? (normalReadings / fzValues.length) * 100
-      : 100;
+    const calcForceMag = (fx: number, fy: number, fz: number) => Math.sqrt(fx * fx + fy * fy + fz * fz);
+    const forceMag24h = dayReadings.map(r => calcForceMag(r.Fx, r.Fy, r.Fz)).filter(v => Number.isFinite(v));
 
-    // 예비보전 예측 점수 계산
-    // 기준: Fz 편차가 크거나, 피크가 자주 발생하면 점검 필요
-    const maintenanceScore = (() => {
-      let score = 100;
+    const forceMagAvg24h = calcAvg(forceMag24h);
+    const forceMagP95_24h = calcP95(forceMag24h);
 
-      // 충돌 발생 시 감점
-      score -= collisionCount * 15;
+    // UR5e 평균 (버퍼 기반)
+    const tcpSpeedValues = integratedData.map(d => d.ur5e?.tcp_speed).filter((v): v is number => typeof v === 'number');
+    const jointTorqueValues = integratedData.map(d => d.ur5e?.joint_torque_sum).filter((v): v is number => typeof v === 'number');
+    const jointCurrentValues = integratedData.map(d => d.ur5e?.joint_current_avg).filter((v): v is number => typeof v === 'number');
+    const ur5eForceMagValues = integratedData.map(d => {
+      if (!d.axia80) return null;
+      return Math.sqrt((d.axia80.Fx || 0) ** 2 + (d.axia80.Fy || 0) ** 2 + (d.axia80.Fz || 0) ** 2);
+    }).filter((v): v is number => v !== null && Number.isFinite(v));
 
-      // 과부하 발생 시 감점
-      score -= overloadCount * 10;
+    const tcpSpeedAvg = calcAvg(tcpSpeedValues);
+    const jointTorqueAvg = calcAvg(jointTorqueValues);
+    const jointCurrentAvg = calcAvg(jointCurrentValues);
+    const ur5eForceMagP95 = calcP95(ur5eForceMagValues);
 
-      // 드리프트 발생 시 감점
-      score -= driftCount * 5;
+    // === 정상률 계산: Fz + Fx + Fy + 이벤트 미발생 비율 ===
+    // Fz: -60~0N, Fx: -10~10N, Fy: -10~10N 기준
+    const fzNormalCount = fzValues24h.filter(v => v >= -60 && v <= 0).length;
+    const fxNormalCount = fxValues24h.filter(v => v >= -10 && v <= 10).length;
+    const fyNormalCount = fyValues24h.filter(v => v >= -10 && v <= 10).length;
 
-      // Fz 표준편차가 크면 감점 (불안정)
-      if (fzStdDev > 30) score -= 10;
-      if (fzStdDev > 50) score -= 10;
+    // 전체 센서 정상률 (3개 축 평균)
+    const fzRate = fzValues24h.length > 0 ? (fzNormalCount / fzValues24h.length) * 100 : 100;
+    const fxRate = fxValues24h.length > 0 ? (fxNormalCount / fxValues24h.length) * 100 : 100;
+    const fyRate = fyValues24h.length > 0 ? (fyNormalCount / fyValues24h.length) * 100 : 100;
 
-      // Fz 피크가 심하면 감점
-      if (Math.abs(fzMin) > 200) score -= 10;
-      if (Math.abs(fzMin) > 500) score -= 15;
+    // 이벤트 미발생 비율 (이벤트가 없을수록 높음)
+    const eventPenalty = events.length > 0 ? Math.max(0, 100 - events.length * 5) : 100;
 
-      return Math.max(0, Math.min(100, score));
-    })();
+    // 종합 정상률: 센서 3개 평균(70%) + 이벤트 미발생률(30%)
+    const sensorNormalRate = (fzRate + fxRate + fyRate) / 3;
+    const normalRate24h = sensorNormalRate * 0.7 + eventPenalty * 0.3;
 
-    // 예비보전 상태
-    const maintenanceStatus = maintenanceScore >= 80 ? '양호' :
-      maintenanceScore >= 60 ? '주의' :
-      maintenanceScore >= 40 ? '점검 권장' : '긴급 점검';
+    // 현재 상태 판단 (전체 센서 기반)
+    const fzOk = fzLive == null || (fzLive >= -60 && fzLive <= 0);
+    const fxOk = fxLive == null || (fxLive >= -10 && fxLive <= 10);
+    const fyOk = fyLive == null || (fyLive >= -10 && fyLive <= 10);
+    const sensorStatus: 'good' | 'warning' | 'danger' | 'unknown' =
+      fzLive == null && fxLive == null && fyLive == null ? 'unknown' :
+      (fzOk && fxOk && fyOk) ? 'good' :
+      (!fzOk && (fzLive! < -120 || fzLive! > 20)) ? 'danger' : 'warning';
+
+    // 위험 평가
+    const contactRisk = latestIntegratedData?.risk?.contact_risk_score ?? 0;
+    const collisionRisk = latestIntegratedData?.risk?.collision_risk_score ?? 0;
+    const riskScore = Math.max(contactRisk, collisionRisk);
+
+    // === 이벤트 집계 ===
+    const allEvents = events.length > 0 ? events : (eventsData?.events?.map(e => ({
+      id: e.event_id,
+      timestamp: e.start_time,
+      type: e.error_code ? 'critical' : 'warning',
+      eventType: e.event_type,
+      message: e.description,
+      errorCode: e.error_code || undefined,
+    })) || []);
+
+    const collisionEvents = allEvents.filter(e => e.eventType?.toLowerCase() === 'collision');
+    const overloadEvents = allEvents.filter(e => e.eventType?.toLowerCase() === 'overload');
+    const driftEvents = allEvents.filter(e => e.eventType?.toLowerCase().includes('drift'));
+
+    const resolvedCount = allEvents.filter(e => resolvedEventIds.has(e.id)).length;
+    const unresolvedCount = allEvents.length - resolvedCount;
+    const unresolvedEvents = allEvents.filter(e => !resolvedEventIds.has(e.id));
+
+    // === AI 분석 생성 (근거 포함) ===
+    const aiAnalysis: {
+      text: string;
+      type: 'insight' | 'warning' | 'action';
+      basis?: string;
+    }[] = [];
+
+    if (fzLive != null && fzAvg24h !== 0) {
+      const trendDiff = Math.abs(fzLive) - Math.abs(fzAvg24h);
+      if (trendDiff > 10) {
+        aiAnalysis.push({
+          text: `Fz 접촉력 ${Math.abs(trendDiff).toFixed(1)}N 증가 추세`,
+          type: 'warning',
+          basis: `현재 ${Math.abs(fzLive).toFixed(1)}N vs 하루평균 ${Math.abs(fzAvg24h).toFixed(1)}N`
+        });
+      }
+    }
+
+    if (collisionEvents.length > 0) {
+      aiAnalysis.push({
+        text: `충돌 ${collisionEvents.length}건 → 작업 경로 재검토 권장`,
+        type: 'action',
+        basis: collisionEvents.slice(0, 2).map(e => e.message || e.errorCode).join(', ')
+      });
+    }
+
+    if (overloadEvents.length > 0) {
+      aiAnalysis.push({
+        text: `과부하 ${overloadEvents.length}건 → 페이로드 설정 확인`,
+        type: 'action',
+        basis: overloadEvents.slice(0, 2).map(e => e.message || e.errorCode).join(', ')
+      });
+    }
+
+    if (jointTorqueLive != null && jointTorqueLive > 100) {
+      aiAnalysis.push({
+        text: `조인트 토크 높음 → 부하 점검 필요`,
+        type: 'warning',
+        basis: `현재 ${jointTorqueLive.toFixed(0)}Nm (정상: 80Nm 이하)`
+      });
+    }
+
+    if (normalRate24h < 90) {
+      aiAnalysis.push({
+        text: `정상 범위 이탈 ${(100 - normalRate24h).toFixed(0)}% → 공정 점검`,
+        type: normalRate24h < 70 ? 'action' : 'warning',
+        basis: `Fz -60~0N 기준, 24시간 중 ${(100 - normalRate24h).toFixed(0)}% 벗어남`
+      });
+    }
+
+    if (aiAnalysis.length === 0) {
+      aiAnalysis.push({
+        text: '모든 지표 정상 범위 내 운영 중',
+        type: 'insight',
+        basis: '센서값, 이벤트, UR5e 상태 모두 양호'
+      });
+    }
+
+    // 조치 필요 사항
+    const actions: { text: string; type: 'danger' | 'warning' | 'info' }[] = [];
+    if (unresolvedCount > 0) {
+      actions.push({
+        text: `미해결 이벤트 ${unresolvedCount}건`,
+        type: unresolvedCount > 3 ? 'danger' : 'warning'
+      });
+    }
+    if (normalRate24h < 90) {
+      actions.push({
+        text: `정상 범위 이탈 ${(100 - normalRate24h).toFixed(0)}%`,
+        type: normalRate24h < 70 ? 'danger' : 'warning'
+      });
+    }
 
     return {
-      collisionCount,
-      overloadCount,
-      driftCount,
-      fxAvg: Math.round(fxAvg * 10) / 10,
-      fyAvg: Math.round(fyAvg * 10) / 10,
-      fzAvg: Math.round(fzAvg * 10) / 10,
-      txAvg: Math.round(txAvg * 100) / 100,
-      tyAvg: Math.round(tyAvg * 100) / 100,
-      tzAvg: Math.round(tzAvg * 100) / 100,
-      fzPeak: Math.round(fzMin * 10) / 10,
-      normalRate: Math.round(normalRate * 10) / 10,
-      maintenanceScore,
-      maintenanceStatus,
-      dataCount: readings.length,
+      fzLive: fzLive != null ? Math.round(fzLive * 10) / 10 : null,
+      fxLive: fxLive != null ? Math.round(fxLive * 10) / 10 : null,
+      fyLive: fyLive != null ? Math.round(fyLive * 10) / 10 : null,
+      forceMagLive: forceMagLive != null ? Math.round(forceMagLive * 10) / 10 : null,
+      sensorStatus,
+      fzAvg24h: Math.round(fzAvg24h * 10) / 10,
+      fxAvg24h: Math.round(fxAvg24h * 10) / 10,
+      fyAvg24h: Math.round(fyAvg24h * 10) / 10,
+      forceMagAvg24h: Math.round(forceMagAvg24h * 10) / 10,
+      forceMagP95_24h: Math.round(forceMagP95_24h * 10) / 10,
+      normalRate24h: Math.round(normalRate24h * 10) / 10,
+      // UR5e 힘 크기 (힘 피크용)
+      ur5eForceMagLive: ur5eForceMagLive != null ? Math.round(ur5eForceMagLive * 10) / 10 : null,
+      ur5eForceMagP95: Math.round(ur5eForceMagP95 * 10) / 10,
+      tcpSpeedLive: tcpSpeedLive != null ? Math.round(tcpSpeedLive * 1000) : null,
+      jointTorqueLive: jointTorqueLive != null ? Math.round(jointTorqueLive) : null,
+      jointCurrentLive: jointCurrentLive != null ? Math.round(jointCurrentLive * 100) / 100 : null,
+      tcpSpeedAvg: Math.round(tcpSpeedAvg * 1000),
+      jointTorqueAvg: Math.round(jointTorqueAvg),
+      jointCurrentAvg: Math.round(jointCurrentAvg * 100) / 100,
+      riskScore: Math.round(riskScore * 100),
+      totalEvents: allEvents.length,
+      collisionTotal: collisionEvents.length,
+      overloadTotal: overloadEvents.length,
+      driftTotal: driftEvents.length,
+      collisionEvents,
+      overloadEvents,
+      driftEvents,
+      resolvedCount,
+      unresolvedCount,
+      unresolvedEvents,
+      aiAnalysis,
+      actions,
+      sseBufferSize: sseReadings.length,
+      integratedBufferSize: integratedData.length,
+      sampleCount24h: dayReadings.length,
     };
-  }, [patternsData, rangeData, period]);
+  }, [sseReadings, integratedData, latestIntegratedData, events, dayRangeData, eventsData, resolvedEventIds]);
+
+  const StatusIcon = ({ status }: { status: 'good' | 'warning' | 'danger' | 'unknown' }) => {
+    if (status === 'good') return <CheckCircle className="h-4 w-4 text-green-400" />;
+    if (status === 'warning') return <AlertTriangle className="h-4 w-4 text-yellow-400" />;
+    if (status === 'danger') return <XCircle className="h-4 w-4 text-red-400" />;
+    return <Minus className="h-4 w-4 text-slate-400" />;
+  };
 
   return (
-    <div
-      className="rounded-lg border border-slate-700/50 bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 backdrop-blur-sm mt-4"
-      style={{
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
-      }}
-    >
-      {/* Header */}
+    <div className="rounded-lg border border-slate-700/60 mb-4" style={{ backgroundColor: '#0f172a' }}>
+      {/* 헤더 */}
       <div className="px-3 py-2 border-b border-slate-700/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-slate-400" />
-          <h3 className="text-sm font-medium text-white">통계 요약</h3>
-          <span className="text-xs text-slate-500">
-            ({period === '24h' ? '최근 24시간' : '최근 7일'} · {stats.dataCount}건)
+          <Activity className="h-4 w-4 text-blue-400" />
+          <span className="text-sm font-medium text-white">통합 운영 현황</span>
+          <span className="text-[10px] text-green-400 px-1.5 py-0.5 bg-green-500/10 rounded border border-green-500/30">
+            실시간
           </span>
         </div>
-        <div className="flex gap-1">
-          <button
-            onClick={() => setPeriod('24h')}
-            className={cn(
-              'px-2 py-1 text-xs rounded transition-colors',
-              period === '24h'
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-            )}
-          >
-            24시간
-          </button>
-          <button
-            onClick={() => setPeriod('7d')}
-            className={cn(
-              'px-2 py-1 text-xs rounded transition-colors',
-              period === '7d'
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-            )}
-          >
-            7일
-          </button>
+        <div className="flex items-center gap-2">
+          <StatusIcon status={stats.sensorStatus} />
+          <span className={cn(
+            'text-xs font-medium',
+            stats.sensorStatus === 'good' ? 'text-green-400' :
+            stats.sensorStatus === 'warning' ? 'text-yellow-400' :
+            stats.sensorStatus === 'danger' ? 'text-red-400' : 'text-slate-400'
+          )}>
+            {stats.sensorStatus === 'good' ? '정상' :
+             stats.sensorStatus === 'warning' ? '주의' :
+             stats.sensorStatus === 'danger' ? '위험' : '대기'}
+          </span>
         </div>
       </div>
 
       <div className="p-3 space-y-3">
-        {/* 이벤트 통계 */}
-        <div>
-          <div className="text-[10px] text-slate-500 mb-1.5 font-medium">이벤트 감지</div>
-          <div className="grid grid-cols-4 gap-2">
-            <StatCard
-              label="충돌"
-              value={`${stats.collisionCount}건`}
-              icon={AlertTriangle}
-              color={stats.collisionCount > 0 ? 'text-red-400' : 'text-slate-400'}
-              bgColor={stats.collisionCount > 0 ? 'bg-red-500/10' : 'bg-slate-700/30'}
-            />
-            <StatCard
-              label="과부하"
-              value={`${stats.overloadCount}건`}
-              icon={Activity}
-              color={stats.overloadCount > 0 ? 'text-orange-400' : 'text-slate-400'}
-              bgColor={stats.overloadCount > 0 ? 'bg-orange-500/10' : 'bg-slate-700/30'}
-            />
-            <StatCard
-              label="드리프트"
-              value={`${stats.driftCount}건`}
-              icon={TrendingUp}
-              color={stats.driftCount > 0 ? 'text-yellow-400' : 'text-slate-400'}
-              bgColor={stats.driftCount > 0 ? 'bg-yellow-500/10' : 'bg-slate-700/30'}
-            />
-            <StatCard
-              label="정상률"
-              value={`${stats.normalRate}%`}
-              icon={Target}
-              color={stats.normalRate >= 90 ? 'text-green-400' : stats.normalRate >= 70 ? 'text-yellow-400' : 'text-red-400'}
-              bgColor={stats.normalRate >= 90 ? 'bg-green-500/10' : stats.normalRate >= 70 ? 'bg-yellow-500/10' : 'bg-red-500/10'}
-            />
-          </div>
-        </div>
-
-        {/* Axia80 센서 평균값 */}
-        <div>
-          <div className="text-[10px] text-slate-500 mb-1.5 font-medium">Axia80 센서 평균 ({period === '24h' ? '24시간' : '7일'})</div>
-          <div className="grid grid-cols-6 gap-2">
-            <SensorAvgCard label="Fx" value={stats.fxAvg} unit="N" />
-            <SensorAvgCard label="Fy" value={stats.fyAvg} unit="N" />
-            <SensorAvgCard label="Fz" value={stats.fzAvg} unit="N" highlight />
-            <SensorAvgCard label="Tx" value={stats.txAvg} unit="Nm" />
-            <SensorAvgCard label="Ty" value={stats.tyAvg} unit="Nm" />
-            <SensorAvgCard label="Tz" value={stats.tzAvg} unit="Nm" />
-          </div>
-        </div>
-
-        {/* 예비보전 예측 */}
-        <div className={cn(
-          'p-2.5 rounded-lg border',
-          stats.maintenanceScore >= 80 ? 'bg-green-500/10 border-green-500/30' :
-          stats.maintenanceScore >= 60 ? 'bg-yellow-500/10 border-yellow-500/30' :
-          stats.maintenanceScore >= 40 ? 'bg-orange-500/10 border-orange-500/30' :
-          'bg-red-500/10 border-red-500/30'
-        )}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wrench className={cn(
-                'h-4 w-4',
-                stats.maintenanceScore >= 80 ? 'text-green-400' :
-                stats.maintenanceScore >= 60 ? 'text-yellow-400' :
-                stats.maintenanceScore >= 40 ? 'text-orange-400' : 'text-red-400'
-              )} />
-              <span className="text-xs font-medium text-white">예비보전 상태</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className={cn(
-                  'text-sm font-bold',
-                  stats.maintenanceScore >= 80 ? 'text-green-400' :
-                  stats.maintenanceScore >= 60 ? 'text-yellow-400' :
-                  stats.maintenanceScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                )}>
-                  {stats.maintenanceStatus}
-                </div>
-                <div className="text-[10px] text-slate-400">점수: {stats.maintenanceScore}/100</div>
+        {/* 1. AI 운영 분석 + 운영 품질 (1:1 비율) */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* AI 운영 분석 - 진한 네이비 배경 (투명도 없음) */}
+          <div
+            className="rounded-lg border border-blue-900 p-3"
+            style={{
+              backgroundColor: '#0a0f1a',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.3)'
+            }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              {/* AI 분석 배지 - 파란색 배경으로 강조 + 3D 입체감 */}
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-blue-600 border border-blue-400/60"
+                style={{
+                  boxShadow: '0 3px 8px rgba(37, 99, 235, 0.4), 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.2)'
+                }}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-white drop-shadow-sm" />
+                <span className="text-xs font-extrabold text-white drop-shadow-sm">AI 분석</span>
               </div>
-              <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all',
-                    stats.maintenanceScore >= 80 ? 'bg-green-500' :
-                    stats.maintenanceScore >= 60 ? 'bg-yellow-500' :
-                    stats.maintenanceScore >= 40 ? 'bg-orange-500' : 'bg-red-500'
+              {predictions && predictions.high_risk_count > 0 && (
+                <span className="ml-auto text-[10px] px-2 py-1 rounded bg-red-500/20 text-red-400 font-medium border border-red-500/30">
+                  고위험 {predictions.high_risk_count}
+                </span>
+              )}
+            </div>
+
+            {/* 분석 결과 - 배경 연하게, 글씨 진하게 */}
+            <div className="space-y-2">
+              {stats.aiAnalysis.slice(0, 3).map((analysis, idx) => (
+                <div key={idx} className={cn(
+                  'p-2.5 rounded-md border-l-2',
+                  analysis.type === 'action' ? 'border-l-red-400' :
+                  analysis.type === 'warning' ? 'border-l-amber-400' :
+                  'border-l-emerald-400'
+                )}
+                style={{
+                  backgroundColor: analysis.type === 'action' ? 'rgba(127, 29, 29, 0.4)' :
+                    analysis.type === 'warning' ? 'rgba(120, 53, 15, 0.4)' : 'rgba(6, 78, 59, 0.4)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
+                }}>
+                  <div className={cn(
+                    'text-[13px] font-medium leading-snug',
+                    analysis.type === 'action' ? 'text-red-300' :
+                    analysis.type === 'warning' ? 'text-amber-300' : 'text-emerald-300'
+                  )}>
+                    {analysis.text}
+                  </div>
+                  {analysis.basis && (
+                    <div className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                      <span className="text-slate-500">근거:</span> {analysis.basis}
+                    </div>
                   )}
-                  style={{ width: `${stats.maintenanceScore}%` }}
-                />
-              </div>
+                </div>
+              ))}
             </div>
           </div>
-          {stats.maintenanceScore < 80 && (
-            <div className="mt-2 text-[10px] text-slate-400">
-              {stats.collisionCount > 0 && `충돌 ${stats.collisionCount}건 감지. `}
-              {stats.overloadCount > 0 && `과부하 ${stats.overloadCount}건 감지. `}
-              {Math.abs(stats.fzPeak) > 200 && `Fz 피크(${stats.fzPeak}N) 과다. `}
-              {stats.maintenanceScore < 60 && '정기 점검을 권장합니다.'}
+
+          {/* 운영 품질 - 세로 레이아웃 */}
+          <div
+            className="rounded-lg border border-slate-600/60 p-3"
+            style={{
+              backgroundColor: '#0f172a',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)'
+            }}
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              <Zap className="h-4 w-4 text-blue-400" />
+              <span className="text-sm font-medium text-slate-200">운영 품질</span>
+            </div>
+            <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+              센서 정상 범위 유지율과 힘 부하를 종합 평가합니다.
+            </p>
+
+            {/* 종합 정상률 + 힘 피크 세로 배치 */}
+            <div className="space-y-3">
+              {/* 정상률 */}
+              <div
+                className="p-3 rounded-lg border border-slate-600/50"
+                style={{
+                  backgroundColor: '#1e293b',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <span className="text-xs font-medium text-slate-300">종합 정상률</span>
+                    <p className="text-[9px] text-slate-500">24시간 센서 범위 내 비율</p>
+                  </div>
+                  <div className="text-right">
+                    <span className={cn(
+                      'text-xl font-bold',
+                      stats.normalRate24h >= 90 ? 'text-green-400' :
+                      stats.normalRate24h >= 70 ? 'text-yellow-400' : 'text-red-400'
+                    )}>
+                      {stats.normalRate24h}%
+                    </span>
+                    <p className={cn(
+                      'text-[10px] font-medium',
+                      stats.normalRate24h >= 90 ? 'text-green-500' :
+                      stats.normalRate24h >= 70 ? 'text-yellow-500' : 'text-red-500'
+                    )}>
+                      {stats.normalRate24h >= 90 ? '양호' : stats.normalRate24h >= 70 ? '주의' : '위험'}
+                    </p>
+                  </div>
+                </div>
+                {/* 프로그레스 바 with 목표선 */}
+                <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      stats.normalRate24h >= 90 ? 'bg-green-500' :
+                      stats.normalRate24h >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                    )}
+                    style={{ width: `${Math.min(stats.normalRate24h, 100)}%` }}
+                  />
+                  {/* 목표선 90% */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-white/60"
+                    style={{ left: '90%' }}
+                    title="목표: 90%"
+                  />
+                </div>
+                {/* 기준 범례 */}
+                <div className="mt-2 flex items-center justify-between text-[9px]">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-slate-500">&lt;70%</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                      <span className="text-slate-500">70-89%</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-slate-500">≥90%</span>
+                    </span>
+                  </div>
+                  <span className="text-slate-400 font-medium">목표 90%↑</span>
+                </div>
+              </div>
+
+              {/* 힘 피크 */}
+              <div
+                className="p-3 rounded-lg border border-slate-600/50"
+                style={{
+                  backgroundColor: '#1e293b',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+                }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <span className="text-xs font-medium text-slate-300">UR5e 힘 피크 (P95)</span>
+                    <p className="text-[9px] text-slate-500">상위 5% 최대 힘 크기</p>
+                  </div>
+                  <span className={cn(
+                    'text-xl font-bold',
+                    stats.ur5eForceMagP95 <= 80 ? 'text-green-400' :
+                    stats.ur5eForceMagP95 <= 120 ? 'text-yellow-400' : 'text-red-400'
+                  )}>
+                    {stats.ur5eForceMagP95}N
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <span>현재: {stats.ur5eForceMagLive ?? '-'}N</span>
+                  <span className={stats.ur5eForceMagP95 <= 80 ? 'text-green-400' : 'text-amber-400'}>
+                    목표: 80N 이하
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {stats.riskScore > 30 && (
+              <div className="mt-3 p-2 rounded bg-red-500/10 border border-red-500/30 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-red-400" />
+                <span className="text-[11px] text-red-400 font-medium">위험 점수: {stats.riskScore}%</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 2. Axia80 센서 현황 (7일 평균 제거) */}
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Gauge className="h-3.5 w-3.5 text-cyan-400" />
+            <span className="text-xs font-medium text-slate-300">Axia80 힘 센서</span>
+          </div>
+          <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+            6축 힘/토크 센서의 실시간 측정값입니다. Fz(수직 접촉력), Fx(전후), Fy(좌우) 방향의 힘과 합력 크기를 모니터링합니다.
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            <ComparisonCard
+              label="Fz (수직)"
+              live={stats.fzLive}
+              avg24h={stats.fzAvg24h}
+              unit="N"
+              highlight
+            />
+            <ComparisonCard
+              label="Fx (전후)"
+              live={stats.fxLive}
+              avg24h={stats.fxAvg24h}
+              unit="N"
+            />
+            <ComparisonCard
+              label="Fy (좌우)"
+              live={stats.fyLive}
+              avg24h={stats.fyAvg24h}
+              unit="N"
+            />
+            <ComparisonCard
+              label="|F| 힘 크기"
+              live={stats.forceMagLive}
+              avg24h={stats.forceMagAvg24h}
+              unit="N"
+            />
+          </div>
+        </div>
+
+        {/* 3. UR5e 로봇 현황 */}
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <RotateCcw className="h-3.5 w-3.5 text-orange-400" />
+            <span className="text-xs font-medium text-slate-300">UR5e 로봇 상태</span>
+            {stats.tcpSpeedLive === 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400 ml-1">
+                대기/정지 중
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+            협동로봇의 동작 상태입니다. TCP 속도(말단 이동속도), 조인트 토크(관절 부하), 전류(모터 소비전력)를 추적합니다.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <ComparisonCard
+              label="TCP 속도"
+              live={stats.tcpSpeedLive}
+              avg24h={stats.tcpSpeedAvg}
+              unit="mm/s"
+              showAvgLabel="버퍼평균"
+            />
+            <ComparisonCard
+              label="조인트 토크"
+              live={stats.jointTorqueLive}
+              avg24h={stats.jointTorqueAvg}
+              unit="Nm"
+              showAvgLabel="버퍼평균"
+            />
+            <ComparisonCard
+              label="조인트 전류"
+              live={stats.jointCurrentLive}
+              avg24h={stats.jointCurrentAvg}
+              unit="A"
+              showAvgLabel="버퍼평균"
+            />
+          </div>
+        </div>
+
+        {/* 4. 이벤트 현황 + 조치 필요 (통합 카드) - 진한 네이비 배경 (투명도 없음) */}
+        <div
+          className={cn(
+            'rounded-lg border p-3',
+            stats.unresolvedCount > 0
+              ? 'border-amber-500/50'
+              : 'border-slate-600/50'
+          )}
+          style={{
+            backgroundColor: '#0f172a',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)'
+          }}
+        >
+          {/* 헤더: 이벤트 현황 + 조치 필요 배지 */}
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className={cn(
+                'h-4 w-4',
+                stats.unresolvedCount > 0 ? 'text-amber-400' : 'text-slate-400'
+              )} />
+              <span className="text-sm font-medium text-slate-200">이벤트 현황</span>
+              <span className="text-[11px] text-slate-500">
+                전체 {stats.totalEvents}건
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {stats.unresolvedCount > 0 ? (
+                <span className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded bg-red-500/20 text-red-400 font-medium border border-red-500/30">
+                  <Wrench className="h-3 w-3" />
+                  조치 필요 {stats.unresolvedCount}건
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded bg-green-500/20 text-green-400 font-medium border border-green-500/30">
+                  <CheckCircle className="h-3 w-3" />
+                  전체 해결됨
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+            이상 패턴 감지 기록입니다. 충돌(물체 접촉), 과부하(허용 힘 초과), 드리프트(센서 편차)를 분류하여 관리합니다.
+          </p>
+
+          {/* 이벤트 카운터 */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <EventCounter label="충돌" count={stats.collisionTotal} color="red" />
+            <EventCounter label="과부하" count={stats.overloadTotal} color="orange" />
+            <EventCounter label="드리프트" count={stats.driftTotal} color="yellow" />
+          </div>
+
+          {/* 이벤트 상세 리스트 (유형별) */}
+          {stats.totalEvents > 0 && (
+            <div className="border-t border-slate-700/30 pt-3 space-y-2">
+              {/* 충돌 이벤트 */}
+              {stats.collisionEvents.length > 0 && (
+                <div
+                  className="p-2 rounded bg-red-500/15 border border-red-500/30"
+                  style={{
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)'
+                  }}
+                >
+                  <div className="text-[11px] text-red-400 font-medium mb-1.5 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-red-400" />
+                    충돌 이벤트 ({stats.collisionEvents.length}건)
+                  </div>
+                  <div className="space-y-1 max-h-[50px] overflow-y-auto">
+                    {stats.collisionEvents.slice(0, 2).map((ev, idx) => (
+                      <div key={idx} className="text-[11px] pl-3 flex items-center gap-1.5">
+                        <span className="text-slate-300">
+                          {ev.message || ev.errorCode || '충돌 감지'}
+                        </span>
+                        {resolvedEventIds.has(ev.id) && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">
+                            해결완료
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {stats.collisionEvents.length > 2 && (
+                      <div className="text-[10px] text-slate-500 pl-3">
+                        +{stats.collisionEvents.length - 2}건 더보기
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 과부하 이벤트 */}
+              {stats.overloadEvents.length > 0 && (
+                <div
+                  className="p-2 rounded bg-orange-500/15 border border-orange-500/30"
+                  style={{
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)'
+                  }}
+                >
+                  <div className="text-[11px] text-orange-400 font-medium mb-1.5 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-orange-400" />
+                    과부하 이벤트 ({stats.overloadEvents.length}건)
+                  </div>
+                  <div className="space-y-1 max-h-[50px] overflow-y-auto">
+                    {stats.overloadEvents.slice(0, 2).map((ev, idx) => (
+                      <div key={idx} className="text-[11px] pl-3 flex items-center gap-1.5">
+                        <span className="text-slate-300">
+                          {ev.message || ev.errorCode || '과부하 감지'}
+                        </span>
+                        {resolvedEventIds.has(ev.id) && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">
+                            해결완료
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {stats.overloadEvents.length > 2 && (
+                      <div className="text-[10px] text-slate-500 pl-3">
+                        +{stats.overloadEvents.length - 2}건 더보기
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 드리프트 이벤트 */}
+              {stats.driftEvents.length > 0 && (
+                <div
+                  className="p-2 rounded bg-yellow-500/15 border border-yellow-500/30"
+                  style={{
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)'
+                  }}
+                >
+                  <div className="text-[11px] text-yellow-400 font-medium mb-1.5 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                    드리프트 이벤트 ({stats.driftEvents.length}건)
+                  </div>
+                  <div className="space-y-1 max-h-[50px] overflow-y-auto">
+                    {stats.driftEvents.slice(0, 2).map((ev, idx) => (
+                      <div key={idx} className="text-[11px] pl-3 flex items-center gap-1.5">
+                        <span className="text-slate-300">
+                          {ev.message || ev.errorCode || '드리프트 감지'}
+                        </span>
+                        {resolvedEventIds.has(ev.id) && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">
+                            해결완료
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {stats.driftEvents.length > 2 && (
+                      <div className="text-[10px] text-slate-500 pl-3">
+                        +{stats.driftEvents.length - 2}건 더보기
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 조치 필요 항목 */}
+          {stats.actions.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-700/30">
+              <div className="text-[11px] text-amber-400 font-medium mb-2 flex items-center gap-1.5">
+                <Wrench className="h-3.5 w-3.5" />
+                권장 조치
+              </div>
+              <div className="space-y-1.5">
+                {stats.actions.map((action, idx) => (
+                  <div key={idx} className="flex items-center gap-2 pl-1">
+                    <ArrowRight className={cn(
+                      'h-3 w-3 shrink-0',
+                      action.type === 'danger' ? 'text-red-400' : 'text-amber-400'
+                    )} />
+                    <span className={cn(
+                      'text-[11px]',
+                      action.type === 'danger' ? 'text-red-300' : 'text-amber-300'
+                    )}>
+                      {action.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 해결된 경우 */}
+          {stats.totalEvents > 0 && stats.unresolvedCount === 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-center gap-2 py-2">
+              <CheckCircle className="h-4 w-4 text-green-400" />
+              <span className="text-[12px] text-green-400 font-medium">
+                {stats.resolvedCount}건 모두 해결 완료
+              </span>
             </div>
           )}
         </div>
 
-        {/* 고위험 예측 경고 */}
-        {predictions && predictions.high_risk_count > 0 && (
-          <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30">
-            <div className="flex items-center gap-2 text-red-400">
-              <Zap className="h-4 w-4" />
-              <span className="text-xs font-medium">
-                고위험 예측 {predictions.high_risk_count}건 감지됨 - 즉시 점검 권장
-              </span>
-            </div>
-          </div>
-        )}
+        {/* 5. 데이터 정보 */}
+        <div className="text-[10px] text-slate-500 flex items-center justify-between">
+          <span>SSE버퍼: {stats.sseBufferSize} | 통합스트림: {stats.integratedBufferSize}</span>
+          <span>24시간 샘플: {stats.sampleCount24h}건</span>
+        </div>
       </div>
     </div>
   );
 }
 
-// 통계 카드 컴포넌트
-function StatCard({
+// === 비교 카드 (7일 평균 제거) ===
+function ComparisonCard({
   label,
-  value,
-  icon: Icon,
-  color,
-  bgColor,
-}: {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bgColor: string;
-}) {
-  return (
-    <div className={cn('rounded-lg p-2 text-center', bgColor)}>
-      <div className="flex items-center justify-center gap-1 mb-0.5">
-        <Icon className={cn('h-3 w-3', color)} />
-        <span className="text-[10px] text-slate-400 font-medium">{label}</span>
-      </div>
-      <div className={cn('text-base font-bold', color)}>{value}</div>
-    </div>
-  );
-}
-
-// 센서 평균값 카드
-function SensorAvgCard({
-  label,
-  value,
+  live,
+  avg24h,
   unit,
   highlight = false,
+  showAvgLabel,
 }: {
   label: string;
-  value: number;
+  live: number | null;
+  avg24h: number;
   unit: string;
   highlight?: boolean;
+  showAvgLabel?: string;
 }) {
   return (
-    <div className={cn(
-      'rounded p-1.5 text-center',
-      highlight ? 'bg-blue-500/15 border border-blue-500/30' : 'bg-slate-700/30'
-    )}>
+    <div
+      className={cn(
+        'rounded-lg border p-2',
+        highlight
+          ? 'border-blue-500/60'
+          : 'border-slate-600/50'
+      )}
+      style={{
+        backgroundColor: highlight ? '#172554' : '#1e293b',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+      }}
+    >
       <div className={cn(
-        'text-[10px] font-medium mb-0.5',
-        highlight ? 'text-blue-300' : 'text-slate-400'
+        'text-[11px] font-medium mb-1.5',
+        highlight ? 'text-blue-300' : 'text-slate-300'
       )}>
         {label}
       </div>
-      <div className={cn(
-        'text-sm font-bold',
-        highlight ? 'text-blue-400' : 'text-slate-200'
-      )}>
-        {value}
-        <span className="text-[9px] font-normal ml-0.5 text-slate-500">{unit}</span>
+
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-emerald-400">● 현재</span>
+          <span className="text-sm font-bold tabular-nums text-white">
+            {live != null ? live : '-'}
+            <span className="text-[10px] font-normal text-slate-500 ml-0.5">{unit}</span>
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-blue-400">● {showAvgLabel || '하루평균'}</span>
+          <span className="text-sm font-bold text-slate-300 tabular-nums">
+            {avg24h}
+            <span className="text-[10px] font-normal text-slate-500 ml-0.5">{unit}</span>
+          </span>
+        </div>
       </div>
+    </div>
+  );
+}
+
+// === 이벤트 카운터 ===
+function EventCounter({
+  label,
+  count,
+  color,
+}: {
+  label: string;
+  count: number;
+  color: 'red' | 'orange' | 'yellow';
+}) {
+  // 색상 카드들은 투명도 유지 (이벤트 현황 특성)
+  const colorClass = {
+    red: count > 0 ? 'text-red-400 bg-red-500/25 border-red-500/40' : 'text-slate-500 border-slate-600/50',
+    orange: count > 0 ? 'text-orange-400 bg-orange-500/25 border-orange-500/40' : 'text-slate-500 border-slate-600/50',
+    yellow: count > 0 ? 'text-yellow-400 bg-yellow-500/25 border-yellow-500/40' : 'text-slate-500 border-slate-600/50',
+  }[color];
+
+  return (
+    <div
+      className={cn('rounded p-1.5 text-center border', colorClass)}
+      style={{
+        backgroundColor: count > 0 ? undefined : '#1e293b',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04)'
+      }}
+    >
+      <div className="text-base font-bold">{count}</div>
+      <div className="text-[9px]">{label}</div>
     </div>
   );
 }

@@ -1,12 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   Controls,
   Background,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
   Node,
   Edge,
   ConnectionMode,
@@ -129,7 +131,11 @@ function convertEdges(edges: GraphEdge[]): Edge[] {
   }));
 }
 
-export function SubGraph({ nodes, edges, centerNodeId, onNodeClick, onNodeHover }: SubGraphProps) {
+// Inner component that uses ReactFlow hooks
+function SubGraphInner({ nodes, edges, centerNodeId, onNodeClick, onNodeHover }: SubGraphProps) {
+  const { fitView } = useReactFlow();
+  const initialLoadRef = useRef(true);
+
   const initialNodes = useMemo(
     () => layoutNodes(nodes, edges, centerNodeId),
     [nodes, edges, centerNodeId]
@@ -146,6 +152,18 @@ export function SubGraph({ nodes, edges, centerNodeId, onNodeClick, onNodeHover 
   useEffect(() => {
     setEdges(initialEdges);
   }, [initialEdges, setEdges]);
+
+  // 노드가 변경되면 중앙으로 fitView 실행
+  useEffect(() => {
+    if (flowNodes.length > 0) {
+      // 초기 로드 시 약간의 딜레이 후 fitView 실행
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.3, duration: initialLoadRef.current ? 0 : 300 });
+        initialLoadRef.current = false;
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [flowNodes, fitView]);
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
@@ -166,28 +184,37 @@ export function SubGraph({ nodes, edges, centerNodeId, onNodeClick, onNodeHover 
   }, [onNodeHover]);
 
   return (
+    <ReactFlow
+      nodes={flowNodes}
+      edges={flowEdges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onNodeClick={handleNodeClick}
+      onNodeMouseEnter={handleNodeMouseEnter}
+      onNodeMouseLeave={handleNodeMouseLeave}
+      nodeTypes={nodeTypes}
+      connectionMode={ConnectionMode.Loose}
+      fitView
+      fitViewOptions={{ padding: 0.3 }}
+      minZoom={0.5}
+      maxZoom={2}
+      proOptions={{ hideAttribution: true }}
+    >
+      <Background color="#334155" gap={20} />
+      <Controls
+        className="!bg-slate-800 !border-slate-700 [&>button]:!bg-slate-800 [&>button]:!border-slate-700 [&>button]:!text-slate-300"
+      />
+    </ReactFlow>
+  );
+}
+
+// Wrapper component with ReactFlowProvider
+export function SubGraph(props: SubGraphProps) {
+  return (
     <div className="h-full w-full bg-slate-900/50 rounded-lg border border-slate-700/50">
-      <ReactFlow
-        nodes={flowNodes}
-        edges={flowEdges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeClick={handleNodeClick}
-        onNodeMouseEnter={handleNodeMouseEnter}
-        onNodeMouseLeave={handleNodeMouseLeave}
-        nodeTypes={nodeTypes}
-        connectionMode={ConnectionMode.Loose}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.5}
-        maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background color="#334155" gap={20} />
-        <Controls
-          className="!bg-slate-800 !border-slate-700 [&>button]:!bg-slate-800 [&>button]:!border-slate-700 [&>button]:!text-slate-300"
-        />
-      </ReactFlow>
+      <ReactFlowProvider>
+        <SubGraphInner {...props} />
+      </ReactFlowProvider>
     </div>
   );
 }

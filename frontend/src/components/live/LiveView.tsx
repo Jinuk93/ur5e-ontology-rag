@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2, Radio, RefreshCw, Bell, BellOff, Volume2, VolumeX } from 'lucide-react';
+import { Loader2, Radio, RefreshCw, Bell, BellOff, Volume2, VolumeX, Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { RiskAlertBar } from './RiskAlertBar';
 import { ObjectCard } from './ObjectCard';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUIStore } from '@/stores/uiStore';
 import { useAlertStore } from '@/stores/alertStore';
+import { useEventResolveStore } from '@/stores/eventResolveStore';
 import { useSensorReadings, useSensorEvents, usePredictions } from '@/hooks/useApi';
 import { useSensorSSE, useIntegratedSSE } from '@/hooks/useSSE';
 import { useAnomalyAlert } from '@/hooks/useAnomalyAlert';
@@ -41,6 +42,7 @@ export function LiveView() {
   const t = useTranslations('live');
   const { selectedEntity, setSelectedEntity, setGraphCenterNode, setCurrentView } = useUIStore();
   const { settings, updateSettings, detectedEvents } = useAlertStore();
+  const { resolvedEventIds } = useEventResolveStore();
   const [streamMode, setStreamMode] = useState<StreamMode>('sse');
 
   // SSE mode
@@ -161,49 +163,7 @@ export function LiveView() {
     );
   }, [entities, sensorState]);
 
-  // Generate alerts from current state
-  const alerts: RiskAlert[] = useMemo(() => {
-    const result: RiskAlert[] = [];
-
-    const criticalEntities = enrichedEntities.filter((e) => e.state === 'critical');
-    const warningEntities = enrichedEntities.filter((e) => e.state === 'warning');
-
-    if (criticalEntities.length > 0) {
-      result.push({
-        id: 'critical',
-        severity: 'critical',
-        title: `${criticalEntities.map((e) => e.name).join(', ')} 위험`,
-        timestamp: new Date().toISOString(),
-        entityId: criticalEntities[0].id,
-        count: criticalEntities.length,
-      });
-    }
-
-    if (warningEntities.length > 0) {
-      result.push({
-        id: 'warning',
-        severity: 'warning',
-        title: `${warningEntities.map((e) => e.name).join(', ')} 경고`,
-        timestamp: new Date().toISOString(),
-        entityId: warningEntities[0].id,
-        count: warningEntities.length,
-      });
-    }
-
-    if (result.length === 0) {
-      result.push({
-        id: 'normal',
-        severity: 'info',
-        title: '정상 동작',
-        timestamp: new Date().toISOString(),
-        count: enrichedEntities.length + 1, // +1 for EventDetectionCard
-      });
-    }
-
-    return result;
-  }, [enrichedEntities]);
-
-  // Convert API events to EventItem
+  // Convert API events to EventItem (alerts보다 먼저 정의)
   const events: EventItem[] = useMemo(() => {
     if (!eventsData?.events) return [];
     return eventsData.events.map((e) => ({
@@ -222,6 +182,65 @@ export function LiveView() {
       },
     }));
   }, [eventsData]);
+
+  // Generate alerts from current state + events (이벤트 감지 연동)
+  const alerts: RiskAlert[] = useMemo(() => {
+    const result: RiskAlert[] = [];
+
+    // 센서 상태 기반
+    const criticalEntities = enrichedEntities.filter((e) => e.state === 'critical');
+    const warningEntities = enrichedEntities.filter((e) => e.state === 'warning');
+
+    // 이벤트 기반 (미해결 이벤트만 카운트)
+    const unresolvedEvents = events.filter((e) => !resolvedEventIds.has(e.id));
+    const criticalEvents = unresolvedEvents.filter((e) => e.type === 'critical');
+    const warningEvents = unresolvedEvents.filter((e) => e.type === 'warning');
+
+    // EventDetectionCard 상태 결정 (이벤트 기반)
+    const eventCardStatus = criticalEvents.length > 0 ? 'critical' : warningEvents.length > 0 ? 'warning' : 'normal';
+
+    // 긴급 (센서 + EventDetectionCard가 critical이면 +1)
+    const criticalCount = criticalEntities.length + (eventCardStatus === 'critical' ? 1 : 0);
+    if (criticalCount > 0) {
+      result.push({
+        id: 'critical',
+        severity: 'critical',
+        title: criticalEntities.length > 0
+          ? `${criticalEntities.map((e) => e.name).join(', ')} 위험`
+          : `이벤트 ${criticalEvents.length}건`,
+        timestamp: new Date().toISOString(),
+        entityId: criticalEntities[0]?.id,
+        count: criticalCount,
+      });
+    }
+
+    // 경고 (센서 + EventDetectionCard가 warning이면 +1)
+    const warningCount = warningEntities.length + (eventCardStatus === 'warning' ? 1 : 0);
+    if (warningCount > 0) {
+      result.push({
+        id: 'warning',
+        severity: 'warning',
+        title: warningEntities.length > 0
+          ? `${warningEntities.map((e) => e.name).join(', ')} 경고`
+          : `이벤트 ${warningEvents.length}건`,
+        timestamp: new Date().toISOString(),
+        entityId: warningEntities[0]?.id,
+        count: warningCount,
+      });
+    }
+
+    // 정상 (센서 + EventDetectionCard가 normal이면 +1)
+    const normalCount = enrichedEntities.filter((e) => e.state === 'normal').length + (eventCardStatus === 'normal' ? 1 : 0);
+    result.push({
+      id: 'normal',
+      severity: 'info',
+      title: '정상 동작',
+      timestamp: new Date().toISOString(),
+      count: normalCount,
+    });
+
+    return result;
+  }, [enrichedEntities, events, resolvedEventIds]);
 
   const handleEntityClick = (entity: EntityInfo) => {
     setSelectedEntity(entity);
@@ -262,7 +281,33 @@ export function LiveView() {
       <RiskAlertBar
         alerts={alerts}
         onAlertClick={handleAlertClick}
-        entityNames={enrichedEntities.map((e) => e.name)}
+        entityNamesBySeverity={(() => {
+          // 이벤트 기반 (미해결 이벤트만 카운트)
+          const unresolvedEvents = events.filter((e) => !resolvedEventIds.has(e.id));
+          const criticalEvents = unresolvedEvents.filter((e) => e.type === 'critical');
+          const warningEvents = unresolvedEvents.filter((e) => e.type === 'warning');
+          const eventCardStatus = criticalEvents.length > 0 ? 'critical' : warningEvents.length > 0 ? 'warning' : 'normal';
+
+          // 센서 카드별 상태
+          const criticalNames = enrichedEntities.filter((e) => e.state === 'critical').map((e) => e.name);
+          const warningNames = enrichedEntities.filter((e) => e.state === 'warning').map((e) => e.name);
+          const normalNames = enrichedEntities.filter((e) => e.state === 'normal').map((e) => e.name);
+
+          // 이벤트 감지 카드 상태에 따라 추가
+          if (eventCardStatus === 'critical') {
+            criticalNames.push('이벤트 감지');
+          } else if (eventCardStatus === 'warning') {
+            warningNames.push('이벤트 감지');
+          } else {
+            normalNames.push('이벤트 감지');
+          }
+
+          return {
+            critical: criticalNames,
+            warning: warningNames,
+            normal: normalNames,
+          };
+        })()}
       />
 
       {/* Main Content */}
@@ -359,7 +404,39 @@ export function LiveView() {
           </div>
         </div>
 
+        {/* 시스템 구분선 - 모니터링 객체와 통합 운영 현황 사이 */}
+        <div className="my-6 border-t border-slate-700/50" />
+
+        {/* Statistics Summary - 통합 운영 현황 (차트 위에 배치) */}
+        <StatisticsSummary
+          sseReadings={readings}
+          integratedData={integratedData}
+          latestIntegratedData={latestIntegratedData}
+          events={events}
+          predictions={
+            predictionsData?.predictions
+              ? {
+                  total_patterns: predictionsData.predictions.length,
+                  high_risk_count: predictionsData.predictions.filter(
+                    (p) => p.risk_level === 'high' || p.risk_level === 'critical'
+                  ).length,
+                }
+              : undefined
+          }
+        />
+
+        {/* 구분선 - 통합 운영 현황과 차트 사이 */}
+        <div className="my-6 border-t border-slate-700/50" />
+
         {/* Chart - UR5e + Axia80 통합 모니터링 */}
+        {/* Demo notice - 차트 바깥에 표시 */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <Info className="h-3.5 w-3.5 text-red-400 shrink-0" />
+          <span className="text-xs text-red-400">
+            데모 버전: 2024-01-15 ~ 2024-01-21 (7일) 샘플 데이터가 제공됩니다.
+          </span>
+        </div>
+
         <div className="mb-6">
           <RealtimeChart
             data={readings}
@@ -372,13 +449,19 @@ export function LiveView() {
           />
         </div>
 
+        {/* 구분선 - 차트와 이벤트 리스트 사이 */}
+        <div className="my-6 border-t border-slate-700/50" />
+
         {/* Events */}
         <EventList
           events={events}
           predictions={predictionsData?.predictions}
           onEventClick={handleEventClick}
-          maxHeight="200px"
+          maxHeight="350px"
         />
+
+        {/* 구분선 - 이벤트 리스트와 상관분석 사이 */}
+        <div className="my-6 border-t border-slate-700/50" />
 
         {/* UR5e + Axia80 실시간 상관분석 (Simulated) */}
         <CorrelationTable
@@ -386,21 +469,6 @@ export function LiveView() {
           latestData={latestIntegratedData}
           isConnected={integratedConnected}
           maxHeight="300px"
-          detectedEvents={detectedEvents}
-        />
-
-        {/* Statistics Summary */}
-        <StatisticsSummary
-          predictions={
-            predictionsData?.predictions
-              ? {
-                  total_patterns: predictionsData.predictions.length,
-                  high_risk_count: predictionsData.predictions.filter(
-                    (p) => p.risk_level === 'high' || p.risk_level === 'critical'
-                  ).length,
-                }
-              : undefined
-          }
         />
       </div>
     </div>
