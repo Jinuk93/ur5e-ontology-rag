@@ -2,13 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, Bot, User, FileText, Network, ChevronDown, ChevronUp, ExternalLink, HelpCircle, AlertCircle, Lightbulb, Sparkles } from 'lucide-react';
+import { Send, Loader2, Bot, User, FileText, Network, ChevronDown, ChevronUp, ExternalLink, HelpCircle, AlertCircle, Lightbulb, Sparkles, Key, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useChatStore, ChatMessage } from '@/stores/chatStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useApiKeyStore } from '@/stores/apiKeyStore';
 import { EvidenceDrawer } from '@/components/evidence/EvidenceDrawer';
+import { ApiKeyModal } from '@/components/chat/ApiKeyModal';
 import { useChatMutation, usePrefetchEvidence } from '@/hooks/useApi';
 import { chatMessage, fadeIn } from '@/lib/animations';
 import type { ChatResponse } from '@/types/api';
@@ -19,7 +21,16 @@ export function ChatPanel() {
   const [selectedEvidence, setSelectedEvidence] = useState<{ traceId: string; response: ChatResponse } | null>(null);
   const { messages, addMessage, updateMessage, isLoading, setLoading } = useChatStore();
   const { selectedEntity, currentView } = useUIStore();
+  const { isKeyRegistered, openKeyModal, initializeFromEnv } = useApiKeyStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // .env.local에서 API 키 로드
+  useEffect(() => {
+    initializeFromEnv();
+  }, [initializeFromEnv]);
+
+  // API 키 미등록 시 챗봇 비활성화
+  const isChatDisabled = !isKeyRegistered;
 
   const chatMutation = useChatMutation();
   const prefetchEvidence = usePrefetchEvidence();
@@ -40,7 +51,7 @@ export function ChatPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isChatDisabled) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -89,7 +100,7 @@ export function ChatPanel() {
 
   // 예시 질문 클릭 시 바로 전송
   const handleDirectSubmit = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || isChatDisabled) return;
 
     const userMessage = text.trim();
 
@@ -149,8 +160,22 @@ export function ChatPanel() {
           <Sparkles className="h-4 w-4 text-white drop-shadow-sm" />
         </div>
         <span className="font-semibold text-white">AI Assistant</span>
+
+        {/* API Key 등록 버튼 */}
+        <button
+          onClick={openKeyModal}
+          className={`ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            isKeyRegistered
+              ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
+              : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30'
+          }`}
+        >
+          <Key className="h-3.5 w-3.5" />
+          {isKeyRegistered ? 'API Key' : 'API Key 등록'}
+        </button>
+
         {selectedEntity && (
-          <Badge variant="outline" className="ml-auto text-xs text-slate-400 border-slate-600">
+          <Badge variant="outline" className="text-xs text-slate-400 border-slate-600">
             {selectedEntity.name} 선택됨
           </Badge>
         )}
@@ -203,26 +228,49 @@ export function ChatPanel() {
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="border-t border-slate-700/50 p-4">
+        {/* API 키 미등록 시 경고 메시지 */}
+        {isChatDisabled && (
+          <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+            <p className="text-xs text-amber-300">
+              챗봇을 사용하려면{' '}
+              <button
+                type="button"
+                onClick={openKeyModal}
+                className="underline hover:text-amber-200 font-medium"
+              >
+                OpenAI API Key를 등록
+              </button>
+              해주세요.
+            </p>
+          </div>
+        )}
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="메시지를 입력하세요..."
-            disabled={isLoading}
+            placeholder={isChatDisabled ? "API Key를 먼저 등록해주세요..." : "메시지를 입력하세요..."}
+            disabled={isLoading || isChatDisabled}
             className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || !input.trim() || isChatDisabled}
             className="flex h-10 w-10 items-center justify-center rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             style={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2)'
+              background: isChatDisabled
+                ? 'linear-gradient(135deg, #475569 0%, #334155 100%)'
+                : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              boxShadow: isChatDisabled
+                ? 'none'
+                : '0 4px 12px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2)'
             }}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin text-white" />
+            ) : isChatDisabled ? (
+              <Lock className="h-4 w-4 text-slate-400" />
             ) : (
               <Send className="h-4 w-4 text-white" />
             )}
@@ -237,6 +285,9 @@ export function ChatPanel() {
         traceId={selectedEvidence?.traceId ?? null}
         response={selectedEvidence?.response}
       />
+
+      {/* API Key Modal */}
+      <ApiKeyModal />
     </div>
   );
 }

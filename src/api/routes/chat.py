@@ -1,15 +1,19 @@
-import httpx
-from datetime import datetime, timedelta
 """
 채팅 라우트
 
 Chat 및 Evidence 관련 엔드포인트
 """
 
+import httpx
+from datetime import datetime, timedelta
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
+from openai import OpenAI
+
+from src.config import get_settings
+from src.rag import ResponseGenerator
 
 from src.api.schemas import (
     ChatRequest,
@@ -81,8 +85,38 @@ def _enrich_graph_node(node: Dict[str, Any], analysis: Dict[str, Any]) -> GraphN
     )
 
 
+def _create_llm_client(api_key: Optional[str]) -> Optional[OpenAI]:
+    """OpenAI 클라이언트 생성 (API 키 우선순위: 헤더 > 서버 설정)"""
+    # 1. 클라이언트 제공 API 키 사용
+    if api_key and api_key.startswith("sk-"):
+        return OpenAI(api_key=api_key)
+
+    # 2. 서버 설정의 API 키 사용 (fallback)
+    settings = get_settings()
+    if settings.openai_api_key:
+        return OpenAI(api_key=settings.openai_api_key)
+
+    return None
+
+
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    x_openai_api_key: Optional[str] = Header(None, alias="X-OpenAI-API-Key"),
+):
+    """
+    채팅 API (Phase12 엔진 연동)
+
+    사용자 질문을 받아 온톨로지 기반 추론 후 응답을 반환합니다.
+
+    - **query**: 사용자 질문 (예: "Fz가 -350N인데 이게 뭐야?") - 권장
+    - **message**: 사용자 질문 (하위 호환, query 없을 때 사용)
+    - **context**: 추가 컨텍스트 (shift, product 등)
+    - **X-OpenAI-API-Key**: OpenAI API 키 (헤더로 전달)
+
+    응답에는 trace_id가 포함되며, /api/evidence/{trace_id}로
+    근거 상세 정보를 조회할 수 있습니다.
+    """
     # --- 이벤트 통계 fetch 유틸 ---
     async def fetch_7d_stats():
         """7일치 이벤트/센서/정량 데이터 API로 집계"""
@@ -132,18 +166,6 @@ async def chat(request: ChatRequest):
             logger.error(f"7d stats fetch error: {ex}")
             return None
 
-    """
-    채팅 API (Phase12 엔진 연동)
-
-    사용자 질문을 받아 온톨로지 기반 추론 후 응답을 반환합니다.
-
-    - **query**: 사용자 질문 (예: "Fz가 -350N인데 이게 뭐야?") - 권장
-    - **message**: 사용자 질문 (하위 호환, query 없을 때 사용)
-    - **context**: 추가 컨텍스트 (shift, product 등)
-
-    응답에는 trace_id가 포함되며, /api/evidence/{trace_id}로
-    근거 상세 정보를 조회할 수 있습니다.
-    """
     try:
         # 1. 질문 분류
         classifier = _get_classifier()
@@ -166,8 +188,15 @@ async def chat(request: ChatRequest):
             request.context
         )
 
-        # 3. 응답 생성
-        generator = _get_generator()
+        # 3. 응답 생성 (LLM 클라이언트가 있으면 사용)
+        llm_client = _create_llm_client(x_openai_api_key)
+
+        # LLM 클라이언트가 있으면 새 Generator 생성, 없으면 기본 사용
+        if llm_client:
+            generator = ResponseGenerator(llm_client=llm_client)
+        else:
+            generator = _get_generator()
+
         response = generator.generate(
             classification,
             reasoning,

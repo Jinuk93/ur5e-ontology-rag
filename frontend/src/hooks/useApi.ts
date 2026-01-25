@@ -18,6 +18,7 @@ import {
   getOntologyNeighbors,
   getOntologyGraph,
 } from '@/lib/api';
+import { useApiKeyStore } from '@/stores/apiKeyStore';
 import type { ChatRequest, ChatResponse } from '@/types/api';
 
 // Query Keys
@@ -87,12 +88,16 @@ export function useEvidence(traceId: string | null) {
 
 /**
  * Chat mutation hook
+ *
+ * API 키를 zustand store에서 자동으로 가져와 헤더로 전송합니다.
+ * 보안: API 키는 request body가 아닌 header로 전송됩니다.
  */
 export function useChatMutation() {
   const queryClient = useQueryClient();
+  const apiKey = useApiKeyStore((state) => state.apiKey);
 
   return useMutation({
-    mutationFn: (request: ChatRequest) => sendChatMessage(request),
+    mutationFn: (request: ChatRequest) => sendChatMessage(request, apiKey),
     onSuccess: (data: ChatResponse) => {
       // Pre-populate evidence cache if we have a traceId
       if (data.traceId && data.evidence) {

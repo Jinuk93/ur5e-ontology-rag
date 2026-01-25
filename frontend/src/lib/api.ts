@@ -166,12 +166,29 @@ export function buildChatRequest(req: ChatRequest): Record<string, unknown> {
 }
 
 // API Functions
-export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
+
+/**
+ * 채팅 메시지 전송 (API 키 보안 전송)
+ *
+ * @param request - 채팅 요청
+ * @param apiKey - OpenAI API 키 (선택, 헤더로 전송)
+ */
+export async function sendChatMessage(
+  request: ChatRequest,
+  apiKey?: string | null
+): Promise<ChatResponse> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // API 키가 있으면 헤더에 추가 (보안: body가 아닌 header로 전송)
+  if (apiKey) {
+    headers['X-OpenAI-API-Key'] = apiKey;
+  }
+
   const response = await fetch(`${API_BASE_URL}/api/chat`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(buildChatRequest(request)),
   });
 
