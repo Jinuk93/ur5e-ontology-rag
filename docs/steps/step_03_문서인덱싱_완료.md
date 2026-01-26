@@ -16,10 +16,10 @@
 
 | 파일 | 라인 수 | 상태 | 설명 |
 |------|--------|------|------|
-| `src/embedding/__init__.py` | 37 | 신규 작성 | 패키지 초기화 및 모듈 노출 |
-| `src/embedding/embedder.py` | 115 | 신규 작성 | OpenAI 임베딩 생성 |
-| `src/embedding/vector_store.py` | 401 | 신규 작성 | ChromaDB 벡터 저장소 + 리랭킹 검색 |
-| `src/embedding/reranker.py` | 226 | 신규 작성 | Cross-Encoder 리랭커 (2026-01-26 추가) |
+| `src/embedding/__init__.py` | 36 | 신규 작성 | 패키지 초기화 및 모듈 노출 |
+| `src/embedding/embedder.py` | 163 | 신규 작성 | OpenAI 임베딩 생성 |
+| `src/embedding/vector_store.py` | 400 | 신규 작성 | ChromaDB 벡터 저장소 + 리랭킹 검색 |
+| `src/embedding/reranker.py` | 241 | 신규 작성 | Cross-Encoder 리랭커 (2026-01-26 추가) |
 | `scripts/run_embedding.py` | 200 | 업데이트 | 임베딩 실행 스크립트 |
 
 ### 2.2 저장소 (생성됨)

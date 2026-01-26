@@ -10,335 +10,415 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![Tests](https://img.shields.io/badge/Tests-173%20passed-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
 
 ---
 
-## 1. 프로젝트 개요
+## 시스템 개요
 
-### 1.1 배경
+```mermaid
+flowchart TB
+    subgraph Input["📥 데이터 소스"]
+        direction TB
+        D1["🤖 UR5e 로봇<br/>Joint/TCP/Error"]
+        D2["📡 Axia80 센서<br/>6축 F/T (125Hz)"]
+        D3["📄 문서 3종<br/>722 chunks"]
+    end
 
-대한민국 제조업의 미래는 <b>AX(AI Transformation)</b>에 있습니다.<br>
-기존 룰베이스(IF-THEN) 시스템은 단순 임계값 판단만 가능하지만, 현장에서 필요한 것은
+    subgraph Core["🧠 온톨로지 RAG 엔진"]
+        direction TB
+        subgraph Ontology["온톨로지 (199 엔티티)"]
+            O1[Equipment<br/>12개]
+            O2[Measurement<br/>22개]
+            O3[Knowledge<br/>145개]
+            O4[Context<br/>20개]
+        end
 
-- "왜 이런 상황이 발생했는가?" <b>(원인 추론)</b>
-- "내일 어떤 문제가 생길까?" <b>(예측)</b>
-- "지금 이 맥락에서 최선의 조치는?" <b>(맥락 기반 판단)</b>
+        subgraph Pipeline["질의 파이프라인"]
+            P1[QueryClassifier<br/>질문 분류]
+            P2[OntologyEngine<br/>그래프 추론]
+            P3[HybridRetriever<br/>Vector+Rerank]
+            P4[ResponseGenerator<br/>응답 생성]
+        end
+    end
 
-이 프로젝트는 **온톨로지 기반 관계 추론**으로 이 간극을 메우는 개념 증명입니다.
+    subgraph Output["📤 출력"]
+        direction TB
+        C["💬 자연어 응답"]
+        V["🔗 온톨로지 그래프"]
+        L["📊 실시간 대시보드"]
+        E["📋 근거 추적"]
+    end
 
-### 1.2 목표
-
-| 구분 | 목표 |
-|------|------|
-| **1차** | 온톨로지 기반 제조 AI의 개념 증명 (PoC) |
-| **최종** | 룰베이스 → 온톨로지 전환의 가치 입증 |
-
-### 1.3 핵심 기능
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         핵심 기능                                │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  🔍 관계 기반 추론     "Fz가 -350N인데?" → 원인/예측/권장조치    │
-│  📊 패턴 감지         충돌, 과부하, 드리프트, 진동 자동 감지     │
-│  🌐 온톨로지 그래프    클릭으로 탐색하는 지식 관계 시각화         │
-│  📄 근거 추적         모든 응답에 온톨로지 경로 + 문서 출처 제시  │
-│  ⚡ 실시간 모니터링    SSE 기반 센서 데이터 스트리밍              │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 1.4 PoC 구현 범위
-
-> **현재 PoC에서 구현된 데이터 범위** (2026-01 기준)
-
-| 데이터 소스 | 상태 | 설명 |
-|------------|------|------|
-| **Axia80 6축 센서** | ✅ 완전 구현 | Fx, Fy, Fz, Tx, Ty, Tz (7일 시뮬레이션) |
-| **UR5e 에러 코드** | ✅ 구현됨 | C153, C189 등 (이벤트 데이터에 포함) |
-| **패턴 감지** | ✅ 구현됨 | 충돌, 과부하, 드리프트, 진동 (17개 패턴) |
-| **문서 벡터화** | ✅ 구현됨 | 722 chunks (매뉴얼, 에러코드 문서) |
-| UR5e 조인트 각도 | 🔜 확장 예정 | Joint1~6 (rad) |
-| UR5e TCP 위치 | 🔜 확장 예정 | X, Y, Z, Rx, Ry, Rz |
-| UR5e 동작 모드 | 🔜 확장 예정 | idle, pick, place, move |
-
-**현재 이기종 결합**<br>
-: `Axia80 센서값` + `UR5e 에러코드` = ✅ 통합 완료
-
----
-
-## 2. UR5e 협동로봇
-
-### 2.1 개요
-
-| 항목 | 내용 |
-|------|------|
-| **제조사** | Universal Robots (덴마크) |
-| **모델명** | UR5e (e-Series) |
-| **유형** | 6축 협동로봇 |
-| **페이로드** | 5kg |
-| **리치** | 850mm |
-
-### 2.2 핵심 데이터
-
-UR5e는 다음과 같은 데이터를 생성합니다
-
-| 데이터 유형 | 설명 | 예시 |
-|-------------|------|------|
-| **조인트 각도** | 6축 관절 위치 | Joint1~6 (rad) |
-| **TCP 위치** | 툴 끝점 좌표 | X, Y, Z, Rx, Ry, Rz |
-| **에러 코드** | 상태/오류 정보 | C189, C153, C204 등 |
-| **동작 모드** | 현재 작업 상태 | idle, pick, place, move |
-
-### 2.3 에러 코드 체계
-
-```
-C1xx
-: Safety 관련 (예: C153 충돌 감지)
-C2xx
-: Joint 관련 (예: C204 진동 경고)
-C3xx
-: Communication 관련
+    D1 --> Ontology
+    D2 --> Ontology
+    D3 --> P3
+    Ontology --> P2
+    P1 --> P2
+    P2 --> P4
+    P3 --> P4
+    P4 --> C
+    P2 --> V
+    D2 --> L
+    P4 --> E
 ```
 
 ---
 
-## 3. Axia80 힘/토크 센서
+## 프로젝트 현황 (v2.0)
 
-### 3.1 개요
+| 항목 | v1.0 | v2.0 (현재) | 비고 |
+|------|------|-------------|------|
+| **온톨로지 엔티티** | 54개 | **199개** | +269% |
+| **온톨로지 관계** | 62개 | **176개** | +184% |
+| **에러 코드** | 14개 | **99개** | C001~C900 |
+| **원인(Cause)** | 6개 | **20개** | 카테고리별 분류 |
+| **해결책(Resolution)** | 5개 | **15개** | 단계별 가이드 |
+| **패턴(Pattern)** | 4개 | **8개** | 충돌/과부하/진동 등 |
+| **문서 청크** | 722개 | 722개 | 임베딩 완료 |
+| **테스트 케이스** | - | **173개** | 100% 통과 |
 
-| 항목 | 내용 |
-|------|------|
-| **제조사** | ATI Industrial Automation (미국) |
-| **모델명** | Axia80 |
-| **유형** | 6축 Force/Torque 센서 |
-| **직경** | 82mm |
-| **샘플링** | 125Hz |
+---
 
-### 3.2 6축 측정값
+## 핵심 기능
 
-로봇 끝단에 장착되어 <b>힘(Force)</b>과 <b>토크(Torque)</b>를 실시간 측정합니다
-| 축 | 의미 | 단위 | 정상 범위 |
-|----|------|------|-----------|
-| **Fx** | X축 방향 힘 | N | -20 ~ +20 |
-| **Fy** | Y축 방향 힘 | N | -20 ~ +20 |
-| **Fz** | Z축 방향 힘 (수직) | N | -60 ~ 0 |
-| **Tx** | X축 회전 토크 | Nm | -2 ~ +2 |
-| **Ty** | Y축 회전 토크 | Nm | -2 ~ +2 |
-| **Tz** | Z축 회전 토크 | Nm | -0.5 ~ +0.5 |
+### 1. 챗봇 질의응답 파이프라인
 
-### 3.3 이상 패턴 예시
+```mermaid
+flowchart LR
+    Q["사용자 질문<br/>'Fz가 -350N인데?'"]
 
+    subgraph Classification["1️⃣ 질문 분류"]
+        QC[QueryClassifier]
+        EE[EntityExtractor]
+    end
+
+    subgraph Reasoning["2️⃣ 추론"]
+        OE[OntologyEngine<br/>그래프 탐색]
+        RE[RuleEngine<br/>상태/원인 추론]
+    end
+
+    subgraph Generation["3️⃣ 응답 생성"]
+        CG[ConfidenceGate<br/>신뢰도 검증]
+        RG[ResponseGenerator<br/>응답 구성]
+    end
+
+    R["구조화된 응답<br/>+ 근거 + 그래프"]
+
+    Q --> Classification
+    Classification --> Reasoning
+    Reasoning --> Generation
+    Generation --> R
 ```
-충돌(Collison)
-: Fz가 갑자기 -350N 이하로 급락 (100ms 이내)
-과부하(Overload)
-: |Fz|가 150N 초과 상태로 5초 이상 지속
-드리프트(Drift)
-: baseline 대비 10% 이상 편차가 30분 이상 유지
-진동(Vibration)
-: 표준편차가 평소의 2배 이상으로 10초 이상 지속
+
+### 2. 질문 유형별 처리
+
+| 질문 유형 | 트리거 조건 | 처리 방식 | 예시 |
+|----------|------------|----------|------|
+| **ONTOLOGY** | 측정축 + 수치값 | 온톨로지 추론 우선 | "Fz가 -350N인데 이게 뭐야?" |
+| **HYBRID** | 에러코드 + 해결 요청 | 온톨로지 + RAG 결합 | "C153 에러 해결 방법 알려줘" |
+| **RAG** | 일반 문서 질의 | 벡터 검색 + 리랭킹 | "UR5e 조인트 설정 방법" |
+| **DEFINITION** | 정의 질문 | 엔티티 속성 조회 | "Fz가 뭐야?", "UR5e 페이로드?" |
+| **RELATION** | 관계 질문 | 그래프 탐색 | "Fz는 어떤 센서가 측정해?" |
+
+### 3. 응답 구조
+
+```mermaid
+classDiagram
+    class ChatResponse {
+        +str trace_id
+        +str query_type
+        +str answer
+        +Analysis analysis
+        +Reasoning reasoning
+        +Prediction prediction
+        +Evidence evidence
+        +Graph graph
+        +bool abstain
+    }
+
+    class Analysis {
+        +str entity
+        +float value
+        +str unit
+        +str state
+        +list normal_range
+        +str deviation
+    }
+
+    class Reasoning {
+        +float confidence
+        +str pattern
+        +str cause
+        +float cause_confidence
+    }
+
+    class Evidence {
+        +str ontology_path
+        +list ontology_paths
+        +list document_refs
+    }
+
+    class Graph {
+        +list nodes
+        +list edges
+    }
+
+    ChatResponse --> Analysis
+    ChatResponse --> Reasoning
+    ChatResponse --> Evidence
+    ChatResponse --> Graph
 ```
 
 ---
 
-## 4. 온톨로지 기반 데이터 통합
+## 온톨로지 구조 (4-Domain)
 
-### 4.1 이기종 데이터의 문제
+```mermaid
+flowchart TB
+    subgraph Equipment["🔧 Equipment Domain (12)"]
+        UR5e[UR5e 로봇]
+        J0[Joint_0~5]
+        CB[ControlBox]
+        TF[ToolFlange]
+        Axia[Axia80 센서]
+    end
 
-로봇 데이터와 센서 데이터는 서로 **다른 형식, 다른 주기, 다른 의미**를 가집니다.
+    subgraph Measurement["📊 Measurement Domain (22)"]
+        Axes[Fx/Fy/Fz/Tx/Ty/Tz]
+        States[State_Normal<br/>State_Warning<br/>State_Critical]
+        Patterns[PAT_COLLISION<br/>PAT_OVERLOAD<br/>PAT_DRIFT<br/>PAT_VIBRATION]
+    end
 
+    subgraph Knowledge["📚 Knowledge Domain (145)"]
+        Errors[99 ErrorCodes<br/>C001~C900]
+        Causes[20 Causes<br/>통신/전원/과열/충돌...]
+        Resolutions[15 Resolutions<br/>재부팅/점검/교체...]
+    end
+
+    subgraph Context["🌐 Context Domain (20)"]
+        Shift[Shift_Day/Night]
+        Product[Product_A/B/C]
+        Docs[Documents]
+    end
+
+    UR5e -->|HAS_COMPONENT| J0
+    UR5e -->|HAS_COMPONENT| TF
+    TF -->|MOUNTED_ON| Axia
+    Axia -->|MEASURES| Axes
+    Axes -->|HAS_STATE| States
+    States -->|INDICATES| Patterns
+    Patterns -->|TRIGGERS| Errors
+    Errors -->|CAUSED_BY| Causes
+    Causes -->|RESOLVED_BY| Resolutions
+    Errors -->|DOCUMENTED_IN| Docs
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  UR5e 로봇                        Axia80 센서                    │
-│  ──────────                       ────────────                   │
-│  • 이벤트 기반                    • 시계열 기반                  │
-│  • 에러코드 (C189)                • 연속 측정값 (Fz=-350N)       │
-│  • 상태 변화 시점만 기록          • 125Hz 연속 샘플링            │
-│                                                                  │
-│           ↓                              ↓                       │
-│           └──────────┬───────────────────┘                       │
-│                      ▼                                           │
-│            ┌─────────────────┐                                   │
-│            │    온톨로지     │                                   │
-│            │  (관계 정의)    │                                   │
-│            └─────────────────┘                                   │
-│                      │                                           │
-│           "Fz=-350N" ──▶ "충돌 패턴" ──▶ "C153 에러 가능성"      │
-└─────────────────────────────────────────────────────────────────┘
-```
 
-### 4.2 4-Domain 온톨로지
+### 관계 타입
 
-```
-┌───────────────────────────────────────────────────────────────────────┐
-│                        UR5e Ontology Domains                          │
-├───────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│   ┌─────────────┐      ┌─────────────┐      ┌─────────────┐          │
-│   │  Equipment  │◀────▶│ Measurement │◀────▶│  Knowledge  │          │
-│   │   Domain    │      │   Domain    │      │   Domain    │          │
-│   │             │      │             │      │             │          │
-│   │ • UR5e      │      │ • Fz, Fx... │      │ • 에러코드  │          │
-│   │ • Axia80    │      │ • 상태      │      │ • 원인      │          │
-│   │ • 조인트    │      │ • 패턴      │      │ • 문서      │          │
-│   └─────────────┘      └─────────────┘      └─────────────┘          │
-│          │                    │                    │                  │
-│          └────────────────────┼────────────────────┘                  │
-│                               ▼                                       │
-│                      ┌─────────────┐                                  │
-│                      │   Context   │                                  │
-│                      │   Domain    │                                  │
-│                      │             │                                  │
-│                      │ • 시간대    │                                  │
-│                      │ • 제품      │                                  │
-│                      │ • 작업자    │                                  │
-│                      └─────────────┘                                  │
-│                                                                       │
-│   ~50 Entities, ~100 Relationships, ~20 Rules                        │
-└───────────────────────────────────────────────────────────────────────┘
-```
+| 관계 | 설명 | 예시 |
+|------|------|------|
+| `HAS_COMPONENT` | 장비 구성 | UR5e → Joint_0~5 |
+| `MOUNTED_ON` | 장착 위치 | Axia80 → ToolFlange |
+| `MEASURES` | 측정 대상 | Axia80 → Fz |
+| `HAS_STATE` | 상태 보유 | Fz → State_Warning |
+| `INDICATES` | 상태→패턴 | State_Critical → PAT_COLLISION |
+| `TRIGGERS` | 패턴→에러 | PAT_COLLISION → C153 |
+| `CAUSED_BY` | 원인 관계 | C153 → CAUSE_COLLISION |
+| `RESOLVED_BY` | 해결 방법 | CAUSE_COLLISION → RES_CHECK_OBSTACLE |
 
 ---
 
-## 5. 시스템 아키텍처
+## 이기종 실시간 상관분석
 
+### 데이터 소스
+
+| 장비 | 데이터 유형 | 샘플링 | 현황 |
+|------|------------|--------|------|
+| **Axia80** | Fx, Fy, Fz, Tx, Ty, Tz | 125Hz → 1Hz (집계) | ✅ 실시간 시뮬레이션 |
+| **UR5e** | tcp_speed, joint_torque_sum, safety_mode | 1Hz | ✅ 합성 텔레메트리 |
+
+### 상관분석 지표
+
+```mermaid
+flowchart LR
+    subgraph Raw["원시 데이터"]
+        A[Axia80<br/>Fx,Fy,Fz]
+        U[UR5e<br/>speed,torque]
+    end
+
+    subgraph Derived["파생 지표"]
+        FM[force_magnitude<br/>√(Fx²+Fy²+Fz²)]
+        FR[force_rate<br/>dF/dt]
+        TFR[torque_force_ratio]
+    end
+
+    subgraph Risk["위험도"]
+        CRS[contact_risk_score<br/>0~1]
+        COLS[collision_risk_score<br/>0~1]
+        AD[anomaly_detected<br/>bool]
+    end
+
+    subgraph Action["권장 조치"]
+        RA[recommended_action<br/>maintain/slow_down/stop]
+    end
+
+    A --> FM
+    A --> FR
+    A --> TFR
+    U --> TFR
+    FM --> CRS
+    FR --> COLS
+    TFR --> AD
+    CRS --> RA
+    COLS --> RA
+    AD --> RA
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          System Architecture                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │  Frontend (Next.js 16)                                            │  │
-│  │  • ChatView - 자연어 질의응답                                     │  │
-│  │  • GraphView - 온톨로지 관계 시각화 (React Flow)                  │  │
-│  │  • LiveView - 실시간 센서 모니터링 (SSE)                          │  │
-│  │  • HistoryView - 이벤트/패턴 이력                                 │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                              │ REST/SSE                                  │
-│                              ▼                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │  Backend (FastAPI)                                                │  │
-│  │  • /api/chat - 질의응답 API                                       │  │
-│  │  • /api/sensors/* - 센서 데이터/패턴/이벤트                       │  │
-│  │  • /api/ontology/* - 온톨로지 조회                                │  │
-│  │  • /api/evidence/* - 근거 상세 조회                               │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                              │                                           │
-│           ┌──────────────────┼──────────────────┐                       │
-│           ▼                  ▼                  ▼                       │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐           │
-│  │ Ontology Engine │ │  Vector Store   │ │  Sensor Store   │           │
-│  │ (JSON/YAML)     │ │  (ChromaDB)     │ │  (Parquet)      │           │
-│  │                 │ │                 │ │                 │           │
-│  │ • 관계 추론     │ │ • 문서 검색     │ │ • 시계열 조회   │           │
-│  │ • 규칙 실행     │ │ • 722 chunks    │ │ • 패턴 감지     │           │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘           │
-│                              │                                           │
-│                              ▼                                           │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │  AI/ML Layer                                                      │  │
-│  │  • GPT-4 - 추론 및 응답 생성                                      │  │
-│  │  • text-embedding-3-small - 문서 임베딩                           │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+
+### 시나리오 기반 생성
+
+| 시나리오 | Fz 범위 | tcp_speed | 위험도 | 설명 |
+|----------|---------|-----------|--------|------|
+| `normal` | -30~-10N | 0.2~0.4 m/s | 0.1~0.2 | 정상 작동 |
+| `high_force` | -80~-50N | 0.3~0.5 m/s | 0.4~0.6 | 힘 증가 |
+| `contact` | -150~-80N | 0.1~0.3 m/s | 0.6~0.8 | 접촉 감지 |
+| `collision` | -350~-200N | 0~0.1 m/s | 0.8~1.0 | 충돌 |
 
 ---
 
-## 6. 문서 구조
+## 백엔드 아키텍처
 
-### 6.1 Steps (개발 단계별 문서)
+### 모듈 구조
 
-| Step | 문서명 | 설명 |
-|------|--------|------|
-| 01 | 환경설정 | 프로젝트 구조, 의존성, 설정 |
-| 02 | 데이터준비 | PDF 파싱, 청킹, 메타데이터 |
-| 03 | 문서인덱싱 | 임베딩, ChromaDB 저장 |
-| 04 | 온톨로지스키마 | 4-Domain 설계, 엔티티 정의 |
-| 05 | 엔티티관계구축 | 온톨로지 로더, 관계 정의 |
-| 06 | 추론규칙 | 규칙 엔진, 상태/패턴 추론 |
-| 07 | 센서데이터처리 | Parquet 로딩, 시계열 조회 |
-| 08 | 패턴감지 | 충돌/과부하/드리프트/진동 |
-| 09 | 온톨로지연결 | 패턴-에러코드 매핑 |
-| 10 | 질문분류기 | ONTOLOGY/HYBRID/RAG 분류 |
-| 11 | 온톨로지추론 | 그래프 탐색, 경로 추출 |
-| 12 | 응답생성 | LLM 프롬프트, 응답 구성 |
-| 13 | UI및API계약 | API 스키마, UI 명세 |
-| 14 | 프론트엔드구현 | Next.js 컴포넌트, 뷰 |
-| 15 | 센서실시간및검증 | SSE 스트리밍, E2E 검증 |
-| 16 | 통합테스트 | 유닛/통합/E2E 테스트 |
-| 17 | 데모시나리오 | 재현 가능한 데모 흐름 |
+```
+src/
+├── api/                    # FastAPI 라우터
+│   ├── routes/
+│   │   ├── chat.py         # 질의응답 API
+│   │   ├── sensors.py      # 센서 데이터 API
+│   │   ├── ontology.py     # 온톨로지 탐색 API
+│   │   └── correlation.py  # 상관분석 API
+│   └── schemas/            # Pydantic 스키마
+│
+├── rag/                    # RAG 파이프라인 (2,400+ 줄)
+│   ├── query_classifier.py # 질문 분류 (406줄)
+│   ├── entity_extractor.py # 엔티티 추출 (599줄)
+│   ├── confidence_gate.py  # 신뢰도 게이트 (245줄)
+│   ├── response_generator.py # 응답 생성 (920줄)
+│   └── prompt_builder.py   # 프롬프트 구성 (220줄)
+│
+├── ontology/               # 온톨로지 엔진 (3,800+ 줄)
+│   ├── ontology_engine.py  # 추론 엔진 (1,940줄)
+│   ├── rule_engine.py      # 규칙 엔진 (960줄)
+│   ├── graph_traverser.py  # 그래프 탐색 (599줄)
+│   └── loader.py           # 온톨로지 로더 (216줄)
+│
+├── sensor/                 # 센서 처리
+│   ├── sensor_store.py     # 시계열 저장소
+│   ├── pattern_detector.py # 패턴 감지
+│   └── correlation_engine.py # 상관분석
+│
+└── embedding/              # 벡터 검색
+    ├── vector_store.py     # ChromaDB (400줄)
+    ├── embedder.py         # OpenAI 임베딩 (163줄)
+    └── reranker.py         # Cross-Encoder (241줄)
+```
 
-### 6.2 References (참조 문서)
+### API 엔드포인트
 
-| 문서 | 설명 |
-|------|------|
-| [Unified_Spec.md](docs/Unified_Spec.md) | 전체 기술 설계서 (SoT) |
-| [Unified_ROADMAP.md](docs/Unified_ROADMAP.md) | 개발 로드맵 |
-| [SoT_백엔드_API_가이드.md](docs/references/SoT_백엔드_API_가이드.md) | API 명세 및 사용법 |
-| [SoT_UI_설계_명세서.md](docs/references/SoT_UI_설계_명세서.md) | 프론트엔드 설계 |
-| [SoT_재현성_가이드.md](docs/references/SoT_재현성_가이드.md) | 설치 및 실행 가이드 |
-
-### 6.3 Reports (분석 보고서)
-
-| 보고서 | 설명 |
-|--------|------|
-| [UR5e_로봇_분석_보고서.md](docs/reports/domain/robot/UR5e_로봇_분석_보고서.md) | UR5e 구조, 에러코드, 데이터 |
-| [Axia80_센서_분석_보고서.md](docs/reports/domain/sensor/Axia80_센서_분석_보고서.md) | Axia80 6축, 측정값, 활용 |
+| 엔드포인트 | 메서드 | 설명 |
+|-----------|--------|------|
+| `/health` | GET | 헬스체크 |
+| `/api/chat` | POST | 질의응답 |
+| `/api/evidence/{trace_id}` | GET | 근거 상세 |
+| `/api/ontology/entities` | GET | 전체 엔티티 (199개) |
+| `/api/ontology/graph` | GET | 서브그래프 조회 |
+| `/api/ontology/neighbors/{id}` | GET | 이웃 노드 |
+| `/api/sensors/readings` | GET | 센서 측정값 |
+| `/api/sensors/patterns` | GET | 감지된 패턴 |
+| `/api/sensors/stream` | GET | SSE 실시간 스트림 |
+| `/api/correlation/data` | GET | 상관분석 데이터 |
+| `/api/correlation/stream` | GET | 상관분석 SSE |
 
 ---
 
-## 7. 프로젝트 구조
+## 프론트엔드 아키텍처
+
+### 컴포넌트 구조
 
 ```
-ur5e-ontology-rag/
-├── src/                    # 백엔드 소스 코드
-│   ├── api/                # FastAPI 라우터, 스키마
-│   ├── rag/                # 질문분류, 응답생성, 신뢰도게이트
-│   ├── ontology/           # 온톨로지 엔진, 그래프 탐색, 규칙
-│   ├── sensor/             # 센서 저장소, 패턴 감지
-│   ├── embedding/          # 벡터 스토어, 임베딩
-│   └── ingestion/          # PDF 파싱, 청킹
-├── frontend/               # Next.js 프론트엔드
-│   └── src/
-│       ├── app/            # App Router 페이지
-│       ├── components/     # React 컴포넌트
-│       └── lib/            # API 클라이언트, 유틸
-├── data/                   # 데이터 파일
-│   ├── raw/pdf/            # 원본 PDF 매뉴얼
-│   ├── processed/          # 청크, 온톨로지, 메타데이터
-│   └── sensor/             # Axia80 센서 데이터
-├── configs/                # 설정 파일
-│   ├── settings.yaml       # 전역 설정
-│   ├── pattern_thresholds.yaml  # 패턴 감지 임계값
-│   └── inference_rules.yaml     # 추론 규칙
-├── docs/                   # 문서
-│   ├── steps/              # 개발 단계별 문서
-│   ├── references/         # 참조 문서
-│   └── reports/            # 분석 보고서
-├── tests/                  # 테스트
-│   ├── unit/               # 유닛 테스트 (64개)
-│   └── integration/        # 통합 테스트
-└── scripts/                # 실행 스크립트
+frontend/src/
+├── app/                    # Next.js App Router
+│   └── page.tsx            # 메인 대시보드
+│
+├── components/
+│   ├── chat/               # 챗봇 UI
+│   │   ├── ChatPanel.tsx   # 채팅 패널
+│   │   ├── MessageBubble.tsx
+│   │   └── ExampleButtons.tsx # 예시 질문 (38개)
+│   │
+│   ├── graph/              # 온톨로지 그래프
+│   │   ├── GraphView.tsx   # D3.js 시각화
+│   │   └── NodeDetail.tsx
+│   │
+│   ├── live/               # 실시간 모니터링
+│   │   ├── LiveMonitor.tsx
+│   │   ├── SensorChart.tsx
+│   │   └── CorrelationTable.tsx
+│   │
+│   └── ui/                 # shadcn/ui 컴포넌트
+│
+└── hooks/
+    └── useApi.ts           # React Query 훅
 ```
+
+### 주요 화면
+
+| 탭 | 기능 | 컴포넌트 |
+|-----|------|---------|
+| **Chat** | 자연어 질의응답 | ChatPanel, MessageBubble |
+| **Graph** | 온톨로지 탐색 | GraphView (D3.js) |
+| **Live** | 실시간 모니터링 | LiveMonitor, SensorChart |
+| **Correlation** | 이기종 상관분석 | CorrelationTable |
+| **History** | 이벤트/패턴 이력 | EventList, PatternList |
 
 ---
 
-## 8. 시작하기
+## 테스트 현황
 
-### 8.1 요구사항
+| 테스트 유형 | 개수 | 통과율 | 커버리지 |
+|------------|------|--------|---------|
+| **Unit Tests** | 150개 | 100% | 백엔드 핵심 모듈 |
+| **Chatbot Tests** | 23개 | 100% | 질의응답 파이프라인 |
+| **예시 질문** | 38개 | 100% | 전체 질문 유형 |
+| **합계** | **173개** | **100%** | - |
+
+### 예시 질문 카테고리
+
+| 카테고리 | 개수 | 예시 |
+|----------|------|------|
+| 센서 값 분석 | 6개 | "Fz가 -350N인데 이게 뭐야?" |
+| 패턴 질문 | 5개 | "최근 충돌 패턴이 있어?" |
+| 에러코드 | 6개 | "C153 에러 해결 방법" |
+| 정의 질문 | 8개 | "Fz가 뭐야?", "UR5e 페이로드?" |
+| 비교 질문 | 4개 | "Fx와 Fy 차이가 뭐야?" |
+| 관계 질문 | 5개 | "Fz는 어떤 센서가 측정해?" |
+| RAG 질문 | 4개 | "조인트 설정 방법" |
+
+---
+
+## 시작하기
+
+### 요구사항
 
 - Python 3.10+
 - Node.js 18+
 - OpenAI API Key
 
-### 8.2 설치
+### 설치
 
 ```bash
 # 1. 저장소 클론
@@ -355,140 +435,99 @@ cp .env.example .env
 # .env 파일에 OPENAI_API_KEY 입력
 
 # 4. 프론트엔드 의존성
-cd frontend
-npm install
-cd ..
+cd frontend && npm install && cd ..
 ```
 
-### 8.3 실행
+### 실행
 
 ```bash
 # 백엔드 (포트 8000)
 python scripts/run_api.py
 
 # 프론트엔드 (포트 3000) - 새 터미널
-cd frontend
-npm run dev
+cd frontend && npm run dev
 ```
 
 브라우저에서 http://localhost:3000 접속
 
-### 8.4 E2E 검증
-
-```bash
-# PowerShell에서 서버 실행 → 검증 → 종료를 한 번에 재현
-powershell -ExecutionPolicy Bypass -File scripts/e2e_validate.ps1 -Port 8000
-```
-
 ---
 
-## 9. 기술 스택
+## 기술 스택
 
 ### Backend
-| 기술 | 용도 |
-|------|------|
-| **Python 3.10+** | 런타임 |
-| **FastAPI** | REST API 서버 |
-| **ChromaDB** | 벡터 데이터베이스 |
-| **Pandas/PyArrow** | 데이터 처리 |
-| **PyMuPDF** | PDF 파싱 |
+
+| 기술 | 버전 | 용도 |
+|------|------|------|
+| Python | 3.10+ | 런타임 |
+| FastAPI | 0.100+ | REST API 서버 |
+| ChromaDB | 0.4+ | 벡터 데이터베이스 |
+| Pandas | 2.0+ | 데이터 처리 |
+| PyArrow | - | Parquet I/O |
+| sentence-transformers | - | Cross-Encoder 리랭킹 |
 
 ### Frontend
-| 기술 | 용도 |
-|------|------|
-| **Next.js 16** | React 프레임워크 |
-| **Tailwind CSS** | 스타일링 |
-| **shadcn/ui** | UI 컴포넌트 |
-| **React Flow** | 그래프 시각화 |
-| **Recharts** | 차트 |
-| **TanStack Query** | 데이터 페칭 |
+
+| 기술 | 버전 | 용도 |
+|------|------|------|
+| Next.js | 16 | React 프레임워크 |
+| TypeScript | 5.0+ | 타입 안전성 |
+| Tailwind CSS | 3.0+ | 스타일링 |
+| shadcn/ui | - | UI 컴포넌트 |
+| D3.js | 7.0+ | 그래프 시각화 |
+| TanStack Query | 5.0+ | 데이터 페칭/캐싱 |
 
 ### AI/ML
+
 | 기술 | 용도 |
 |------|------|
-| **GPT-4** | 추론 및 응답 생성 |
-| **text-embedding-3-small** | 문서 임베딩 |
+| GPT-4o-mini | 추론 및 응답 생성 |
+| text-embedding-3-small | 문서 임베딩 (1536차원) |
+| ms-marco-MiniLM-L-6-v2 | Cross-Encoder 리랭킹 |
 
 ---
 
-## 10. API 엔드포인트
+## 문서 구조
 
-| 엔드포인트 | 메서드 | 설명 |
-|-----------|--------|------|
-| `/health` | GET | 헬스체크 |
-| `/api/chat` | POST | 질의응답 |
-| `/api/evidence/{trace_id}` | GET | 근거 상세 조회 |
-| `/api/ontology/summary` | GET | 온톨로지 요약 |
-| `/api/sensors/readings` | GET | 센서 측정값 |
-| `/api/sensors/patterns` | GET | 감지된 패턴 |
-| `/api/sensors/events` | GET | 이상 이벤트 |
-| `/api/sensors/stream` | GET | SSE 실시간 스트림 |
-
----
-
-## 11. 사용 예시
-
-### 질의응답
-
-```bash
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Fz가 -350N인데 뭐가 문제야?"}'
 ```
-
-### 응답 예시
-
-```json
-{
-  "trace_id": "abc123",
-  "query_type": "ontology",
-  "answer": "Fz 값 -350N은 충돌 패턴을 나타냅니다. 최근 유사 패턴이 3회 감지되었으며, 조치하지 않을 경우 24시간 내 C153 에러 발생 가능성이 85%입니다. 그립 위치를 확인하시기 바랍니다.",
-  "analysis": {
-    "entity": "Fz",
-    "value": -350.0,
-    "state": "Warning"
-  },
-  "reasoning": {
-    "confidence": 0.85,
-    "pattern": "collision",
-    "cause": "grip_position"
-  },
-  "graph": {
-    "nodes": [...],
-    "edges": [...]
-  }
-}
+docs/
+├── core/                   # 핵심 설계 문서
+│   ├── Unified_Spec.md     # 전체 기술 설계서
+│   ├── Unified_ROADMAP.md  # 개발 로드맵
+│   └── 온톨로지_스키마_설계.md
+│
+├── steps/                  # 개발 단계별 문서 (19 steps)
+│   ├── step_01~17_*.md     # 설계/완료 문서
+│   └── step_18~19_*.md     # 최적화/테스트
+│
+├── ontology-chatbot/       # 챗봇 관련 문서
+│   ├── 챗봇_파이프라인_아키텍처.md
+│   ├── 챗봇_문제해결_로그.md
+│   ├── 온톨로지_확장_v2.0.md
+│   └── 온톨로지_그래프_탐색_API.md
+│
+├── ui-features/            # UI 기능 문서
+│   └── 이기종_실시간_상관분석_설계.md
+│
+├── references/             # 참조 문서
+│   ├── SoT_백엔드_API_가이드.md
+│   ├── SoT_UI_설계_명세서.md
+│   └── SoT_재현성_가이드.md
+│
+└── reports/                # 분석 보고서
+    └── domain/
+        ├── robot/UR5e_로봇_분석_보고서.md
+        └── sensor/Axia80_센서_분석_보고서.md
 ```
 
 ---
 
-## 12. 프론트엔드 연동
-
-백엔드 응답은 snake_case(`trace_id`, `query_type` 등)를 유지합니다.
-프론트에서는 [frontend/src/lib/api.ts](frontend/src/lib/api.ts)의 어댑터 함수를 사용해 정규화합니다.
-
-```ts
-import { buildChatRequest, normalizeChatResponse } from '@/lib/api'
-
-const res = await fetch('http://localhost:8000/api/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(buildChatRequest({ message: 'Fz가 -350N인데?' }))
-})
-
-const data = normalizeChatResponse(await res.json())
-console.log(data.traceId, data.queryType)
-```
-
----
-
-## 13. 라이선스
+## 라이선스
 
 MIT License
 
 ---
 
-## 14. 기여
+## 기여
 
-이 프로젝트는 개인 프로젝트로서 제조 AX의 가능성을 탐구하기 위해 진행되었습니다.
+이 프로젝트는 제조 AX의 가능성을 탐구하기 위한 PoC입니다.
 피드백과 제안은 언제나 환영합니다.

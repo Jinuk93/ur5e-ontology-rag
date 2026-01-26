@@ -17,9 +17,9 @@
 | 파일 | 라인 수 | 설명 |
 |------|---------|------|
 | `src/ontology/graph_traverser.py` | 599 | 그래프 탐색기 (BFS, 경로 찾기) |
-| `src/ontology/ontology_engine.py` | 1,805 | 온톨로지 추론 엔진 (확장) |
+| `src/ontology/ontology_engine.py` | 1,941 | 온톨로지 추론 엔진 (확장) |
 | `src/ontology/__init__.py` | 113 | 모듈 노출 (업데이트) |
-| **합계** | **2,517** | |
+| **합계** | **2,653** | |
 
 ---
 
@@ -148,6 +148,39 @@ class ReasoningResult:
     evidence: Dict[str, Any]
 ```
 
+**ReasoningResult 타입 시스템**
+
+```mermaid
+classDiagram
+    class ReasoningResult {
+        +str query
+        +List entities
+        +List reasoning_chain
+        +List conclusions
+        +List predictions
+        +List recommendations
+        +List ontology_paths
+        +float confidence
+        +Dict evidence
+    }
+
+    class Conclusion {
+        <<union>>
+        str: 관계 질문 응답
+        Dict: 구조화된 결론
+    }
+
+    class DictConclusion {
+        +str type
+        +str entity
+        +str state
+        +float confidence
+    }
+
+    ReasoningResult --> "*" Conclusion : conclusions
+    Conclusion <|-- DictConclusion : type=state/cause/error
+```
+
 ### 3.5 관계 질문 처리 (신규)
 
 ```python
@@ -268,7 +301,7 @@ Q: 충돌이 왜 발생했어?
 ### 4.3 엔진 요약
 
 ```
-Ontology: 54 entities, 62 relationships
+Ontology: 199 entities, 176 relationships (v2.0 확장 후)
 Rules: {'state_rules': 3, 'cause_rules': 4, 'prediction_rules': 3}
 ```
 
@@ -406,7 +439,7 @@ print(context.related_patterns)  # ["PAT_COLLISION", "PAT_OVERLOAD"]
   - [x] 관계 체인 따라가기 (follow_relation_chain)
   - [x] 엔티티 컨텍스트 수집 (get_entity_context)
   - [x] 패턴 추론 경로 생성 (get_reasoning_path)
-- [x] `src/ontology/ontology_engine.py` 구현 (1,805줄로 확장)
+- [x] `src/ontology/ontology_engine.py` 구현 (1,941줄로 확장)
   - [x] EntityContext 데이터클래스
   - [x] ReasoningResult 데이터클래스
   - [x] get_context() - 엔티티 컨텍스트 로딩
@@ -442,7 +475,7 @@ ur5e-ontology-rag/
         ├── loader.py            [Phase 5]
         ├── rule_engine.py       [504줄, Phase 6]
         ├── graph_traverser.py   [599줄, 신규]
-        └── ontology_engine.py   [1,805줄, 확장]
+        └── ontology_engine.py   [1,941줄, 확장]
 ```
 
 ---
@@ -498,7 +531,7 @@ response = generator.generate(reasoning)
 
 ### 11.1 v2.0 변경 사항
 
-- `ontology_engine.py` 라인 수: 646 → 1,805
+- `ontology_engine.py` 라인 수: 646 → 1,941
 - 관계 질문 처리 기능 추가 (`_is_relationship_query`, `_process_relationship_query`)
 - 트렌드 질문 처리 기능 추가 (`_process_measurement_info`)
 - 정의 엔티티 타입 확장 (ToolFlange, Joint, Component)

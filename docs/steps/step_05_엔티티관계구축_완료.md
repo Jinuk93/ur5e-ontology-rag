@@ -14,18 +14,18 @@
 
 | 파일 | 라인 수 | 상태 | 설명 |
 |------|--------|------|------|
-| `src/ontology/loader.py` | 204 | 신규 작성 | OntologyLoader 클래스 |
-| `data/processed/ontology/ontology.json` | 501 | 업데이트 | 전체 온톨로지 인스턴스 |
-| `data/processed/ontology/lexicon.yaml` | 402 | 기존 유지 | 동의어 사전 |
+| `src/ontology/loader.py` | 216 | 신규 작성 | OntologyLoader 클래스 |
+| `data/processed/ontology/ontology.json` | 1,689 | v2.0 확장 | 전체 온톨로지 인스턴스 (199 엔티티, 176 관계) |
+| `data/processed/ontology/lexicon.yaml` | 444 | v2.0 확장 | 동의어 사전 |
 | `scripts/build_ontology.py` | 215 | 신규 작성 | 빌드/검증 스크립트 |
-| `src/ontology/__init__.py` | 89 | 업데이트 | loader 모듈 노출 |
+| `src/ontology/__init__.py` | 113 | 업데이트 | loader 모듈 노출 |
 
 ### 2.2 온톨로지 통계
 
 | 항목 | v1.0 수량 | v2.0 수량 | 증가율 |
 |------|-----------|-----------|--------|
-| 총 엔티티 | 54개 | **~180개** | +233% |
-| 총 관계 | 62개 | **155개** | +150% |
+| 총 엔티티 | 54개 | **199개** | +269% |
+| 총 관계 | 62개 | **176개** | +184% |
 | 에러 코드 | 14개 | **99개** | +607% |
 
 ### 2.3 도메인별 엔티티 분포 (v2.0)

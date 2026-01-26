@@ -7,6 +7,38 @@
 이 API는 UR5e 로봇과 Axia80 센서의 온톨로지 데이터를 그래프 형태로 탐색할 수 있게 해줍니다.
 사용자는 임의의 엔티티에서 시작하여 연결된 관계를 따라 탐색하고, 원인-결과 체인을 시각적으로 확인할 수 있습니다.
 
+## API 흐름도
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자
+    participant F as Frontend<br/>(GraphView)
+    participant A as API Server
+    participant E as OntologyEngine
+    participant G as GraphTraverser
+
+    U->>F: 엔티티 선택
+    F->>A: GET /api/ontology/entities
+    A->>E: get_all_entities()
+    E-->>A: 199 entities
+    A-->>F: 엔티티 목록
+
+    U->>F: 노드 클릭 (PAT_COLLISION)
+    F->>A: GET /api/ontology/graph?center=PAT_COLLISION&depth=2
+    A->>G: bfs(PAT_COLLISION, depth=2)
+    G->>G: BFS 탐색
+    G-->>A: nodes[], edges[]
+    A-->>F: 서브그래프 데이터
+    F->>F: D3.js 렌더링
+    F-->>U: 그래프 시각화
+
+    U->>F: 노드 더블클릭
+    F->>A: GET /api/ontology/neighbors/{id}
+    A->>G: get_neighbors()
+    G-->>A: 이웃 노드
+    A-->>F: 확장된 그래프
+```
+
 ## API 엔드포인트
 
 ### 1. 전체 엔티티 목록 조회
@@ -23,9 +55,9 @@
     {"id": "C153", "type": "ErrorCode", "label": "C153 안전 정지", "domain": "knowledge"},
     ...
   ],
-  "total": 54,
-  "by_type": {"Robot": 1, "Pattern": 4, "ErrorCode": 12, ...},
-  "by_domain": {"equipment": 9, "measurement": 13, "knowledge": 26, ...}
+  "total": 199,
+  "by_type": {"Robot": 1, "Pattern": 8, "ErrorCode": 99, "Cause": 20, ...},
+  "by_domain": {"equipment": 12, "measurement": 22, "knowledge": 145, "context": 20}
 }
 ```
 

@@ -18,9 +18,9 @@
 |------|---------|------|
 | `src/rag/evidence_schema.py` | 152 | 근거 스키마 (QueryType, Evidence 등) |
 | `src/rag/entity_extractor.py` | 599 | 엔티티 추출기 (확장) |
-| `src/rag/query_classifier.py` | 352 | 질문 분류기 |
-| `src/rag/__init__.py` | 52 | 모듈 노출 |
-| **합계** | **1,155** | |
+| `src/rag/query_classifier.py` | 406 | 질문 분류기 (확장) |
+| `src/rag/__init__.py` | 84 | 모듈 노출 |
+| **합계** | **1,241** | |
 
 ---
 

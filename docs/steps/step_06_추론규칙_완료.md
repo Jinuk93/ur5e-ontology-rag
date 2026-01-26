@@ -15,9 +15,9 @@
 
 | 파일 | 라인 수 | 상태 | 설명 |
 |------|--------|------|------|
-| `src/ontology/rule_engine.py` | 503 | 신규 작성 | RuleEngine 클래스 |
-| `configs/inference_rules.yaml` | 211 | 신규 작성 | 추론 규칙 정의 |
-| `src/ontology/__init__.py` | 89 | 업데이트 | RuleEngine 노출 |
+| `src/ontology/rule_engine.py` | 960 | v2.0 확장 | RuleEngine 클래스 |
+| `configs/inference_rules.yaml` | 569 | v2.0 확장 | 추론 규칙 정의 (99개 에러코드 매핑) |
+| `src/ontology/__init__.py` | 113 | 업데이트 | RuleEngine 노출 |
 
 ### 2.2 기존 설정 파일 (활용)
 

@@ -18,9 +18,9 @@
 |------|---------|------|
 | `src/rag/confidence_gate.py` | 245 | 신뢰도 기반 응답 검증 |
 | `src/rag/prompt_builder.py` | 220 | LLM 프롬프트 구성 |
-| `src/rag/response_generator.py` | 820 | 응답 생성기 (v2.1 - 관계 질문 응답 추가) |
+| `src/rag/response_generator.py` | 920 | 응답 생성기 (v2.1 - 관계 질문 응답 추가) |
 | `src/rag/__init__.py` | 84 | 모듈 노출 (업데이트) |
-| **합계** | **1,369** | |
+| **합계** | **1,469** | |
 
 ---
 
@@ -58,6 +58,27 @@ class ConfidenceGate:
 | 엔티티 없음 | "no entities extracted" |
 | reasoning.confidence < 0.5 | "reasoning confidence too low" |
 | 추론 체인 비어있음 | "no reasoning chain" |
+
+**ConfidenceGate 의사결정 흐름도**:
+
+```mermaid
+flowchart TD
+    A[입력: Classification + Reasoning] --> B{분류 신뢰도<br/>≥ 0.4?}
+    B -->|No| C[ABSTAIN<br/>분류 신뢰도 부족]
+    B -->|Yes| D{엔티티<br/>추출됨?}
+    D -->|No| E[ABSTAIN<br/>엔티티 없음]
+    D -->|Yes| F{추론 신뢰도<br/>≥ 0.5?}
+    F -->|No| G[ABSTAIN<br/>추론 신뢰도 부족]
+    F -->|Yes| H{추론 체인<br/>존재?}
+    H -->|No| I[ABSTAIN<br/>추론 체인 없음]
+    H -->|Yes| J[PASS<br/>응답 생성 진행]
+
+    style C fill:#ffcccc
+    style E fill:#ffcccc
+    style G fill:#ffcccc
+    style I fill:#ffcccc
+    style J fill:#ccffcc
+```
 
 ### 3.2 PromptBuilder 클래스
 
@@ -447,13 +468,13 @@ print(f"Graph: {response.graph}")
 ur5e-ontology-rag/
 └── src/
     └── rag/
-        ├── __init__.py              [80줄, 업데이트]
+        ├── __init__.py              [84줄, 업데이트]
         ├── evidence_schema.py       [153줄, Phase 10]
         ├── entity_extractor.py      [323줄, Phase 10]
         ├── query_classifier.py      [352줄, Phase 10]
         ├── confidence_gate.py       [245줄, 신규]
         ├── prompt_builder.py        [220줄, 신규]
-        └── response_generator.py    [445줄, 신규]
+        └── response_generator.py    [920줄, v2.1]
 ```
 
 ---

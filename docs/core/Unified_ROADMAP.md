@@ -85,6 +85,13 @@
 │  │ STAGE 6: Demo & Evaluation (데모 및 평가)                       │    │
 │  │ Phase 16-17                                                     │    │
 │  │ 통합 테스트 → 데모 시나리오 → 평가                               │    │
+│  └────────────────────────────────┬────────────────────────────────┘    │
+│                                   │                                      │
+│                                   ▼                                      │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │ STAGE 7: Quality Assurance (품질 보증)                          │    │
+│  │ Phase 18-19                                                     │    │
+│  │ 시스템 점검 → 종합 테스트 → 문서화                               │    │
 │  └─────────────────────────────────────────────────────────────────┘    │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -159,6 +166,8 @@
 | | 15 | 센서 실시간/검증 | 센서 REST+SSE + E2E 검증 자동화 |
 | **6. Demo** | 16 | 통합 테스트 | E2E 테스트 |
 | | 17 | 데모 시나리오 | 3가지 시나리오 |
+| **7. Quality** | 18 | 시스템 종합점검 | 코드 리뷰, 아키텍처 점검 |
+| | 19 | 종합테스트 보고서 | 150개 단위 테스트, 23개 챗봇 테스트 |
 
 ## 3.2 온톨로지 관점에서의 Phase 분류
 
@@ -303,7 +312,7 @@ print(results)
 
 **산출물**:
 - `data/processed/ontology/schema.yaml` (스키마 정의)
-- `docs/온톨로지_스키마_설계.md` (이미 완료됨)
+- `docs/core/온톨로지_스키마_설계.md` (이미 완료됨)
 
 **온톨로지 연결**: 전체 온톨로지의 뼈대
 
@@ -1193,17 +1202,17 @@ ur5e-ontology-rag/
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py                  # pytest 설정 & fixtures
-│   ├── unit/
-│   │   ├── __init__.py
-│   │   ├── test_ingestion.py        # 수집 테스트
-│   │   ├── test_embedding.py        # 임베딩 테스트
-│   │   ├── test_ontology.py         # 온톨로지 테스트
-│   │   ├── test_sensor.py           # 센서 테스트
-│   │   └── test_rag.py              # RAG 테스트
+│   ├── unit/                        # 단위 테스트 (150개)
+│   │   ├── test_query_classifier.py    # 질문 분류 (12개)
+│   │   ├── test_confidence_gate.py     # 신뢰도 게이트 (13개)
+│   │   ├── test_evidence_schema.py     # 증거 스키마 (17개)
+│   │   ├── test_graph_traverser.py     # 그래프 탐색 (11개)
+│   │   ├── test_rule_engine.py         # 규칙 엔진 (33개)
+│   │   ├── test_hybrid_retriever.py    # 하이브리드 검색 (14개)
+│   │   ├── test_response_generator.py  # 응답 생성 (21개)
+│   │   └── test_ontology_engine.py     # 온톨로지 엔진 (18개)
 │   └── integration/
-│       ├── __init__.py
-│       ├── test_api.py              # API 통합 테스트
-│       └── test_e2e.py              # E2E 시나리오 테스트
+│       └── test_api_query.py           # API 통합 테스트
 │
 ├── stores/
 │   ├── chroma/                      # Phase 3: ChromaDB 영속화
@@ -1212,17 +1221,33 @@ ur5e-ontology-rag/
 │       └── .gitkeep
 │
 └── docs/
-  ├── Unified_Spec.md              # 통합 기술 명세
-  ├── Unified_ROADMAP.md           # 통합 개발 로드맵
-  ├── 온톨로지_스키마_설계.md       # 온톨로지 상세 설계
-  ├── reports/
+  ├── core/                         # 핵심 문서
+  │   ├── Unified_Spec.md           # 통합 기술 명세
+  │   ├── Unified_ROADMAP.md        # 통합 개발 로드맵
+  │   └── 온톨로지_스키마_설계.md    # 온톨로지 상세 설계
+  ├── ontology-chatbot/             # 온톨로지/챗봇 주제
+  │   ├── 챗봇_파이프라인_아키텍처.md  # 챗봇 파이프라인 상세
+  │   ├── 온톨로지_확장_v2.0.md       # 온톨로지 v2.0 확장
+  │   ├── 온톨로지_그래프_사용자_가이드.md
+  │   ├── 온톨로지_그래프_탐색_API.md
+  │   └── 챗봇_문제해결_로그.md
+  ├── ui-features/                  # UI/AI 기능 주제
+  │   └── 이기종_실시간_상관분석_설계.md
+  ├── reports/                      # 분석 보고서
+  │   ├── 자율테스트_보고서.md
   │   └── domain/
   │       ├── robot/
-  │       │   └── UR5e_로봇_분석_보고서.md      # 로봇 분석
+  │       │   └── UR5e_로봇_분석_보고서.md
   │       └── sensor/
-  │           └── Axia80_센서_분석_보고서.md    # 센서 분석
-  └── phases/                      # Phase별 완료 보고서
-    └── Phase_XX_완료.md
+  │           └── Axia80_센서_분석_보고서.md
+  ├── references/                   # SoT 정본 문서
+  │   ├── SoT_UI_설계_명세서.md
+  │   ├── SoT_백엔드_API_가이드.md
+  │   └── SoT_재현성_가이드.md
+  └── steps/                        # Phase별 설계/완료 보고서
+      ├── step_01_환경설정_설계.md
+      ├── step_01_환경설정_완료.md
+      └── ...                       # step_19까지
 ```
 
 ### 폴더별 Phase 매핑
