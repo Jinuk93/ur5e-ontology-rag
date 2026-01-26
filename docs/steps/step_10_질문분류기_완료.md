@@ -17,10 +17,10 @@
 | 파일 | 라인 수 | 설명 |
 |------|---------|------|
 | `src/rag/evidence_schema.py` | 152 | 근거 스키마 (QueryType, Evidence 등) |
-| `src/rag/entity_extractor.py` | 323 | 엔티티 추출기 |
+| `src/rag/entity_extractor.py` | 599 | 엔티티 추출기 (확장) |
 | `src/rag/query_classifier.py` | 352 | 질문 분류기 |
 | `src/rag/__init__.py` | 52 | 모듈 노출 |
-| **합계** | **879** | |
+| **합계** | **1,155** | |
 
 ---
 
@@ -66,7 +66,10 @@ class EntityExtractor:
     """온톨로지 엔티티 추출기"""
 
     # 추출 패턴
-    AXIS_PATTERN = re.compile(r'\b(Fz|Fx|Fy|Tx|Ty|Tz)\b', re.IGNORECASE)
+    AXIS_PATTERN = re.compile(
+        r'(?<![a-zA-Z])(Fz|Fx|Fy|Tx|Ty|Tz|Mx|My|Mz)' + KOREAN_PARTICLES,
+        re.IGNORECASE
+    )
     VALUE_PATTERN = re.compile(r'(-?\d+(?:\.\d+)?)\s*(N|Nm|kg|mm|도|℃)?')
     ERROR_CODE_PATTERN = re.compile(r'\b(C\d{1,3})\b', re.IGNORECASE)
     TIME_PATTERN = re.compile(r'(어제|오늘|그제|아까|방금|(\d{1,2})시|(\d{1,2})분)')
@@ -74,23 +77,36 @@ class EntityExtractor:
     SHIFT_PATTERN = re.compile(r'(주간|야간|오전|오후|SHIFT_[ABC])')
     PRODUCT_PATTERN = re.compile(r'(PART-[A-Z]|제품[A-Z]|모델[A-Z])')
 
+    # 모멘트 → 토크 변환 (v2.0 신규)
+    MOMENT_TO_TORQUE = {"Mx": "Tx", "My": "Ty", "Mz": "Tz"}
+
     def extract(self, query: str) -> List[ExtractedEntity]
 ```
 
 **추출 엔티티 타입:**
-- `MeasurementAxis`: 센서 축 (Fz, Fx, Fy, Tx, Ty, Tz)
+- `MeasurementAxis`: 센서 축 (Fz, Fx, Fy, Tx, Ty, Tz, Mx, My, Mz)
 - `Value`: 수치 값 (-350N, 5kg 등)
 - `ErrorCode`: 에러 코드 (C153, C119 등)
 - `TimeExpression`: 시간 표현 (어제, 14시 등)
 - `Pattern`: 패턴 키워드 (충돌, 과부하 등)
 - `Shift`: 근무 교대 (주간, 야간, SHIFT_A 등)
 - `Product`: 제품 ID (PART-A 등)
+- `Joint`: 조인트 (Joint0, Joint1, ... Joint5) - v2.0 신규
+- `SafetyFeature`: 안전 기능 (긴급 정지, emergency stop) - v2.0 신규
 
 **한국어 조사 지원:**
 - AXIS_PATTERN이 한국어 조사(가/이/를/은/는/도/에서/의/로)를 지원
   - 예: "Fz가 -350N" → "Fz" 추출 성공 ✅
   - 예: "Fz는 정상" → "Fz" 추출 성공 ✅
   - 예: "Tx도 확인" → "Tx" 추출 성공 ✅
+
+**모멘트/토크 자동 변환 (v2.0 신규):**
+- Mx → Tx, My → Ty, Mz → Tz 자동 변환
+- 예: "Mx가 -20Nm" → entity_id: "Tx" (토크로 정규화)
+
+**엔티티 별명 지원 (v2.0 신규):**
+- Joint 별명: "Joint1" → "Joint_1", "조인트0" → "Joint_0"
+- 안전 기능 별명: "긴급 정지" → "C159", "emergency stop" → "C159"
 
 ### 3.4 QueryClassifier 클래스
 
@@ -252,14 +268,17 @@ print(intent["sub_intent"])  # 'cause_analysis'
   - [x] OntologyPath 데이터클래스
   - [x] Evidence 데이터클래스
   - [x] ClassificationResult 데이터클래스
-- [x] `src/rag/entity_extractor.py` 구현
+- [x] `src/rag/entity_extractor.py` 구현 (599줄로 확장)
   - [x] 센서 축 추출 (Fz, Fx, ...)
+  - [x] 모멘트 축 추출 및 변환 (Mx→Tx, My→Ty, Mz→Tz) - v2.0 신규
   - [x] 수치 값 추출 (-350N, 5kg, ...)
   - [x] 에러 코드 추출 (C153, ...)
   - [x] 시간 표현 추출 (어제, 14시, ...)
   - [x] 패턴 키워드 추출 (충돌, 과부하, ...)
   - [x] Shift 추출 (주간, 야간, ...)
   - [x] 제품 ID 추출 (PART-A, ...)
+  - [x] Joint 별명 지원 (Joint1→Joint_1) - v2.0 신규
+  - [x] 안전 기능 별명 지원 (긴급 정지→C159) - v2.0 신규
 - [x] `src/rag/query_classifier.py` 구현
   - [x] ONTOLOGY 지표 패턴
   - [x] HYBRID 지표 패턴
@@ -285,7 +304,7 @@ ur5e-ontology-rag/
     └── rag/
         ├── __init__.py          [52줄, 업데이트]
         ├── evidence_schema.py   [152줄, 신규]
-        ├── entity_extractor.py  [323줄, 신규]
+        ├── entity_extractor.py  [599줄, 확장]
         └── query_classifier.py  [352줄, 신규]
 ```
 
@@ -334,6 +353,15 @@ else:  # RAG
 
 | 항목 | 값 |
 |------|------|
-| 문서 버전 | v1.0 |
+| 문서 버전 | v2.0 |
 | ROADMAP 섹션 | Stage 4, Phase 10 |
 | Spec 섹션 | 7.1 질문 분류 |
+| 최종 업데이트 | 2026-01-26 |
+
+### 10.1 v2.0 변경 사항
+
+- `entity_extractor.py` 라인 수: 323 → 599
+- AXIS_PATTERN에 Mx/My/Mz 추가
+- MOMENT_TO_TORQUE 매핑 추가 (모멘트→토크 변환)
+- Joint 별명 지원 (Joint0~5, 조인트0~5)
+- 안전 기능 별명 지원 (긴급 정지 → C159)

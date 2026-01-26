@@ -45,24 +45,103 @@ class RuleEngine:
         Args:
             inference_rules_path: 추론 규칙 파일 경로
             pattern_thresholds_path: 패턴 임계값 파일 경로
+
+        Raises:
+            FileNotFoundError: 필수 설정 파일이 없을 때
+            ValueError: 필수 설정 키가 없을 때
         """
+        # 추론 규칙 로드 (필수)
         self.inference_rules = self._load_yaml(
-            inference_rules_path or self.DEFAULT_INFERENCE_RULES_PATH
+            inference_rules_path or self.DEFAULT_INFERENCE_RULES_PATH,
+            required=True
         )
+
+        # 패턴 임계값 로드 (필수)
         self.pattern_thresholds = self._load_yaml(
-            pattern_thresholds_path or self.DEFAULT_PATTERN_THRESHOLDS_PATH
+            pattern_thresholds_path or self.DEFAULT_PATTERN_THRESHOLDS_PATH,
+            required=True
         )
+
+        # 필수 키 검증
+        self._validate_required_keys()
+
+        # 온톨로지 로드
         self.ontology = load_ontology()
 
-        logger.info("RuleEngine 초기화 완료")
+        logger.info(
+            f"RuleEngine 초기화 완료: "
+            f"state_rules={len(self.inference_rules.get('state_rules', []))}, "
+            f"cause_rules={len(self.inference_rules.get('cause_rules', []))}, "
+            f"prediction_rules={len(self.inference_rules.get('prediction_rules', []))}"
+        )
 
-    def _load_yaml(self, path: Path) -> Dict:
-        """YAML 파일 로드"""
+    def _validate_required_keys(self) -> None:
+        """필수 설정 키 검증
+
+        Raises:
+            ValueError: 필수 키가 없을 때
+        """
+        # inference_rules 필수 키
+        required_inference_keys = ["state_rules"]
+        for key in required_inference_keys:
+            if key not in self.inference_rules:
+                raise ValueError(
+                    f"inference_rules.yaml에 필수 키 '{key}'가 없습니다. "
+                    f"현재 키: {list(self.inference_rules.keys())}"
+                )
+
+        # pattern_thresholds 필수 키
+        required_threshold_keys = ["collision", "overload"]
+        for key in required_threshold_keys:
+            if key not in self.pattern_thresholds:
+                raise ValueError(
+                    f"pattern_thresholds.yaml에 필수 키 '{key}'가 없습니다. "
+                    f"현재 키: {list(self.pattern_thresholds.keys())}"
+                )
+
+    def _load_yaml(self, path: Path, required: bool = True) -> Dict:
+        """YAML 파일 로드
+
+        Args:
+            path: YAML 파일 경로
+            required: 필수 파일 여부 (True면 로드 실패 시 예외 발생)
+
+        Returns:
+            파싱된 딕셔너리
+
+        Raises:
+            FileNotFoundError: 필수 파일이 없을 때
+            yaml.YAMLError: YAML 파싱 실패 시
+        """
+        if not path.exists():
+            if required:
+                error_msg = f"필수 설정 파일이 없습니다: {path}"
+                logger.error(error_msg)
+                raise FileNotFoundError(error_msg)
+            else:
+                logger.warning(f"선택적 설정 파일이 없습니다: {path}")
+                return {}
+
         try:
             with open(path, "r", encoding="utf-8") as f:
-                return yaml.safe_load(f)
+                data = yaml.safe_load(f)
+                if data is None:
+                    if required:
+                        error_msg = f"설정 파일이 비어있습니다: {path}"
+                        logger.error(error_msg)
+                        raise ValueError(error_msg)
+                    return {}
+                logger.info(f"설정 파일 로드 완료: {path}")
+                return data
+        except yaml.YAMLError as e:
+            error_msg = f"YAML 파싱 실패: {path} - {e}"
+            logger.error(error_msg)
+            raise yaml.YAMLError(error_msg)
         except Exception as e:
-            logger.warning(f"YAML 로드 실패: {path} - {e}")
+            error_msg = f"설정 파일 로드 실패: {path} - {e}"
+            logger.error(error_msg)
+            if required:
+                raise
             return {}
 
     # ================================================================
@@ -532,8 +611,8 @@ class RuleEngine:
             elif "==" in condition:
                 key, value = condition.split("==")
                 return str(context.get(key.strip())) == value.strip().strip("'\"")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"조건 평가 실패 (condition={condition}): {e}")
 
         return False
 
@@ -549,7 +628,7 @@ class RuleEngine:
 
         Args:
             pattern_history: 패턴 발생 이력
-                [{"pattern": "PAT_OVERLOAD", "timestamp": "2026-01-20T10:00:00"}, ...]
+                [{"pattern": "PAT_OVERLOAD", "timestamp": "2026-01-20T10:00:00", "intensity": 0.8}, ...]
 
         Returns:
             예측 결과 리스트
@@ -568,34 +647,210 @@ class RuleEngine:
                 if e.get("pattern") == pattern_id
             ]
 
-            if condition.get("type") == "frequency":
+            condition_type = condition.get("type")
+
+            if condition_type == "frequency":
                 # 빈도 기반 예측
-                count_threshold = condition.get("count", 3)
-                time_window_days = condition.get("time_window_days", 3)
+                result = self._evaluate_frequency_condition(
+                    rule, pattern_id, pattern_events, condition, prediction
+                )
+                if result:
+                    results.append(result)
 
-                # 최근 N일 내 이벤트 필터
-                cutoff = datetime.now() - timedelta(days=time_window_days)
-                recent_events = [
-                    e for e in pattern_events
-                    if self._parse_timestamp(e.get("timestamp")) > cutoff
-                ]
-
-                if len(recent_events) >= count_threshold:
-                    results.append(InferenceResult(
-                        rule_name=rule["name"],
-                        result_type="prediction",
-                        result_id=prediction.get("error_id", ""),
-                        confidence=prediction.get("probability", 0.5),
-                        evidence={
-                            "pattern": pattern_id,
-                            "event_count": len(recent_events),
-                            "time_window_days": time_window_days,
-                            "threshold": count_threshold
-                        },
-                        message=prediction.get("message", "")
-                    ))
+            elif condition_type == "trend":
+                # 추세 기반 예측 (증가/감소 추세)
+                result = self._evaluate_trend_condition(
+                    rule, pattern_id, pattern_events, condition, prediction
+                )
+                if result:
+                    results.append(result)
 
         return results
+
+    def _evaluate_frequency_condition(
+        self,
+        rule: Dict,
+        pattern_id: str,
+        pattern_events: List[Dict],
+        condition: Dict,
+        prediction: Dict
+    ) -> Optional[InferenceResult]:
+        """빈도 기반 예측 조건 평가
+
+        Args:
+            rule: 규칙 정의
+            pattern_id: 패턴 ID
+            pattern_events: 해당 패턴의 이벤트 목록
+            condition: 조건 정의
+            prediction: 예측 정의
+
+        Returns:
+            InferenceResult 또는 None
+        """
+        count_threshold = condition.get("count", 3)
+        time_window_days = condition.get("time_window_days", 3)
+
+        # 최근 N일 내 이벤트 필터
+        cutoff = datetime.now() - timedelta(days=time_window_days)
+        recent_events = [
+            e for e in pattern_events
+            if self._parse_timestamp(e.get("timestamp")) > cutoff
+        ]
+
+        if len(recent_events) >= count_threshold:
+            return InferenceResult(
+                rule_name=rule["name"],
+                result_type="prediction",
+                result_id=prediction.get("error_id", ""),
+                confidence=prediction.get("probability", 0.5),
+                evidence={
+                    "pattern": pattern_id,
+                    "condition_type": "frequency",
+                    "event_count": len(recent_events),
+                    "time_window_days": time_window_days,
+                    "threshold": count_threshold
+                },
+                message=prediction.get("message", "")
+            )
+
+        return None
+
+    def _evaluate_trend_condition(
+        self,
+        rule: Dict,
+        pattern_id: str,
+        pattern_events: List[Dict],
+        condition: Dict,
+        prediction: Dict
+    ) -> Optional[InferenceResult]:
+        """추세 기반 예측 조건 평가
+
+        패턴의 강도(intensity)가 시간에 따라 증가/감소하는 추세를 감지합니다.
+
+        Args:
+            rule: 규칙 정의
+            pattern_id: 패턴 ID
+            pattern_events: 해당 패턴의 이벤트 목록
+            condition: 조건 정의 (direction, threshold_pct, time_window_days)
+            prediction: 예측 정의
+
+        Returns:
+            InferenceResult 또는 None
+        """
+        direction = condition.get("direction", "increasing")  # "increasing" or "decreasing"
+        threshold_pct = condition.get("threshold_pct", 20)  # 20% 변화
+        time_window_days = condition.get("time_window_days", 7)
+
+        # 최근 N일 내 이벤트 필터
+        cutoff = datetime.now() - timedelta(days=time_window_days)
+        recent_events = [
+            e for e in pattern_events
+            if self._parse_timestamp(e.get("timestamp")) > cutoff
+        ]
+
+        # 최소 2개 이상의 이벤트 필요
+        if len(recent_events) < 2:
+            return None
+
+        # 시간순 정렬
+        sorted_events = sorted(
+            recent_events,
+            key=lambda e: self._parse_timestamp(e.get("timestamp"))
+        )
+
+        # 강도(intensity) 값 추출
+        # intensity, severity, confidence, magnitude 등 다양한 키 지원
+        def get_intensity(event: Dict) -> Optional[float]:
+            for key in ["intensity", "severity", "confidence", "magnitude", "value"]:
+                val = event.get(key)
+                if val is not None:
+                    try:
+                        return float(val)
+                    except (ValueError, TypeError):
+                        pass
+            return None
+
+        intensities = [get_intensity(e) for e in sorted_events]
+        valid_intensities = [i for i in intensities if i is not None]
+
+        # 강도 값이 없으면 발생 빈도로 대체 (단순 카운트 증가)
+        if len(valid_intensities) < 2:
+            # 빈도 기반 추세: 기간을 절반으로 나누어 비교
+            mid_time = cutoff + timedelta(days=time_window_days / 2)
+            first_half = [e for e in sorted_events if self._parse_timestamp(e.get("timestamp")) < mid_time]
+            second_half = [e for e in sorted_events if self._parse_timestamp(e.get("timestamp")) >= mid_time]
+
+            if len(first_half) == 0:
+                return None
+
+            # 빈도 변화율 계산
+            first_count = len(first_half)
+            second_count = len(second_half)
+            change_pct = ((second_count - first_count) / first_count) * 100 if first_count > 0 else 0
+
+            trend_detected = (
+                (direction == "increasing" and change_pct >= threshold_pct) or
+                (direction == "decreasing" and change_pct <= -threshold_pct)
+            )
+
+            if trend_detected:
+                return InferenceResult(
+                    rule_name=rule["name"],
+                    result_type="prediction",
+                    result_id=prediction.get("error_id", ""),
+                    confidence=prediction.get("probability", 0.5),
+                    evidence={
+                        "pattern": pattern_id,
+                        "condition_type": "trend",
+                        "trend_direction": direction,
+                        "detection_method": "frequency_based",
+                        "first_half_count": first_count,
+                        "second_half_count": second_count,
+                        "change_pct": round(change_pct, 1),
+                        "threshold_pct": threshold_pct,
+                        "time_window_days": time_window_days,
+                        "total_events": len(sorted_events)
+                    },
+                    message=prediction.get("message", "")
+                )
+        else:
+            # 강도 기반 추세: 전반부와 후반부 평균 비교
+            mid_idx = len(valid_intensities) // 2
+            first_half_avg = sum(valid_intensities[:mid_idx]) / mid_idx if mid_idx > 0 else 0
+            second_half_avg = sum(valid_intensities[mid_idx:]) / (len(valid_intensities) - mid_idx) if len(valid_intensities) > mid_idx else 0
+
+            if first_half_avg == 0:
+                return None
+
+            change_pct = ((second_half_avg - first_half_avg) / abs(first_half_avg)) * 100
+
+            trend_detected = (
+                (direction == "increasing" and change_pct >= threshold_pct) or
+                (direction == "decreasing" and change_pct <= -threshold_pct)
+            )
+
+            if trend_detected:
+                return InferenceResult(
+                    rule_name=rule["name"],
+                    result_type="prediction",
+                    result_id=prediction.get("error_id", ""),
+                    confidence=prediction.get("probability", 0.5),
+                    evidence={
+                        "pattern": pattern_id,
+                        "condition_type": "trend",
+                        "trend_direction": direction,
+                        "detection_method": "intensity_based",
+                        "first_half_avg": round(first_half_avg, 3),
+                        "second_half_avg": round(second_half_avg, 3),
+                        "change_pct": round(change_pct, 1),
+                        "threshold_pct": threshold_pct,
+                        "time_window_days": time_window_days,
+                        "total_events": len(sorted_events)
+                    },
+                    message=prediction.get("message", "")
+                )
+
+        return None
 
     def _parse_timestamp(self, ts_str: Optional[str]) -> datetime:
         """타임스탬프 문자열 파싱"""

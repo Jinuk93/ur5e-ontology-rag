@@ -54,6 +54,11 @@ from .response_generator import (
     GeneratedResponse,
     create_response_generator,
 )
+from .hybrid_retriever import (
+    HybridRetriever,
+    RetrievalResult,
+    create_hybrid_retriever,
+)
 
 __all__ = [
     # Evidence Schema
@@ -80,4 +85,8 @@ __all__ = [
     "ResponseGenerator",
     "GeneratedResponse",
     "create_response_generator",
+    # Hybrid Retriever
+    "HybridRetriever",
+    "RetrievalResult",
+    "create_hybrid_retriever",
 ]

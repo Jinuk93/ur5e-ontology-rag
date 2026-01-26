@@ -30,7 +30,7 @@ class EntityExtractor:
     # 센서 축 패턴 (한국어 조사 지원)
     # 예: "Fz", "Fz가", "Fz는", "Fz를" 모두 매칭
     AXIS_PATTERN = re.compile(
-        r'(?<![a-zA-Z])(Fz|Fx|Fy|Tx|Ty|Tz)' + KOREAN_PARTICLES + r'(?![a-zA-Z])',
+        r'(?<![a-zA-Z])(Fz|Fx|Fy|Tx|Ty|Tz|Mx|My|Mz)' + KOREAN_PARTICLES + r'(?![a-zA-Z])',
         re.IGNORECASE
     )
 
@@ -44,10 +44,13 @@ class EntityExtractor:
         re.IGNORECASE,
     )
 
-    # 시간 패턴 (예: 14시, 14:00, 어제, 오늘, 최근)
+    # 시간 패턴 (예: 14시, 14:00, 어제, 오늘, 최근, 지난 주)
     # NOTE: "최근"류 질의(이력/존재 여부)는 센서 이벤트/패턴 로그 조회로 처리할 수 있도록 포함
     TIME_PATTERN = re.compile(
-        r'(\d{1,2}시|\d{1,2}:\d{2}|어제|오늘|내일|그제|모레|최근|최근에|요즘|근래|방금)',
+        r'(\d{1,2}시|\d{1,2}:\d{2}|어제|오늘|내일|그제|모레|최근|최근에|요즘|근래|방금|'
+        r'지난\s*주|저번\s*주|이번\s*주|다음\s*주|금주|전주|차주|'
+        r'지난\s*달|저번\s*달|이번\s*달|다음\s*달|'
+        r'며칠\s*전|일주일\s*전|한달\s*전|몇\s*일\s*전)',
         re.IGNORECASE,
     )
 
@@ -57,6 +60,8 @@ class EntityExtractor:
         "overload": ["과부하", "overload", "과하중", "무거"],
         "drift": ["드리프트", "drift", "편차", "이동"],
         "vibration": ["진동", "vibration", "떨림"],
+        "error": ["에러 패턴", "오류 패턴", "에러패턴", "오류패턴", "에러패", "오류패", "에러 이력", "오류 이력"],  # 일반 에러 패턴
+        "anomaly": ["이상 패턴", "이상패턴", "이상", "비정상", "anomaly", "이상 징후", "이상징후"],  # 이상/비정상 패턴
     }
 
     # Shift 패턴
@@ -96,6 +101,30 @@ class EntityExtractor:
         "sensor": ["sensor", "센서", "force sensor", "힘 센서"],
     }
 
+    # 개념어 -> 측정축 매핑 (토크 -> Tx/Ty/Tz, 힘 -> Fx/Fy/Fz)
+    CONCEPT_TO_AXES = {
+        "토크": ["Tx", "Ty", "Tz"],
+        "torque": ["Tx", "Ty", "Tz"],
+        "회전력": ["Tx", "Ty", "Tz"],
+        "힘": ["Fx", "Fy", "Fz"],
+        "force": ["Fx", "Fy", "Fz"],
+    }
+
+    # 예비보전/예방보전 상태 키워드
+    MAINTENANCE_KEYWORDS = [
+        "예비보전", "예방보전", "예방 보전", "예비 보전",
+        "predictive maintenance", "preventive maintenance",
+        "보전 상태", "보전상태", "유지보수 상태", "정비 상태",
+        "로봇 상태", "장비 상태", "시스템 상태", "건강 상태",
+        "이상 징후", "이상징후", "anomaly",
+    ]
+
+    # 상태 확인 키워드 (현재 ~상태, ~어때 등)
+    STATUS_CHECK_KEYWORDS = [
+        "상태", "어때", "어떻게", "괜찮", "정상", "이상 없",
+        "문제 없", "문제없", "점검", "체크", "확인",
+    ]
+
     def __init__(self, ontology: Optional[OntologySchema] = None):
         """초기화
 
@@ -120,9 +149,56 @@ class EntityExtractor:
 
         # Lexicon (동의어) 인덱싱
         if self._lexicon:
-            for entity_id, aliases in self._lexicon.items():
-                for alias in aliases:
-                    self._entity_index[alias.lower()] = (entity_id, "alias")
+            for key, entry in self._lexicon.items():
+                # entry는 dict: {"canonical": "...", "synonyms": [...], "node_id": "..."}
+                if isinstance(entry, dict):
+                    canonical = entry.get("canonical", key)
+                    # canonical 자체도 인덱싱
+                    self._entity_index[canonical.lower()] = (canonical, "alias")
+                    # synonyms 인덱싱
+                    for alias in entry.get("synonyms", []):
+                        self._entity_index[alias.lower()] = (canonical, "alias")
+                else:
+                    # 하위 호환: entry가 리스트인 경우
+                    for alias in entry:
+                        self._entity_index[alias.lower()] = (key, "alias")
+
+        # 추가 별칭: Joint 언더스코어 없는 버전 (Joint1 → Joint_1)
+        for i in range(6):
+            self._entity_index[f"joint{i}"] = (f"Joint_{i}", "Joint")
+            self._entity_index[f"조인트{i}"] = (f"Joint_{i}", "Joint")
+            self._entity_index[f"관절{i}"] = (f"Joint_{i}", "Joint")
+
+        # 개념어 별칭: 측정축 → MeasurementAxis (첫 번째 축 Fx를 대표로 사용)
+        concept_aliases = {
+            "측정축": ("Fx", "MeasurementAxis"),  # 대표 축
+            "measurement axis": ("Fx", "MeasurementAxis"),
+            "센서축": ("Fx", "MeasurementAxis"),
+            "정상 범위": ("Fx", "MeasurementAxis"),  # 정상 범위 질문 처리용
+        }
+        for alias, (entity_id, entity_type) in concept_aliases.items():
+            self._entity_index[alias.lower()] = (entity_id, entity_type)
+
+        # Mx/My/Mz → Tx/Ty/Tz 별칭 (모멘트 = 토크)
+        moment_aliases = {
+            "mx": ("Tx", "MeasurementAxis"),
+            "my": ("Ty", "MeasurementAxis"),
+            "mz": ("Tz", "MeasurementAxis"),
+        }
+        for alias, (entity_id, entity_type) in moment_aliases.items():
+            self._entity_index[alias.lower()] = (entity_id, entity_type)
+
+        # 안전/절차 관련 별칭
+        safety_aliases = {
+            "긴급 정지": ("C159", "ErrorCode"),
+            "긴급정지": ("C159", "ErrorCode"),
+            "emergency stop": ("C159", "ErrorCode"),
+            "비상 정지": ("C159", "ErrorCode"),
+            "비상정지": ("C159", "ErrorCode"),
+            "e-stop": ("C159", "ErrorCode"),
+        }
+        for alias, (entity_id, entity_type) in safety_aliases.items():
+            self._entity_index[alias.lower()] = (entity_id, entity_type)
 
     def extract(self, query: str) -> List[ExtractedEntity]:
         """질문에서 엔티티 추출
@@ -162,8 +238,14 @@ class EntityExtractor:
         # 9. 에러 카테고리 추출 (joint position 에러 등)
         entities.extend(self._extract_error_categories(query))
 
-        # 10. 온톨로지 엔티티 직접 매칭
+        # 10. 예비보전/상태 확인 추출
+        entities.extend(self._extract_maintenance_status(query))
+
+        # 11. 온톨로지 엔티티 직접 매칭
         entities.extend(self._extract_ontology_entities(query))
+
+        # 12. 개념어 -> 측정축 매핑 (토크 -> Tx/Ty/Tz 등)
+        entities.extend(self._extract_concept_axes(query))
 
         # 중복 제거
         entities = self._deduplicate(entities)
@@ -171,18 +253,28 @@ class EntityExtractor:
         logger.debug(f"추출된 엔티티: {[e.entity_id for e in entities]}")
         return entities
 
+    # 모멘트 → 토크 별칭 매핑 (Mx/My/Mz → Tx/Ty/Tz)
+    MOMENT_TO_TORQUE = {
+        "Mx": "Tx",
+        "My": "Ty",
+        "Mz": "Tz",
+    }
+
     def _extract_axes(self, query: str) -> List[ExtractedEntity]:
         """센서 축 추출 (한국어 조사 지원)
 
         "Fz가 -350N" → Fz 추출
         "Fz는 정상" → Fz 추출
         "Fz 값이" → Fz 추출
+        "Mx가 -20Nm" → Tx 추출 (모멘트 → 토크 매핑)
         """
         entities = []
         for match in self.AXIS_PATTERN.finditer(query):
             axis = match.group(1)  # 축 이름만 (조사 제외)
             # 표준화 (대문자 첫글자)
             axis_id = axis[0].upper() + axis[1:].lower()
+            # Mx/My/Mz → Tx/Ty/Tz 매핑
+            axis_id = self.MOMENT_TO_TORQUE.get(axis_id, axis_id)
             entities.append(ExtractedEntity(
                 text=axis,  # 축 이름만 저장 (조사 제외)
                 entity_id=axis_id,
@@ -191,11 +283,35 @@ class EntityExtractor:
             ))
         return entities
 
+    def _extract_concept_axes(self, query: str) -> List[ExtractedEntity]:
+        """개념어에서 측정축 추출 (토크 -> Tx, Ty, Tz 등)
+
+        "토크가 높아졌어" → Tx, Ty, Tz 추출
+        "힘이 너무 세" → Fx, Fy, Fz 추출
+        """
+        entities = []
+        query_lower = query.lower()
+
+        for concept, axes in self.CONCEPT_TO_AXES.items():
+            if concept.lower() in query_lower:
+                # 해당 개념이 발견되면 관련 측정축 엔티티 추가
+                for axis in axes:
+                    entities.append(ExtractedEntity(
+                        text=concept,
+                        entity_id=axis,
+                        entity_type="MeasurementAxis",
+                        confidence=0.8,  # 개념 매핑은 직접 축 언급보다 약간 낮은 신뢰도
+                        properties={"source": "concept_mapping"},
+                    ))
+                break  # 첫 번째 매칭된 개념만 처리
+
+        return entities
+
     def _extract_values(self, query: str) -> List[ExtractedEntity]:
         """수치값 추출"""
         entities = []
-        # 장비명 내부 숫자를 제외하기 위한 패턴 (UR5e, Axia80 등)
-        equipment_pattern = re.compile(r'(UR5e|Axia80)', re.IGNORECASE)
+        # 장비명/조인트명 내부 숫자를 제외하기 위한 패턴 (UR5e, Axia80, Joint_0 등)
+        equipment_pattern = re.compile(r'(UR5e|Axia80|Joint[_\-]?\d)', re.IGNORECASE)
         equipment_spans = [(m.start(), m.end()) for m in equipment_pattern.finditer(query)]
 
         for match in self.VALUE_PATTERN.finditer(query):
@@ -350,8 +466,39 @@ class EntityExtractor:
                     break  # 카테고리당 하나만 추가
         return entities
 
+    def _extract_maintenance_status(self, query: str) -> List[ExtractedEntity]:
+        """예비보전/예방보전 상태 쿼리 추출
+
+        "현재 예비보전 상태는 어때?" → MaintenanceStatus 엔티티 추출
+        "로봇 상태 확인해줘" → MaintenanceStatus 엔티티 추출
+        """
+        entities = []
+        query_lower = query.lower()
+
+        # 예비보전 관련 키워드 매칭
+        for keyword in self.MAINTENANCE_KEYWORDS:
+            if keyword.lower() in query_lower:
+                # 상태 확인 키워드가 함께 있는지 확인
+                has_status_check = any(
+                    sk.lower() in query_lower
+                    for sk in self.STATUS_CHECK_KEYWORDS
+                )
+                entities.append(ExtractedEntity(
+                    text=keyword,
+                    entity_id="MAINTENANCE_STATUS",
+                    entity_type="MaintenanceStatus",
+                    confidence=0.95 if has_status_check else 0.85,
+                    properties={
+                        "keyword": keyword,
+                        "has_status_check": has_status_check,
+                    },
+                ))
+                return entities  # 하나만 추출
+
+        return entities
+
     def _extract_ontology_entities(self, query: str) -> List[ExtractedEntity]:
-        """온톨로지 엔티티 직접 매칭"""
+        """온톨로지 엔티티 직접 매칭 (한국어 호환)"""
         entities = []
         query_lower = query.lower()
 
@@ -360,11 +507,27 @@ class EntityExtractor:
 
         matched_spans: List[Tuple[int, int]] = []
 
+        def is_boundary(char: str) -> bool:
+            """단어 경계 문자인지 확인 (ASCII 영숫자/언더스코어가 아니면 경계)"""
+            if not char:
+                return True
+            # ASCII 영숫자 또는 언더스코어는 경계가 아님
+            if char.isascii() and (char.isalnum() or char == '_'):
+                return False
+            return True
+
         for key in sorted_keys:
-            # 단어 경계 검사
-            pattern = re.compile(r'\b' + re.escape(key) + r'\b', re.IGNORECASE)
+            # 단순 대소문자 무시 매칭
+            pattern = re.compile(re.escape(key), re.IGNORECASE)
             for match in pattern.finditer(query_lower):
                 start, end = match.start(), match.end()
+
+                # 경계 검사: 앞뒤 문자가 영숫자/언더스코어가 아니어야 함
+                char_before = query_lower[start - 1] if start > 0 else ''
+                char_after = query_lower[end] if end < len(query_lower) else ''
+
+                if not is_boundary(char_before) or not is_boundary(char_after):
+                    continue
 
                 # 이미 매칭된 구간과 겹치지 않는지 확인
                 overlaps = any(

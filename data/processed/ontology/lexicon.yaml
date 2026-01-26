@@ -226,6 +226,8 @@ components:
   joint_0:
     canonical: "Joint_0"
     synonyms:
+      - "Joint_0"
+      - "joint_0"
       - "joint 0"
       - "Joint 0"
       - "joint0"
@@ -235,11 +237,15 @@ components:
       - "베이스 조인트"
       - "J0"
       - "0번 조인트"
+      - "0번축"
+      - "0축"
     node_id: "COMP_JOINT_0"
 
   joint_1:
     canonical: "Joint_1"
     synonyms:
+      - "Joint_1"
+      - "joint_1"
       - "joint 1"
       - "Joint 1"
       - "joint1"
@@ -249,11 +255,15 @@ components:
       - "숄더 조인트"
       - "J1"
       - "1번 조인트"
+      - "1번축"
+      - "1축"
     node_id: "COMP_JOINT_1"
 
   joint_2:
     canonical: "Joint_2"
     synonyms:
+      - "Joint_2"
+      - "joint_2"
       - "joint 2"
       - "Joint 2"
       - "joint2"
@@ -263,11 +273,15 @@ components:
       - "엘보우 조인트"
       - "J2"
       - "2번 조인트"
+      - "2번축"
+      - "2축"
     node_id: "COMP_JOINT_2"
 
   joint_3:
     canonical: "Joint_3"
     synonyms:
+      - "Joint_3"
+      - "joint_3"
       - "joint 3"
       - "Joint 3"
       - "joint3"
@@ -277,11 +291,15 @@ components:
       - "손목 1"
       - "J3"
       - "3번 조인트"
+      - "3번축"
+      - "3축"
     node_id: "COMP_JOINT_3"
 
   joint_4:
     canonical: "Joint_4"
     synonyms:
+      - "Joint_4"
+      - "joint_4"
       - "joint 4"
       - "Joint 4"
       - "joint4"
@@ -291,11 +309,15 @@ components:
       - "손목 2"
       - "J4"
       - "4번 조인트"
+      - "4번축"
+      - "4축"
     node_id: "COMP_JOINT_4"
 
   joint_5:
     canonical: "Joint_5"
     synonyms:
+      - "Joint_5"
+      - "joint_5"
       - "joint 5"
       - "Joint 5"
       - "joint5"
@@ -305,6 +327,8 @@ components:
       - "손목 3"
       - "J5"
       - "5번 조인트"
+      - "5번축"
+      - "5축"
     node_id: "COMP_JOINT_5"
 
   # 케이블

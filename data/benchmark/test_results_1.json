@@ -1,0 +1,367 @@
+[
+  {
+    "id": "ONT-001",
+    "question": "Fz가 뭐야?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "Fz는 Z축 방향의 힘을 측정하는 센서 축입니다. 이는 로봇이 수직 방향으로 얼마나 많은 힘을 가하거나 받고 있는지를 나타냅니다. 이 값의 단위는 N(뉴턴)이며, 정상적인 범위는 -60N에서 0N 사이입니다. 즉, 로봇이 아무런 작업을 하지 않을 때는 이 범위 내에서 측정됩니다. 하지만 센서가 감지할 수 있는 전체 범위는 -1000N에서 1000N까지입니다",
+    "abstain_reason": null,
+    "query_type": "ontology",
+    "expected_entities": [
+      "Fz"
+    ],
+    "analysis_entity": "Fz",
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ONT-002",
+    "question": "Fx와 Fz의 차이가 뭐야?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "Fx와 Fz는 모두 힘을 측정하는 축이지만, 측정하는 방향과 범위에 차이가 있습니다. Fx는 X축 방향의 힘을 측정하고, 정상 범위는 -10N에서 10N입니다. 반면에 Fz는 Z축 방향의 힘을 측정하며, 정상 범위는 -60N에서 0N입니다.\n\n더 자세히 말하자면, Fx의 정상 허용치가 Fz보다 높습니다. 즉, Fx는 더 큰 힘을 감지할 수 있습니다. 하지만",
+    "abstain_reason": null,
+    "query_type": "ontology",
+    "expected_entities": [
+      "Fx",
+      "Fz"
+    ],
+    "analysis_entity": "Fz",
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ONT-003",
+    "question": "UR5e가 뭐야?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "UR5e는 Universal Robots에서 제조한 협동로봇입니다. 이 로봇은 최대 5.0kg의 무게를 들 수 있으며, 작업 반경은 850mm입니다. 또한, 6축 로봇으로 다양한 작업을 수행할 수 있습니다. 이 정보는 온톨로지에서 조회한 결과이며, 신뢰도는 95%입니다.",
+    "abstain_reason": null,
+    "query_type": "ontology",
+    "expected_entities": [
+      "UR5e"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ONT-004",
+    "question": "Axia80 센서는 뭘 측정해?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.85,
+    "answer": "Axia80 센서는 6축 힘/토크를 측정하는 장비입니다. 이는 로봇이 물체를 다루는 과정에서 발생하는 힘과 회전력을 정밀하게 파악하기 위해 사용됩니다. \n\n추론 결과에 따르면, 센서 관련 에러 2개가 발견되었습니다. 에러 코드는 C710 (센서 에러)과 C740 (힘 센서 에러)입니다. 이러한 에러는 주로 센서의 캘리브레이션 필요 혹은 하드웨어 고장으로 인",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "Axia80"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "SEN-001",
+    "question": "Fz가 -350N인데 뭐야?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "Fz 값이 -350N으로 측정된 것은 로봇이 충돌했을 가능성이 높다는 신호입니다. 일반적으로 Fz 값은 -60N에서 0N 사이에서 측정되는데, 이 범위를 벗어난다면 로봇이 이상한 행동을 하고 있을 수 있습니다.\n\n추론 결과, 이 값은 로봇의 상태가 '경고' 상태로 변경되었음을 나타냅니다. 이는 로봇이 충돌했을 가능성이 있음을 의미하며, 이 추론의 신뢰도는 ",
+    "abstain_reason": null,
+    "query_type": "ontology",
+    "expected_entities": [
+      "Fz",
+      "-350N"
+    ],
+    "analysis_entity": "Fz",
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "SEN-002",
+    "question": "Fx 값이 100N 넘었어",
+    "expected_abstain": false,
+    "actual_abstain": true,
+    "confidence": 0,
+    "answer": "해당 질문에 대한 충분한 근거를 찾지 못했습니다. 질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요.",
+    "abstain_reason": "classification confidence too low (0.30 < 0.4)",
+    "query_type": "ontology",
+    "expected_entities": [
+      "Fx",
+      "100N"
+    ],
+    "analysis_entity": null,
+    "passed": false,
+    "issue": "False ABSTAIN (should answer)"
+  },
+  {
+    "id": "SEN-003",
+    "question": "센서에 진동이 감지됐어",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.8099999999999999,
+    "answer": "센서에서 진동이 감지된 것에 대해 분석한 결과, 이는 주로 로봇의 조인트 마모나 볼트 풀림으로 인한 것일 가능성이 있습니다. 또한, 센서 자체의 문제로 인해 진동이 감지된 것일 수도 있습니다. 이에 대한 신뢰도는 약 81%입니다.\n\n조인트 마모나 볼트 풀림은 로봇의 움직임에서 불규칙한 진동을 일으킬 수 있습니다. 이런 경우, 관련 에러 코드인 C204가 발",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "PAT_VIBRATION"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ERR-001",
+    "question": "C153 에러 해결법 알려줘",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 1.0,
+    "answer": "C153 에러는 로봇이 충돌하거나 과부하 상태가 되거나 위치 오류가 발생했을 때 발생합니다. 이 에러를 해결하기 위해 다음과 같은 조치를 권장합니다.\n\n1. 로봇의 작업 경로를 점검하고 주변의 장애물을 제거하여 충돌을 방지하세요.\n2. 로봇이 운반하는 페이로드의 무게를 확인하고 필요하다면 페이로드 설정을 조정하여 과부하 상태를 방지하세요.\n3. 로봇의 위치",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "C153"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ERR-002",
+    "question": "C119 에러가 뭐야?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 1.0,
+    "answer": "C119 에러는 로봇이 충돌하거나 안전 설정이 잘못되었을 때 발생하는 에러입니다. 이 에러는 로봇의 운동 경로에 장애물이 있거나, 로봇의 안전 설정이 잘못되어 있을 때 발생하게 됩니다.\n\n충돌 패턴과 안전 위반 패턴이 이 에러를 유발하는 것으로 확인되었습니다. 이는 로봇이 작업 중에 물체와 충돌하거나 안전 설정이 잘못되어 있을 때 발생합니다. \n\n따라서, ",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "C119"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ERR-003",
+    "question": "C189 에러 원인이 뭐야?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 1.0,
+    "answer": "C189 에러는 로봇이 과부하 상태에 있다는 것을 나타냅니다. 이는 로봇이 무거운 물체를 들거나, 로봇 팔이 너무 많은 힘을 받아서 발생할 수 있습니다.\n\n이 에러는 '과부하 패턴'이라는 특정 패턴에 의해 발생하며, 이 패턴은 로봇이 너무 많은 무게를 들거나, 너무 많은 힘을 받아서 발생합니다. 이 패턴은 로봇의 센서가 측정하는 힘과 토크가 정상 범위를 벗",
+    "abstain_reason": null,
+    "query_type": "hybrid",
+    "expected_entities": [
+      "C189"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ERR-004",
+    "question": "joint position 에러가 자주 나. 왜 그래?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.85,
+    "answer": "로봇의 'joint position' 에러는 주로 위치 오차, 프로그램 오류, 물리적 충돌, 하중 초과 등의 원인으로 발생합니다. 이러한 문제는 로봇의 관절이 움직이는 경로에 장애물이 있거나, 로봇이 지정된 경로를 따르지 않거나, 로봇이 지정된 위치에 도달하지 못했을 때 발생할 수 있습니다.\n\n이를 해결하기 위해 먼저 로봇의 작업 경로를 확인하고 필요하다면",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "CAT_JOINT_POSITION"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "ERR-005",
+    "question": "communication 에러 해결 방법은?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.85,
+    "answer": "통신 관련 에러가 발생한 것으로 보입니다. 이는 주로 케이블 불량이나 통신 손실로 인해 발생하는데, 이에 대한 해결 방법으로는 시스템 재부팅과 케이블 점검을 권장합니다.\n\n우리의 추론 시스템은 통신 카테고리에서 총 26개의 에러를 찾았습니다. 그 중 'C4 Communication issue'라는 에러가 특히 주목할 만한데, 이 에러는 '통신 손실'과 '케",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "CAT_COMMUNICATION"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "PAT-001",
+    "question": "최근 충돌 패턴이 있나요?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "최근에 충돌 패턴이 2회 감지되었습니다. 마지막 감지 시각은 2024년 1월 20일 10시였습니다. 이는 로봇이 물체와 충돌했을 때 발생하는 패턴으로, 로봇의 센서가 감지한 힘의 변화를 기반으로 판단합니다.\n\n충돌 패턴의 감지는 로봇의 센서가 감지한 힘의 급격한 변화를 기반으로 합니다. 이 경우, 'Fz' 축에서 힘의 변화가 가장 컸습니다. 'Fz'는 로봇",
+    "abstain_reason": null,
+    "query_type": "ontology",
+    "expected_entities": [
+      "PAT_COLLISION"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "PAT-002",
+    "question": "오늘 과부하 발생했어?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.8999999999999999,
+    "answer": "네, 오늘 과부하가 발생한 것으로 확인됩니다. 이는 로봇이 정상적으로 운용되는 범위를 초과하여 작동하였음을 의미합니다. \n\n세부적으로 보면, 오늘 과부하 패턴(PAT_OVERLOAD)이 총 4회 감지되었습니다. 마지막으로 감지된 시간은 2024년 1월 19일 14시 30분이었으며, 이때 수직 방향의 힘(Fz)이 평균 약 394.6N으로 측정되었습니다. 이 ",
+    "abstain_reason": null,
+    "query_type": "ontology",
+    "expected_entities": [
+      "PAT_OVERLOAD"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "PAT-003",
+    "question": "지난 주 에러 패턴 알려줘",
+    "expected_abstain": false,
+    "actual_abstain": true,
+    "confidence": 0,
+    "answer": "해당 질문에 대한 충분한 근거를 찾지 못했습니다. 질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요.",
+    "abstain_reason": "classification confidence too low (0.35 < 0.4)",
+    "query_type": "ontology",
+    "expected_entities": [
+      "PAT_ERROR"
+    ],
+    "analysis_entity": null,
+    "passed": false,
+    "issue": "False ABSTAIN (should answer)"
+  },
+  {
+    "id": "PAT-004",
+    "question": "현재 예비보전 상태는 어때?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.9,
+    "answer": "현재 예비보전 상태는 정상입니다. 최근 7일간 특이 패턴이 감지되지 않았으며, 로봇 시스템이 안정적으로 운영되고 있습니다. 이는 로봇의 유지보수 상태를 판단하는 과정에서 패턴 이력을 분석한 결과입니다.\n\n이 결과는 90%의 신뢰도로 추론되었습니다. 따라서 현재로서는 특별한 조치를 취할 필요가 없습니다. 그러나 로봇 시스템의 상태는 지속적으로 모니터링하고, ",
+    "abstain_reason": null,
+    "query_type": "ontology",
+    "expected_entities": [
+      "MAINTENANCE_STATUS"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "SPEC-001",
+    "question": "UR5e 페이로드가 몇 kg이야?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "UR5e 협동로봇의 최대 페이로드는 5.0kg입니다. 이는 로봇이 안전하게 들 수 있는 최대 무게를 의미합니다. 이 정보는 UR5e의 공식 사양에서 확인할 수 있습니다. 이를 초과하는 무게를 로봇에 부여하면, 로봇의 성능에 영향을 미치거나 장비에 손상을 줄 수 있으니 주의해야 합니다. 이 정보에 대한 신뢰도는 95%입니다.",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "UR5e"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "SPEC-002",
+    "question": "UR5e 작업 반경은?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "UR5e 협동로봇의 작업 반경은 850mm입니다. 이 정보는 온톨로지에서 UR5e의 사양을 조회한 결과로, 이는 로봇이 중심점에서 얼마나 멀리까지 도달할 수 있는지를 나타내는 값입니다. 이 정보의 신뢰도는 95%입니다. 이를 참고하여 UR5e 로봇을 사용하시면 됩니다.",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "UR5e"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "SPEC-003",
+    "question": "Fz 정상 범위가 어떻게 돼?",
+    "expected_abstain": false,
+    "actual_abstain": false,
+    "confidence": 0.95,
+    "answer": "Fz, 즉 Z축 힘의 정상 범위는 -60N에서 0N입니다. 이는 로봇이 아무런 작업을 하지 않고 대기 상태(IDLE)일 때의 수치입니다. 이 범위를 벗어나면 로봇이 부정상적인 힘을 받고 있다는 것을 의미하므로, 이 경우 로봇의 상태를 점검하거나 작업 환경을 확인해야 합니다. 이 정보는 95%의 신뢰도로 확인되었습니다.",
+    "abstain_reason": null,
+    "query_type": "rag",
+    "expected_entities": [
+      "Fz"
+    ],
+    "analysis_entity": "Fz",
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "INV-001",
+    "question": "안녕?",
+    "expected_abstain": true,
+    "actual_abstain": true,
+    "confidence": 0,
+    "answer": "해당 질문에 대한 충분한 근거를 찾지 못했습니다. 질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요.",
+    "abstain_reason": "no entities extracted",
+    "query_type": "rag",
+    "expected_entities": [],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "INV-002",
+    "question": "오늘 날씨 어때?",
+    "expected_abstain": true,
+    "actual_abstain": true,
+    "confidence": 0,
+    "answer": "해당 질문에 대한 충분한 근거를 찾지 못했습니다. 질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요.",
+    "abstain_reason": "reasoning confidence too low (0.30 < 0.5)",
+    "query_type": "rag",
+    "expected_entities": [],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "INV-003",
+    "question": "C999 에러 해결법",
+    "expected_abstain": true,
+    "actual_abstain": true,
+    "confidence": 0,
+    "answer": "해당 질문에 대한 충분한 근거를 찾지 못했습니다. 질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요.",
+    "abstain_reason": "no reasoning chain",
+    "query_type": "rag",
+    "expected_entities": [
+      "C999"
+    ],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  },
+  {
+    "id": "INV-004",
+    "question": "피자 추천해줘",
+    "expected_abstain": true,
+    "actual_abstain": true,
+    "confidence": 0,
+    "answer": "해당 질문에 대한 충분한 근거를 찾지 못했습니다. 질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요.",
+    "abstain_reason": "no entities extracted",
+    "query_type": "rag",
+    "expected_entities": [],
+    "analysis_entity": null,
+    "passed": true,
+    "issue": null
+  }
+]

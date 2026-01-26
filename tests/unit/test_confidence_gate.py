@@ -63,9 +63,9 @@ class TestConfidenceGateInit:
     def test_default_thresholds(self):
         """기본 임계값 테스트"""
         gate = ConfidenceGate()
-        assert gate.min_confidence == 0.5
-        assert gate.min_entity_confidence == 0.6
-        assert gate.min_classification_confidence == 0.4
+        assert gate.min_confidence == 0.4  # 0.5 → 0.4 (2026-01-26 변경)
+        assert gate.min_entity_confidence == 0.5  # 0.6 → 0.5 (2026-01-26 변경)
+        assert gate.min_classification_confidence == 0.25  # 0.4 → 0.25 (2026-01-26 변경)
 
     def test_custom_thresholds(self):
         """커스텀 임계값 테스트"""
@@ -88,14 +88,16 @@ class TestClassificationQualityCheck:
 
     def test_low_classification_confidence_abstain(self, gate):
         """분류 신뢰도가 낮으면 ABSTAIN"""
+        # 고가치 엔티티가 있으면 임계값이 0.15로 낮아지므로
+        # 일반 엔티티(Other 타입)로 테스트 (임계값 0.20)
         classification = ClassificationResult(
             query="test",
             query_type=QueryType.ONTOLOGY,
-            confidence=0.2,  # 임계값 0.4 미만
+            confidence=0.1,  # 임계값 0.20 미만 (일반 엔티티 기준)
             entities=[
                 ExtractedEntity(
-                    text="Fz", entity_id="Fz",
-                    entity_type="MeasurementAxis", confidence=0.9
+                    text="something", entity_id="something",
+                    entity_type="Other", confidence=0.9  # 일반 타입
                 )
             ],
         )

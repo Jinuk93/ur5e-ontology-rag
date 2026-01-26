@@ -236,6 +236,65 @@ class VectorStore:
 
         return search_results
 
+    def search_with_rerank(
+        self,
+        query: str,
+        initial_top_k: int = 20,
+        final_top_n: int = 5,
+        filter_metadata: Optional[Dict[str, Any]] = None,
+        reranker_model: Optional[str] = None,
+    ) -> List[SearchResult]:
+        """
+        리랭킹을 포함한 2단계 검색
+
+        1단계: 임베딩 유사도로 initial_top_k개 후보 검색
+        2단계: Cross-Encoder로 리랭킹하여 final_top_n개 반환
+
+        Args:
+            query: 검색 쿼리
+            initial_top_k: 1단계 후보 수 (기본: 20)
+            final_top_n: 최종 반환 수 (기본: 5)
+            filter_metadata: 메타데이터 필터
+            reranker_model: 리랭커 모델 이름 (기본: bge-reranker-base)
+
+        Returns:
+            리랭킹된 SearchResult 리스트
+        """
+        # 1단계: 벡터 검색으로 후보 추출
+        candidates = self.search(
+            query=query,
+            top_k=initial_top_k,
+            filter_metadata=filter_metadata,
+        )
+
+        if not candidates:
+            return []
+
+        # 리랭커가 필요 없는 경우 (후보가 final_top_n 이하)
+        if len(candidates) <= final_top_n:
+            return candidates
+
+        # 2단계: Cross-Encoder 리랭킹
+        try:
+            from .reranker import get_reranker
+
+            reranker = get_reranker(model_name=reranker_model)
+            reranked = reranker.rerank_search_results(
+                query=query,
+                search_results=candidates,
+                top_n=final_top_n,
+            )
+
+            logger.info(
+                f"리랭킹 검색 완료: query='{query[:30]}...', "
+                f"후보={len(candidates)}개 → 최종={len(reranked)}개"
+            )
+            return reranked
+
+        except ImportError as e:
+            logger.warning(f"리랭커 사용 불가, 기본 검색 결과 반환: {e}")
+            return candidates[:final_top_n]
+
     def get_by_id(self, chunk_id: str) -> Optional[SearchResult]:
         """
         ID로 청크 조회

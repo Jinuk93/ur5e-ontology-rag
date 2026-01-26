@@ -21,6 +21,15 @@ from .graph_traverser import GraphTraverser, OntologyPath, TraversalResult
 logger = logging.getLogger(__name__)
 
 
+def _get_entity_attr(entity, attr: str, default=None):
+    """ExtractedEntity 객체 또는 딕셔너리에서 속성 가져오기"""
+    if hasattr(entity, attr):
+        return getattr(entity, attr)
+    elif isinstance(entity, dict):
+        return entity.get(attr, default)
+    return default
+
+
 @dataclass
 class EntityContext:
     """엔티티 컨텍스트"""
@@ -188,6 +197,78 @@ class OntologyEngine:
             "confidence": confidence,
         }
 
+    def _build_all_patterns_history(self, limit: int = 5) -> Dict[str, Any]:
+        """모든 패턴 이력(에러 패턴 전체) 요약
+
+        "지난 주 에러 패턴 알려줘" 같은 일반적인 패턴 조회 시 사용
+        """
+        patterns = self._load_detected_patterns()
+
+        # 타임스탬프 필드 후보
+        def _ts(item: Dict[str, Any]) -> str:
+            return str(item.get("timestamp") or item.get("start_time") or item.get("time") or "")
+
+        # 전체 패턴 정렬
+        patterns_sorted = sorted(patterns, key=_ts, reverse=True)
+        count = len(patterns_sorted)
+
+        # 패턴 타입별 카운트
+        type_counts: Dict[str, int] = {}
+        for p in patterns_sorted:
+            ptype = (p.get("pattern_type") or p.get("type") or "unknown").lower()
+            type_counts[ptype] = type_counts.get(ptype, 0) + 1
+
+        # 최근 샘플
+        recent_samples = [
+            {
+                "timestamp": _ts(x),
+                "pattern_type": x.get("pattern_type") or x.get("type") or "unknown",
+                "confidence": float(x.get("confidence", 0.0)) if x.get("confidence") is not None else 0.0,
+            }
+            for x in patterns_sorted[:limit]
+        ]
+
+        # 데이터 기간
+        all_ts = [_ts(x) for x in patterns if _ts(x)]
+        time_range = {
+            "start": min(all_ts) if all_ts else "",
+            "end": max(all_ts) if all_ts else "",
+        }
+
+        if not patterns:
+            desc = (
+                "현재 저장된 패턴 이력 데이터가 없습니다. "
+                "센서 데이터는 최근 7일치만 보관되며, 해당 기간에 감지된 패턴이 없거나 "
+                "요청하신 기간의 데이터가 존재하지 않을 수 있습니다."
+            )
+            confidence = 0.85
+        elif count == 0:
+            desc = (
+                f"데이터 기간({time_range['start']} ~ {time_range['end']})에서 "
+                "감지된 에러/이상 패턴이 없습니다."
+            )
+            confidence = 0.9
+        else:
+            type_summary = ", ".join([f"{k}: {v}건" for k, v in type_counts.items()])
+            latest_ts = _ts(patterns_sorted[0]) if count else ""
+            desc = (
+                f"데이터 기간({time_range['start']} ~ {time_range['end']})에서 "
+                f"총 {count}건의 패턴이 감지되었습니다.\n"
+                f"패턴 유형별: {type_summary}\n"
+                f"마지막 감지 시각: {latest_ts}"
+            )
+            confidence = 0.95
+
+        return {
+            "description": desc,
+            "count": count,
+            "latest_timestamp": _ts(patterns_sorted[0]) if count else "",
+            "samples": recent_samples,
+            "time_range": time_range,
+            "type_counts": type_counts,
+            "confidence": confidence,
+        }
+
     # ================================================================
     # 엔티티 컨텍스트 로딩
     # ================================================================
@@ -299,22 +380,67 @@ class OntologyEngine:
         evidence = {"entities_processed": [], "rules_applied": []}
 
         # 0. 질문 유형 확인
-        has_value = any(e.get("entity_type") == "Value" for e in entities)
+        has_value = any(_get_entity_attr(e, "entity_type") == "Value" for e in entities)
         is_definition_query = self._is_definition_query(query)
         is_comparison_query = self._is_comparison_query(query)
         is_specification_query = self._is_specification_query(query)
+        is_relationship_query = self._is_relationship_query(query)
+        is_resolution_query = self._is_resolution_query(query)
 
-        # 0-1. 비교 질문 처리 (여러 엔티티 비교)
+        # 0-1. 관계 질문 처리 (Axia80은 어디에 장착돼?)
+        if is_relationship_query and not has_value and len(entities) >= 1:
+            result = self._process_relationship_query(entities, query)
+            if result:
+                reasoning_chain.extend(result.get("reasoning", []))
+                conclusions.extend(result.get("conclusions", []))
+                ontology_paths.extend(result.get("paths", []))
+                evidence["entities_processed"].extend([_get_entity_attr(e, "entity_id") for e in entities])
+                return ReasoningResult(
+                    query=query,
+                    entities=entities,
+                    reasoning_chain=reasoning_chain,
+                    conclusions=conclusions,
+                    predictions=predictions,
+                    recommendations=recommendations,
+                    ontology_paths=list(set(ontology_paths)),
+                    confidence=result.get("confidence", 0.9),
+                    evidence=evidence,
+                )
+
+        # 0-2. 비교 질문 처리 (여러 엔티티 비교)
         if is_comparison_query and not has_value:
-            axis_entities = [e for e in entities if e.get("entity_type") == "MeasurementAxis"]
+            axis_entities = [e for e in entities if _get_entity_attr(e, "entity_type") == "MeasurementAxis"]
             if len(axis_entities) >= 2:
                 result = self._process_comparison(axis_entities, query)
                 if result:
                     reasoning_chain.extend(result.get("reasoning", []))
                     conclusions.extend(result.get("conclusions", []))
                     ontology_paths.extend(result.get("paths", []))
-                    evidence["entities_processed"].extend([e.get("entity_id") for e in axis_entities])
+                    evidence["entities_processed"].extend([_get_entity_attr(e, "entity_id") for e in axis_entities])
                     # 비교 질문 처리 완료 시 조기 반환
+                    return ReasoningResult(
+                        query=query,
+                        entities=entities,
+                        reasoning_chain=reasoning_chain,
+                        conclusions=conclusions,
+                        predictions=predictions,
+                        recommendations=recommendations,
+                        ontology_paths=list(set(ontology_paths)),
+                        confidence=result.get("confidence", 0.9),
+                        evidence=evidence,
+                    )
+
+        # 0-3. 대처/해결 질문 처리 (토크가 높을 때 어떻게 대처?)
+        if is_resolution_query and not has_value:
+            axis_entities = [e for e in entities if _get_entity_attr(e, "entity_type") == "MeasurementAxis"]
+            if axis_entities:
+                result = self._process_resolution_query(axis_entities, query)
+                if result:
+                    reasoning_chain.extend(result.get("reasoning", []))
+                    conclusions.extend(result.get("conclusions", []))
+                    recommendations.extend(result.get("recommendations", []))
+                    ontology_paths.extend(result.get("paths", []))
+                    evidence["entities_processed"].extend([_get_entity_attr(e, "entity_id") for e in axis_entities])
                     return ReasoningResult(
                         query=query,
                         entities=entities,
@@ -329,12 +455,15 @@ class OntologyEngine:
 
         # 1. 엔티티별 컨텍스트 로딩 및 처리
         for entity_info in entities:
-            entity_id = entity_info.get("entity_id", "")
-            entity_type = entity_info.get("entity_type", "")
-            entity_text = entity_info.get("text", "")
+            entity_id = _get_entity_attr(entity_info, "entity_id", "")
+            entity_type = _get_entity_attr(entity_info, "entity_type", "")
+            entity_text = _get_entity_attr(entity_info, "text", "")
 
             # 정의 질문 처리 (값 없이 "Fy가 뭐야?", "UR5e가 뭐야?" 같은 질문)
-            definition_entity_types = ("MeasurementAxis", "Robot", "Sensor", "Equipment")
+            definition_entity_types = (
+                "MeasurementAxis", "Robot", "Sensor", "Equipment",
+                "ControlBox", "ToolFlange", "Joint", "Component"
+            )
             if entity_type in definition_entity_types and not has_value and is_definition_query:
                 result = self._process_entity_definition(entity_id, entity_type)
                 if result:
@@ -344,8 +473,8 @@ class OntologyEngine:
                     evidence["entities_processed"].append(entity_id)
                 continue
 
-            # 사양 질문 처리 (값 없이 "UR5e 페이로드가 몇 kg?" 같은 질문)
-            spec_entity_types = ("Robot", "Sensor", "Equipment", "MeasurementAxis")
+            # 사양 질문 처리 (값 없이 "UR5e 페이로드가 몇 kg?", "Joint_0 가동 범위?" 같은 질문)
+            spec_entity_types = ("Robot", "Sensor", "Equipment", "MeasurementAxis", "Joint")
             if entity_type in spec_entity_types and not has_value and is_specification_query:
                 result = self._process_specification(entity_id, entity_type, query)
                 if result:
@@ -364,6 +493,15 @@ class OntologyEngine:
                     predictions.extend(result.get("predictions", []))
                     ontology_paths.extend(result.get("paths", []))
                     evidence["entities_processed"].append(entity_id)
+                elif not has_value and not is_definition_query:
+                    # 값이 없고 정의 질문도 아닌 경우 (트렌드/이상 질문)
+                    # 측정축 정보와 함께 안내 제공
+                    result = self._process_measurement_info(entity_id, query)
+                    if result:
+                        reasoning_chain.extend(result.get("reasoning", []))
+                        conclusions.extend(result.get("conclusions", []))
+                        ontology_paths.extend(result.get("paths", []))
+                        evidence["entities_processed"].append(entity_id)
 
             # Pattern 처리
             elif entity_type == "Pattern":
@@ -404,9 +542,26 @@ class OntologyEngine:
                     ontology_paths.extend(result.get("paths", []))
                     evidence["entities_processed"].append(entity_id)
 
+            # MaintenanceStatus 처리 (예비보전 상태 등)
+            elif entity_type == "MaintenanceStatus":
+                result = self._process_maintenance_status(entity_id, entity_text, context)
+                if result:
+                    reasoning_chain.extend(result.get("reasoning", []))
+                    conclusions.extend(result.get("conclusions", []))
+                    recommendations.extend(result.get("recommendations", []))
+                    ontology_paths.extend(result.get("paths", []))
+                    evidence["entities_processed"].append(entity_id)
+
         # 2. 신뢰도 계산
         if conclusions:
-            confidences = [c.get("confidence", 0.5) for c in conclusions]
+            confidences = []
+            for c in conclusions:
+                if isinstance(c, str):
+                    confidences.append(0.8)  # 문자열 결론은 기본 신뢰도
+                elif isinstance(c, dict):
+                    confidences.append(c.get("confidence", 0.5))
+                else:
+                    confidences.append(0.5)
             total_confidence = sum(confidences) / len(confidences)
         else:
             # 결론 없으면 낮은 신뢰도 (ABSTAIN 가능성)
@@ -453,6 +608,213 @@ class OntologyEngine:
                 return True
         return False
 
+    def _is_resolution_query(self, query: str) -> bool:
+        """대처/해결 질문인지 확인 (높을 때 어떻게 대처하나요? 등)"""
+        import re
+        resolution_patterns = [
+            r"(대처|해결|조치|처리|수정|고치|fix)",
+            r"어떻게.*(하|해|할)",
+            r"(높|낮|이상|초과|부족).{0,5}(을|면|때).{0,10}(어떻게|뭘|무엇)",
+        ]
+        for pattern in resolution_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                return True
+        return False
+
+    def _process_resolution_query(self, axis_entities: list, query: str) -> Optional[Dict]:
+        """대처/해결 질문 처리 (토크가 높을 때 어떻게 대처?)"""
+        import re
+
+        reasoning = []
+        conclusions = []
+        recommendations = []
+        paths = []
+
+        # 높음/낮음 여부 판단
+        is_high = bool(re.search(r"(높|크|초과|넘|이상)", query))
+        is_low = bool(re.search(r"(낮|작|부족|미달)", query))
+
+        for entity_info in axis_entities:
+            entity_id = _get_entity_attr(entity_info, "entity_id", "")
+            entity = self.ontology.get_entity(entity_id)
+            if not entity:
+                continue
+
+            props = entity.properties or {}
+            measurement_type = props.get("measurement_type", "")
+            axis = props.get("axis", "")
+            unit = props.get("unit", "")
+            normal_range = props.get("normal_range", [])
+
+            reasoning.append(f"{entity_id} ({measurement_type}) 대처 방법을 분석합니다.")
+
+            # 토크 관련 대처
+            if measurement_type == "torque" or entity_id in ("Tx", "Ty", "Tz"):
+                if is_high:
+                    conclusion_text = f"""**{entity_id} (토크) 값이 높을 때 대처 방법:**
+
+1. **즉시 조치**
+   - 로봇 속도를 낮추세요 (속도가 빠를수록 토크 부하 증가)
+   - 페이로드(적재 중량)를 확인하고 필요시 감량하세요
+
+2. **점검 사항**
+   - 조인트 상태 점검: 마모, 이물질, 윤활 상태 확인
+   - 케이블 꼬임이나 간섭 여부 확인
+   - 작업 경로가 특정 관절에 무리를 주는지 검토
+
+3. **예방 조치**
+   - 정상 범위: {normal_range[0]}~{normal_range[1]} {unit}
+   - 작업 프로그램의 가감속 설정 완화
+   - 정기적인 조인트 캘리브레이션 수행"""
+                else:
+                    conclusion_text = f"{entity_id} 토크 관련 일반 대처: 정상 범위({normal_range[0]}~{normal_range[1]} {unit}) 내 유지를 권장합니다."
+
+            # 힘 관련 대처
+            elif measurement_type == "force" or entity_id in ("Fx", "Fy", "Fz"):
+                if is_high:
+                    conclusion_text = f"""**{entity_id} (힘) 값이 높을 때 대처 방법:**
+
+1. **즉시 조치**
+   - 로봇을 일시 정지하고 충돌 여부 확인
+   - 작업물이나 환경에 장애물이 있는지 점검
+
+2. **점검 사항**
+   - 그리퍼/툴 장착 상태 확인
+   - 센서 캘리브레이션 상태 점검
+   - 작업 경로가 물체와 간섭하는지 확인
+
+3. **예방 조치**
+   - 정상 범위: {normal_range[0]}~{normal_range[1]} {unit}
+   - 힘 제한(Force Limit) 설정 검토
+   - 충돌 감지 민감도 조정"""
+                else:
+                    conclusion_text = f"{entity_id} 힘 관련 일반 대처: 정상 범위({normal_range[0]}~{normal_range[1]} {unit}) 내 유지를 권장합니다."
+            else:
+                conclusion_text = f"{entity_id} 값 이상 시 센서 상태 및 캘리브레이션을 점검하세요."
+
+            conclusions.append({
+                "type": "resolution",
+                "entity_id": entity_id,
+                "description": conclusion_text,
+                "confidence": 0.9,
+            })
+
+            # 권장사항 추가
+            if is_high:
+                recommendations.append({
+                    "type": "immediate",
+                    "action": f"{entity_id} 과부하 대처: 속도 감소, 페이로드 확인, 경로 점검",
+                    "steps": ["속도 파라미터 조정", "적재 중량 확인", "작업 경로 재검토", "조인트/센서 점검"],
+                })
+
+            paths.append(f"{entity_id} → 대처방법 분석")
+
+        if conclusions:
+            return {
+                "reasoning": reasoning,
+                "conclusions": conclusions,
+                "recommendations": recommendations,
+                "paths": paths,
+                "confidence": 0.9,
+            }
+        return None
+
+    def _is_relationship_query(self, query: str) -> bool:
+        """관계 질문인지 확인 (어디에 장착, 연결, 구성, 어떤 센서가 측정 등)"""
+        import re
+        rel_patterns = [
+            r"어디에.*(장착|연결|설치|부착)",
+            r"(장착|연결|설치|부착).*(어디|위치)",
+            r"(구성요소|컴포넌트|부품).*(뭐|무엇)",
+            r"뭐가.*(연결|장착|설치)",
+            r"(포함|구성|이루어)",
+            # 측정 관계 질문: "어떤 센서가 측정해?", "무엇이 측정하는지"
+            r"어떤.*(센서|장비).*(측정|감지)",
+            r"(측정|감지).*(센서|장비).*(뭐|무엇|어떤)",
+            r"(뭐|무엇|뭘|어떤).*(측정|감지)",
+            # 정방향 측정 질문: "뭘 측정해?", "무엇을 측정해?"
+            r"(측정|감지).*(뭐|무엇|뭘)",
+        ]
+        for pattern in rel_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                return True
+        return False
+
+    def _process_relationship_query(self, entities: list, query: str) -> Optional[Dict]:
+        """관계 질문 처리 (Axia80은 어디에 장착돼?)"""
+        if len(entities) < 1:
+            return None
+
+        reasoning = []
+        conclusions = []
+        paths = []
+
+        # 주요 엔티티들의 관계 찾기
+        for entity_info in entities:
+            entity_id = _get_entity_attr(entity_info, "entity_id", "")
+            entity = self.ontology.get_entity(entity_id)
+            if not entity:
+                continue
+
+            reasoning.append(f"{entity_id} 엔티티의 관계를 탐색합니다.")
+
+            # 나가는 관계 조회
+            outgoing_rels = self.ontology.get_relationships_for_entity(entity_id, direction="outgoing")
+            # 들어오는 관계 조회
+            incoming_rels = self.ontology.get_relationships_for_entity(entity_id, direction="incoming")
+
+            all_rels = outgoing_rels + incoming_rels
+
+            for rel in all_rels:
+                # Relationship 객체에서 속성 가져오기
+                if hasattr(rel, 'relation'):
+                    rel_type = rel.relation.value if hasattr(rel.relation, 'value') else str(rel.relation)
+                else:
+                    rel_type = rel.get('relation', '') if isinstance(rel, dict) else str(rel)
+                source = rel.source if hasattr(rel, 'source') else (rel.get('source', '') if isinstance(rel, dict) else '')
+                target = rel.target if hasattr(rel, 'target') else (rel.get('target', '') if isinstance(rel, dict) else '')
+
+                # 장착/연결 관계 처리
+                if rel_type in ("MOUNTED_ON", "CONNECTED_TO", "HAS_COMPONENT", "PART_OF"):
+                    if source == entity_id:
+                        reasoning.append(f"{source}는 {target}에 {rel_type} 관계로 연결됩니다.")
+                        if rel_type == "MOUNTED_ON":
+                            conclusions.append(f"{source}는 {target}에 장착되어 있습니다.")
+                        elif rel_type == "CONNECTED_TO":
+                            conclusions.append(f"{source}는 {target}에 연결되어 있습니다.")
+                        elif rel_type == "HAS_COMPONENT":
+                            conclusions.append(f"{source}는 {target}를 구성요소로 포함합니다.")
+                    else:
+                        reasoning.append(f"{target}는 {source}의 일부입니다 ({rel_type}).")
+                        if rel_type == "MOUNTED_ON":
+                            conclusions.append(f"{target}는 {source}에 장착되어 있습니다.")
+                        elif rel_type == "HAS_COMPONENT":
+                            conclusions.append(f"{source}는 {target}를 포함합니다.")
+
+                    paths.append(f"{source} --[{rel_type}]--> {target}")
+
+                # 측정 관계 처리 (MEASURES)
+                elif rel_type == "MEASURES":
+                    if target == entity_id:
+                        # 역방향: "어떤 센서가 Fz를 측정해?" → source(Axia80)가 측정
+                        reasoning.append(f"{source}가 {target}를 측정합니다 (MEASURES 관계).")
+                        conclusions.append(f"{source} 센서가 {target}를 측정합니다.")
+                        paths.append(f"{source} --[{rel_type}]--> {target}")
+                    else:
+                        # 정방향: "Axia80이 뭘 측정해?" → target(Fx,Fy,...)를 측정
+                        reasoning.append(f"{source}가 {target}를 측정합니다.")
+                        conclusions.append(f"{source}는 {target}를 측정합니다.")
+                        paths.append(f"{source} --[{rel_type}]--> {target}")
+
+        if conclusions:
+            return {
+                "reasoning": reasoning,
+                "conclusions": conclusions,
+                "paths": paths,
+                "confidence": 0.9,
+            }
+        return None
+
     def _process_specification(self, entity_id: str, entity_type: str, query: str) -> Optional[Dict]:
         """사양 질문 처리 (페이로드가 몇 kg? 등)"""
         entity = self.ontology.get_entity(entity_id)
@@ -478,7 +840,7 @@ class OntologyEngine:
                 found_specs.append(f"최대 페이로드: {props['max_payload']}kg")
 
         # 범위/반경 관련
-        if any(kw in query_lower for kw in ["범위", "반경", "reach", "mm"]):
+        if any(kw in query_lower for kw in ["범위", "반경", "reach", "mm", "가동", "동작", "회전", "모션"]):
             if "reach_mm" in props:
                 found_specs.append(f"작업 반경: {props['reach_mm']}mm")
             if "range" in props:
@@ -489,6 +851,10 @@ class OntologyEngine:
                 nr = props["normal_range"]
                 unit = props.get("unit", "")
                 found_specs.append(f"정상 범위: {nr[0]}~{nr[1]} {unit}")
+            # Joint 가동 범위 (range_deg)
+            if "range_deg" in props:
+                rd = props["range_deg"]
+                found_specs.append(f"가동 범위: {rd[0]}°~{rd[1]}°")
 
         # 조인트/축 관련
         if any(kw in query_lower for kw in ["조인트", "joint", "축", "몇 축"]):
@@ -564,7 +930,7 @@ class OntologyEngine:
         # 비교할 엔티티들의 정보 수집
         comparison_data = []
         for entity_info in axis_entities:
-            entity_id = entity_info.get("entity_id", "")
+            entity_id = _get_entity_attr(entity_info, "entity_id", "")
             entity = self.ontology.get_entity(entity_id)
             if entity:
                 props = entity.properties or {}
@@ -766,6 +1132,71 @@ class OntologyEngine:
             "paths": paths,
         }
 
+    def _process_measurement_info(
+        self,
+        axis_id: str,
+        query: str
+    ) -> Optional[Dict]:
+        """측정축 정보 제공 (값이 없는 트렌드/이상 질문용)
+
+        "Fy가 계속 증가하고 있어" 같은 질문에 대해
+        정상 범위 정보와 함께 확인 방법을 안내합니다.
+        """
+        entity = self.ontology.get_entity(axis_id)
+        if not entity:
+            return None
+
+        reasoning = []
+        conclusions = []
+        paths = []
+
+        props = entity.properties or {}
+        normal_range = props.get("normal_range")
+        unit = props.get("unit", "")
+
+        # 질문 유형 판단 (증가/감소/진동/이상 등)
+        query_lower = query.lower()
+        is_increasing = any(kw in query_lower for kw in ["증가", "올라", "높아", "커지"])
+        is_decreasing = any(kw in query_lower for kw in ["감소", "내려", "낮아", "작아", "떨어"])
+        is_vibrating = any(kw in query_lower for kw in ["진동", "흔들", "변동", "불안정"])
+        is_problem = any(kw in query_lower for kw in ["문제", "이상", "위험", "비정상"])
+
+        reasoning.append({
+            "step": "measurement_info",
+            "description": f"{axis_id} 측정축 정보 조회",
+            "result": {
+                "normal_range": normal_range,
+                "unit": unit,
+            }
+        })
+
+        # 응답 구성
+        info_parts = []
+        info_parts.append(f"{axis_id} 센서 값의 변화가 감지되었군요.")
+
+        if normal_range:
+            info_parts.append(f"정상 범위는 {normal_range[0]}~{normal_range[1]}{unit}입니다.")
+
+        if is_increasing:
+            info_parts.append(f"값이 계속 증가하고 있다면, 정상 범위 상한({normal_range[1] if normal_range else '?'}{unit}) 근처에서 주의가 필요합니다.")
+        elif is_decreasing:
+            info_parts.append(f"값이 계속 감소하고 있다면, 정상 범위 하한({normal_range[0] if normal_range else '?'}{unit}) 근처에서 주의가 필요합니다.")
+        elif is_vibrating:
+            info_parts.append("값이 진동하는 경우, PAT_VIBRATION(진동) 패턴의 징후일 수 있습니다.")
+
+        if is_problem:
+            info_parts.append("현재 값을 확인하여 정상 범위를 벗어났는지 점검해 주세요.")
+
+        conclusions.append(" ".join(info_parts))
+        paths.append(f"Ontology → {axis_id} (정보 조회)")
+
+        return {
+            "reasoning": reasoning,
+            "conclusions": conclusions,
+            "paths": paths,
+            "confidence": 0.8,
+        }
+
     def _process_measurement(
         self,
         axis_id: str,
@@ -776,7 +1207,7 @@ class OntologyEngine:
         # 값 엔티티 찾기
         value_entity = None
         for e in entities:
-            if e.get("entity_type") == "Value":
+            if _get_entity_attr(e, "entity_type") == "Value":
                 value_entity = e
                 break
 
@@ -785,7 +1216,7 @@ class OntologyEngine:
 
         # 값 파싱
         try:
-            value_text = value_entity.get("text", "0")
+            value_text = _get_entity_attr(value_entity, "text", "0")
             # 숫자 부분만 추출
             import re
             match = re.search(r'-?\d+(?:\.\d+)?', value_text)
@@ -909,6 +1340,10 @@ class OntologyEngine:
             "overload": "PAT_OVERLOAD",
             "drift": "PAT_DRIFT",
             "vibration": "PAT_VIBRATION",
+            "에러 패턴": "PAT_ERROR",
+            "오류 패턴": "PAT_ERROR",
+            "에러패턴": "PAT_ERROR",
+            "오류패턴": "PAT_ERROR",
         }
 
         resolved_pattern_id = pattern_id
@@ -919,7 +1354,11 @@ class OntologyEngine:
 
         # 시간 컨텍스트(최근/어제/오늘 등)가 있으면 '원인/예측'이 아니라 '이력/존재 여부'로 응답
         if context.get("has_temporal_context"):
-            history = self._build_pattern_history(resolved_pattern_id)
+            # PAT_ERROR는 모든 패턴 조회
+            if resolved_pattern_id == "PAT_ERROR":
+                history = self._build_all_patterns_history()
+            else:
+                history = self._build_pattern_history(resolved_pattern_id)
             return {
                 "reasoning": [
                     {
@@ -1007,7 +1446,27 @@ class OntologyEngine:
         """에러 코드 처리"""
         error_entity = self.ontology.get_entity(error_code)
         if not error_entity:
-            return None
+            # 존재하지 않는 에러코드에 대한 응답
+            return {
+                "reasoning": [{
+                    "step": "error_lookup",
+                    "description": f"에러 코드 조회: {error_code}",
+                    "result": "not_found",
+                }],
+                "conclusions": [{
+                    "type": "definition",
+                    "entity_id": error_code,
+                    "entity_name": error_code,
+                    "description": f"{error_code}은(는) 등록된 에러 코드가 아닙니다. UR5e 에러 코드는 C0~C255 범위이며, 티치펜던트나 로그에서 정확한 에러 코드를 확인해 주세요.",
+                    "properties": {},
+                    "confidence": 0.9,
+                }],
+                "recommendations": [{
+                    "action": "티치펜던트 로그에서 정확한 에러 코드 확인",
+                    "reference": "UR5e 사용자 매뉴얼 - 에러 코드",
+                }],
+                "paths": [],
+            }
 
         reasoning = []
         conclusions = []
@@ -1085,6 +1544,32 @@ class OntologyEngine:
                         "confidence": rel.properties.get("confidence", 1.0),
                     })
                     paths.append(f"{rel.source} →[TRIGGERS]→ {error_code}")
+
+        # 결론이 없으면 에러코드 기본 정의 반환
+        if not conclusions:
+            description = error_entity.properties.get("description", "")
+            severity = error_entity.properties.get("severity", "unknown")
+            error_name = error_entity.name or error_code
+
+            # 정의 결론 추가
+            def_text = f"{error_code}는 '{error_name}' 에러입니다."
+            if description:
+                def_text += f" {description}"
+            if severity and severity != "unknown":
+                def_text += f" (심각도: {severity})"
+
+            conclusions.append({
+                "type": "definition",
+                "entity_id": error_code,
+                "entity_name": error_name,
+                "description": def_text,
+                "properties": {
+                    "severity": severity,
+                    "category": error_entity.properties.get("category", ""),
+                    "recoverable": error_entity.properties.get("recoverable", None),
+                },
+                "confidence": 0.9,
+            })
 
         return {
             "reasoning": reasoning,
@@ -1238,6 +1723,119 @@ class OntologyEngine:
             })
 
         paths.append(f"ErrorCategory → {category_id} → matched {len(matching_errors)} errors")
+
+        return {
+            "reasoning": reasoning,
+            "conclusions": conclusions,
+            "recommendations": recommendations,
+            "paths": paths,
+        }
+
+    def _process_maintenance_status(
+        self,
+        entity_id: str,
+        entity_text: str,
+        context: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """예비보전/예방보전 상태 쿼리 처리
+
+        현재 로봇 상태를 종합적으로 분석하여 보고합니다:
+        - 최근 감지된 패턴 (충돌, 과부하, 진동 등)
+        - 최근 에러 발생 빈도
+        - 센서 데이터 이상 징후
+        """
+        reasoning = []
+        conclusions = []
+        recommendations = []
+        paths = []
+
+        # 1. 최근 패턴 이력 조회
+        patterns = self._load_detected_patterns()
+        recent_patterns = []
+        if patterns:
+            # 최근 7일 내 패턴만 필터링 (있으면)
+            from datetime import datetime, timedelta
+            cutoff = datetime.now() - timedelta(days=7)
+            for p in patterns:
+                ts = p.get("timestamp")
+                if ts:
+                    try:
+                        pt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                        if pt.replace(tzinfo=None) >= cutoff:
+                            recent_patterns.append(p)
+                    except (ValueError, TypeError):
+                        recent_patterns.append(p)  # 파싱 실패 시 포함
+                else:
+                    recent_patterns.append(p)
+
+        reasoning.append({
+            "step": "pattern_analysis",
+            "description": "최근 패턴 이력 분석",
+            "result": {
+                "total_patterns": len(patterns) if patterns else 0,
+                "recent_patterns": len(recent_patterns),
+            }
+        })
+
+        # 2. 상태 평가
+        status_level = "정상"
+        issues = []
+
+        if recent_patterns:
+            pattern_counts = {}
+            for p in recent_patterns:
+                pt = p.get("pattern_type", "unknown")
+                pattern_counts[pt] = pattern_counts.get(pt, 0) + 1
+
+            for pt, count in pattern_counts.items():
+                if count >= 3:
+                    status_level = "주의"
+                    issues.append(f"{pt} 패턴이 {count}회 감지됨")
+                elif count >= 1:
+                    if status_level == "정상":
+                        status_level = "양호"
+                    issues.append(f"{pt} 패턴이 {count}회 감지됨")
+
+        # 3. 결론 생성
+        if status_level == "정상":
+            description = (
+                "현재 예비보전 상태: 정상\n\n"
+                "최근 7일간 특이 패턴이 감지되지 않았습니다. "
+                "로봇 시스템이 안정적으로 운영되고 있습니다."
+            )
+            confidence = 0.9
+        elif status_level == "양호":
+            description = (
+                "현재 예비보전 상태: 양호\n\n"
+                f"최근 감지된 사항:\n- " + "\n- ".join(issues) + "\n\n"
+                "경미한 패턴이 감지되었으나 즉각적인 조치가 필요한 수준은 아닙니다. "
+                "지속적인 모니터링을 권장합니다."
+            )
+            confidence = 0.85
+        else:  # 주의
+            description = (
+                "현재 예비보전 상태: 주의 필요\n\n"
+                f"최근 감지된 사항:\n- " + "\n- ".join(issues) + "\n\n"
+                "반복적인 패턴이 감지되었습니다. 원인 분석 및 예방 조치를 권장합니다."
+            )
+            confidence = 0.85
+            recommendations.append({
+                "type": "maintenance",
+                "action": "점검 권장",
+                "description": "반복적인 패턴이 감지되어 사전 점검을 권장합니다.",
+                "priority": "medium",
+            })
+
+        conclusions.append({
+            "type": "maintenance_status",
+            "status_level": status_level,
+            "description": description,
+            "recent_pattern_count": len(recent_patterns),
+            "issues": issues,
+            "confidence": confidence,
+        })
+
+        paths.append("MaintenanceStatus → PatternHistory → StatusEvaluation")
 
         return {
             "reasoning": reasoning,

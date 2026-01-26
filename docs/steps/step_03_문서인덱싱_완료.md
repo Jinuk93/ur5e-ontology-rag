@@ -16,9 +16,10 @@
 
 | 파일 | 라인 수 | 상태 | 설명 |
 |------|--------|------|------|
-| `src/embedding/__init__.py` | 25 | 신규 작성 | 패키지 초기화 및 모듈 노출 |
+| `src/embedding/__init__.py` | 37 | 신규 작성 | 패키지 초기화 및 모듈 노출 |
 | `src/embedding/embedder.py` | 115 | 신규 작성 | OpenAI 임베딩 생성 |
-| `src/embedding/vector_store.py` | 250 | 신규 작성 | ChromaDB 벡터 저장소 |
+| `src/embedding/vector_store.py` | 401 | 신규 작성 | ChromaDB 벡터 저장소 + 리랭킹 검색 |
+| `src/embedding/reranker.py` | 226 | 신규 작성 | Cross-Encoder 리랭커 (2026-01-26 추가) |
 | `scripts/run_embedding.py` | 200 | 업데이트 | 임베딩 실행 스크립트 |
 
 ### 2.2 저장소 (생성됨)
@@ -91,6 +92,37 @@ class VectorStore:
 - 메타데이터 필터링
 - 유사도 점수 반환
 - 증분 추가 지원 (기존 ID 스킵)
+- **2단계 검색 (리랭킹 포함)** - 2026-01-26 추가
+
+### 3.4 CrossEncoderReranker (reranker.py) - 2026-01-26 추가
+
+```python
+class CrossEncoderReranker:
+    """Cross-Encoder 기반 리랭커
+
+    2단계 검색 파이프라인:
+    Query → Embedding → Top-K(20) → Reranker → Top-N(5) → LLM
+    """
+
+    SUPPORTED_MODELS = {
+        "bge-reranker-base": "BAAI/bge-reranker-base",  # 한국어 지원
+        "bge-reranker-large": "BAAI/bge-reranker-large",
+    }
+
+    def rerank(self, query: str, documents: List[Tuple], top_n: int) -> List[RerankResult]:
+        """문서 리랭킹"""
+        pass
+
+    def rerank_search_results(self, query: str, search_results: List, top_n: int) -> List:
+        """SearchResult 리스트 리랭킹"""
+        pass
+```
+
+주요 기능:
+- Cross-Encoder 기반 정밀 리랭킹
+- BGE-reranker-base 모델 (한국어 지원)
+- GPU 자동 감지 및 활용
+- 싱글톤 패턴으로 모델 재사용
 
 ### 3.3 SearchResult 데이터 클래스
 
@@ -143,6 +175,13 @@ results = vs.search(
 # 컬렉션 통계
 stats = vs.get_collection_stats()
 print(f"총 문서: {stats['count']}개")
+
+# 2단계 검색 (리랭킹 포함) - 2026-01-26 추가
+results = vs.search_with_rerank(
+    "C153 에러 해결 방법",
+    initial_top_k=20,  # 1단계: 후보 확장
+    final_top_n=5,     # 2단계: 정밀 리랭킹
+)
 ```
 
 ---
@@ -188,7 +227,8 @@ ur5e-ontology-rag/
 │   └── embedding/
 │       ├── __init__.py [신규]
 │       ├── embedder.py [신규]
-│       └── vector_store.py [신규]
+│       ├── vector_store.py [신규]
+│       └── reranker.py [신규 - 2026-01-26]
 │
 ├── scripts/
 │   └── run_embedding.py [업데이트]

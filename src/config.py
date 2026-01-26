@@ -46,6 +46,15 @@ class RetrievalSettings:
 
 
 @dataclass
+class RerankSettings:
+    """리랭커 설정"""
+    enabled: bool = True  # 리랭킹 활성화 여부
+    model: str = "bge-reranker-base"  # Cross-Encoder 모델
+    initial_top_k: int = 20  # 1단계 후보 수
+    final_top_n: int = 5  # 최종 반환 수
+
+
+@dataclass
 class LLMSettings:
     """LLM 설정"""
     model: str = "gpt-4o-mini"
@@ -67,6 +76,7 @@ class APISettings:
     host: str = "0.0.0.0"
     port: int = 8080
     debug: bool = True
+    internal_base_url: str = "http://localhost:8000"  # 내부 API 호출용 기본 URL
 
 
 @dataclass
@@ -136,6 +146,7 @@ class Settings:
     document: DocumentSettings = field(default_factory=DocumentSettings)
     embedding: EmbeddingSettings = field(default_factory=EmbeddingSettings)
     retrieval: RetrievalSettings = field(default_factory=RetrievalSettings)
+    rerank: RerankSettings = field(default_factory=RerankSettings)
     llm: LLMSettings = field(default_factory=LLMSettings)
     verifier: VerifierSettings = field(default_factory=VerifierSettings)
     api: APISettings = field(default_factory=APISettings)
@@ -151,6 +162,34 @@ def _load_yaml_settings(settings_path: Path) -> dict:
 
     with open(settings_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
+
+
+import logging as _logging
+
+_config_logger = _logging.getLogger(__name__)
+
+
+def _validate_env_vars(settings: "Settings") -> None:
+    """환경변수 검증
+
+    필수 환경변수가 설정되지 않으면 경고 로그를 출력합니다.
+    API 키가 없으면 LLM/임베딩 기능이 제한됩니다.
+    """
+    warnings = []
+
+    # 필수 환경변수 검증
+    if not settings.openai_api_key:
+        warnings.append("OPENAI_API_KEY가 설정되지 않았습니다. LLM/임베딩 기능이 비활성화됩니다.")
+    elif not settings.openai_api_key.startswith("sk-"):
+        warnings.append("OPENAI_API_KEY 형식이 올바르지 않습니다 (sk-로 시작해야 함).")
+
+    # 선택적 환경변수 검증 (경고만)
+    if not settings.neo4j_password:
+        _config_logger.debug("NEO4J_PASSWORD가 설정되지 않았습니다 (Neo4j 미사용 시 무시).")
+
+    # 경고 출력
+    for warning in warnings:
+        _config_logger.warning(warning)
 
 
 def _create_settings() -> Settings:
@@ -179,6 +218,9 @@ def _create_settings() -> Settings:
     if "retrieval" in yaml_config:
         settings.retrieval = RetrievalSettings(**yaml_config["retrieval"])
 
+    if "rerank" in yaml_config:
+        settings.rerank = RerankSettings(**yaml_config["rerank"])
+
     if "llm" in yaml_config:
         settings.llm = LLMSettings(**yaml_config["llm"])
 
@@ -193,6 +235,9 @@ def _create_settings() -> Settings:
 
     if "supervisor_targets" in yaml_config:
         settings.supervisor_targets = SupervisorTargetsSettings(**yaml_config["supervisor_targets"])
+
+    # 환경변수 검증
+    _validate_env_vars(settings)
 
     return settings
 

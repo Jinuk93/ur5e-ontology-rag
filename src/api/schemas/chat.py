@@ -63,6 +63,7 @@ class RecommendationInfo(BaseModel):
     """권장사항"""
     immediate: Optional[str] = None
     reference: Optional[str] = None
+    steps: List[str] = Field(default_factory=list)
 
 
 class EvidenceInfo(BaseModel):

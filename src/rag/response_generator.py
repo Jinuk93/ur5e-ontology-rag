@@ -141,18 +141,21 @@ class ResponseGenerator:
         Returns:
             GeneratedResponse (abstain=True)
         """
+        # abstain_reason에 따른 상세 응답 메시지 생성
+        answer, recommendation = self._build_abstain_message(
+            gate_result.abstain_reason,
+            classification
+        )
+
         return GeneratedResponse(
             trace_id=trace_id,
             query_type=classification.query_type.value,
-            answer="해당 질문에 대한 충분한 근거를 찾지 못했습니다. 질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요.",
+            answer=answer,
             analysis={},
             context={},
-            reasoning={},
+            reasoning={"confidence": gate_result.confidence},
             prediction=None,
-            recommendation={
-                "immediate": "질문을 더 구체적으로 해주세요.",
-                "reference": None,
-            },
+            recommendation=recommendation,
             evidence={
                 "ontology_paths": [],
                 "document_refs": [],
@@ -161,6 +164,90 @@ class ResponseGenerator:
             abstain_reason=gate_result.abstain_reason,
             graph={"nodes": [], "edges": []},
         )
+
+    def _build_abstain_message(
+        self,
+        abstain_reason: Optional[str],
+        classification: ClassificationResult
+    ) -> tuple[str, Dict[str, Any]]:
+        """ABSTAIN 사유에 따른 상세 메시지 생성
+
+        Args:
+            abstain_reason: 게이트 실패 사유
+            classification: 분류 결과
+
+        Returns:
+            (응답 메시지, 권장사항)
+        """
+        reason = abstain_reason or ""
+
+        # 사유별 상세 응답
+        if "no entities extracted" in reason:
+            answer = (
+                "질문에서 분석할 수 있는 구체적인 대상(센서 축, 에러 코드, 패턴 등)을 "
+                "찾지 못했습니다. 'Fz', 'C153', 'PAT_OVERLOAD' 같은 구체적인 항목을 "
+                "포함해서 질문해 주세요."
+            )
+            recommendation = {
+                "immediate": "구체적인 센서 축, 에러 코드, 또는 패턴명을 포함해 주세요.",
+                "reference": None,
+                "examples": ["Fz가 -350N인데 문제인가요?", "C153 에러가 뭔가요?", "PAT_OVERLOAD 원인이 뭐야?"],
+            }
+
+        elif "classification confidence too low" in reason:
+            answer = (
+                "질문의 의도를 명확히 파악하지 못했습니다. "
+                "무엇을 알고 싶으신지 좀 더 구체적으로 질문해 주세요."
+            )
+            recommendation = {
+                "immediate": "질문을 더 명확하게 표현해 주세요.",
+                "reference": None,
+                "examples": ["현재 Fz 값이 정상인지 알려줘", "C153 에러 원인이 뭐야?", "최근 충돌 패턴이 있었어?"],
+            }
+
+        elif "entity confidence too low" in reason:
+            answer = (
+                "추출된 정보의 신뢰도가 낮습니다. "
+                "센서 축 이름(Fx, Fy, Fz 등)이나 에러 코드(C153 등)를 정확히 입력해 주세요."
+            )
+            recommendation = {
+                "immediate": "센서 축 이름이나 에러 코드를 정확히 입력해 주세요.",
+                "reference": None,
+            }
+
+        elif "no reasoning result" in reason or "no reasoning chain" in reason:
+            answer = (
+                "해당 질문에 대한 추론 경로를 찾지 못했습니다. "
+                "온톨로지에 등록되지 않은 항목일 수 있습니다."
+            )
+            recommendation = {
+                "immediate": "등록된 센서 축, 에러 코드, 패턴에 대해 질문해 주세요.",
+                "reference": "온톨로지에 등록된 항목: Fx, Fy, Fz, Tx, Ty, Tz, ErrorCode(C1xx~C9xx), Pattern(PAT_*)",
+            }
+
+        elif "reasoning confidence too low" in reason or "confidence below threshold" in reason:
+            answer = (
+                "분석 결과의 신뢰도가 충분하지 않습니다. "
+                "더 구체적인 정보(센서 값, 시간대 등)를 제공해 주시면 "
+                "더 정확한 분석이 가능합니다."
+            )
+            recommendation = {
+                "immediate": "센서 값이나 시간대 등 추가 정보를 제공해 주세요.",
+                "reference": None,
+            }
+
+        else:
+            # 기본 응답 (알 수 없는 사유)
+            answer = (
+                "해당 질문에 대한 충분한 근거를 찾지 못했습니다. "
+                "질문을 더 구체적으로 해주시거나, 다른 방식으로 질문해 주세요."
+            )
+            recommendation = {
+                "immediate": "질문을 더 구체적으로 해주세요.",
+                "reference": None,
+            }
+
+        return answer, recommendation
 
     def _generate_normal_response(
         self,
@@ -250,6 +337,8 @@ class ResponseGenerator:
 
         # 추론 결과에서 상태 추출
         for conclusion in reasoning.conclusions:
+            if isinstance(conclusion, str):
+                continue
             if conclusion.get("type") == "state":
                 analysis["state"] = conclusion.get("state", "")
                 if "entity" not in analysis:
@@ -297,6 +386,8 @@ class ResponseGenerator:
 
         # 원인 추출
         for conclusion in reasoning.conclusions:
+            if isinstance(conclusion, str):
+                continue
             if conclusion.get("type") == "cause":
                 result["cause"] = conclusion.get("cause", "")
                 result["cause_confidence"] = conclusion.get("confidence", 0)
@@ -348,6 +439,8 @@ class ResponseGenerator:
         else:
             # 결론에서 권장사항 추출
             for conclusion in reasoning.conclusions:
+                if isinstance(conclusion, str):
+                    continue
                 if conclusion.get("type") == "cause":
                     cause = conclusion.get("cause", "")
                     result["immediate"] = self._get_action_for_cause(cause)
@@ -436,24 +529,35 @@ class ResponseGenerator:
         edges: List[Dict[str, Any]] = []
         seen_ids: set = set()
 
+        # 헬퍼 함수: 객체 또는 딕셔너리에서 속성 가져오기
+        def get_attr(obj, key, default=""):
+            if hasattr(obj, key):
+                return getattr(obj, key)
+            elif isinstance(obj, dict):
+                return obj.get(key, default)
+            return default
+
         # 엔티티에서 노드 추출
         for entity in reasoning.entities:
-            entity_id = entity.get("entity_id", entity.get("id", ""))
+            entity_id = get_attr(entity, "entity_id") or get_attr(entity, "id", "")
             if entity_id and entity_id not in seen_ids:
                 nodes.append({
                     "id": entity_id,
-                    "type": entity.get("entity_type", entity.get("type", "")),
-                    "label": entity.get("text", entity_id),
+                    "type": get_attr(entity, "entity_type") or get_attr(entity, "type", ""),
+                    "label": get_attr(entity, "text", entity_id) or entity_id,
                 })
                 seen_ids.add(entity_id)
 
         # 결론에서 추가 노드 및 엣지 추출
         for conclusion in reasoning.conclusions:
-            c_type = conclusion.get("type", "")
+            # conclusion이 문자열인 경우 스킵 (온톨로지 엔진에서 문자열 결론 반환)
+            if isinstance(conclusion, str):
+                continue
+            c_type = get_attr(conclusion, "type", "")
 
             if c_type == "state":
-                state = conclusion.get("state", "")
-                entity = conclusion.get("entity", "")
+                state = get_attr(conclusion, "state", "")
+                entity = get_attr(conclusion, "entity", "")
                 if state and state not in seen_ids:
                     nodes.append({"id": state, "type": "State", "label": state})
                     seen_ids.add(state)
@@ -461,15 +565,15 @@ class ResponseGenerator:
                     edges.append({"source": entity, "target": state, "relation": "HAS_STATE"})
 
             elif c_type == "pattern":
-                pattern = conclusion.get("pattern", "")
+                pattern = get_attr(conclusion, "pattern", "")
                 if pattern and pattern not in seen_ids:
                     nodes.append({"id": pattern, "type": "Pattern", "label": pattern})
                     seen_ids.add(pattern)
 
             elif c_type == "cause":
-                cause = conclusion.get("cause", "")
-                pattern = conclusion.get("pattern", "")
-                error = conclusion.get("error", "")
+                cause = get_attr(conclusion, "cause", "")
+                pattern = get_attr(conclusion, "pattern", "")
+                error = get_attr(conclusion, "error", "")
 
                 # ErrorCode 질문 처리: C153 →[CAUSED_BY]→ CAUSE_*
                 if error and error not in seen_ids:
@@ -488,8 +592,8 @@ class ResponseGenerator:
                     edges.append({"source": pattern, "target": cause, "relation": "INDICATES"})
 
             elif c_type == "triggered_error":
-                error = conclusion.get("error", "")
-                pattern = conclusion.get("pattern", "")
+                error = get_attr(conclusion, "error", "")
+                pattern = get_attr(conclusion, "pattern", "")
                 if pattern and pattern not in seen_ids:
                     nodes.append({"id": pattern, "type": "Pattern", "label": pattern})
                     seen_ids.add(pattern)
@@ -501,8 +605,8 @@ class ResponseGenerator:
 
             elif c_type == "triggering_pattern":
                 # ErrorCode 질문 처리: PAT_* →[TRIGGERS]→ C153
-                error = conclusion.get("error", "")
-                pattern = conclusion.get("pattern", "")
+                error = get_attr(conclusion, "error", "")
+                pattern = get_attr(conclusion, "pattern", "")
                 if pattern and pattern not in seen_ids:
                     nodes.append({"id": pattern, "type": "Pattern", "label": pattern})
                     seen_ids.add(pattern)
@@ -522,17 +626,23 @@ class ResponseGenerator:
         """
         # 1) pattern 타입 결론
         for conclusion in reasoning.conclusions:
+            if isinstance(conclusion, str):
+                continue
             if conclusion.get("type") == "pattern":
                 return conclusion.get("pattern", ""), conclusion.get("confidence")
 
         # 2) 다른 결론의 pattern 필드
         for conclusion in reasoning.conclusions:
+            if isinstance(conclusion, str):
+                continue
             pattern = conclusion.get("pattern")
             if pattern:
                 return pattern, conclusion.get("confidence")
 
         # 3) reasoning_chain에서 패턴 매칭 결과
         for step in getattr(reasoning, "reasoning_chain", []) or []:
+            if isinstance(step, str):
+                continue
             if step.get("step") in ("pattern_matching", "pattern_analysis"):
                 result = step.get("result") or {}
                 pattern = result.get("pattern") or result.get("pattern_id")
@@ -629,12 +739,15 @@ class ResponseGenerator:
 
             if value:
                 unit = analysis.get("unit", "")
-                if state in ("Warning", "Critical", "CRITICAL", "WARNING"):
+                # State_Warning, State_Critical, Warning, Critical 등 다양한 형태 지원
+                is_abnormal = any(kw in state for kw in ("Warning", "Critical", "CRITICAL", "WARNING"))
+                if is_abnormal:
                     intro_parts.append(f"현재 {entity} 값이 {value}{unit}로, 정상 범위를 벗어났네요.")
                 else:
                     intro_parts.append(f"{entity} 값은 {value}{unit}로 정상 범위입니다.")
             else:
-                if state in ("Warning", "Critical", "CRITICAL", "WARNING"):
+                is_abnormal = any(kw in state for kw in ("Warning", "Critical", "CRITICAL", "WARNING"))
+                if is_abnormal:
                     intro_parts.append(f"{entity}에서 이상 징후가 감지되었어요.")
                 else:
                     intro_parts.append(f"{entity}는 현재 정상 상태입니다.")
@@ -642,12 +755,21 @@ class ResponseGenerator:
             if "deviation" in analysis:
                 intro_parts.append(f"({analysis['deviation']})")
 
-        # 2. 패턴/원인/정의 분석 수집
+        # 2. 문자열 결론 처리 (관계 질문 응답: "Axia80 센서가 Fz를 측정합니다." 등)
+        string_conclusions = [c for c in reasoning.conclusions if isinstance(c, str)]
+        if string_conclusions:
+            # 문자열 결론이 있으면 바로 반환 (관계 질문에 대한 직접 응답)
+            return "\n".join(string_conclusions)
+
+        # 3. 패턴/원인/정의 분석 수집
         patterns_found: List[Dict] = []
         causes_found: List[Dict] = []
         definitions_found: List[Dict] = []
 
         for conclusion in reasoning.conclusions:
+            # 이미 위에서 문자열 결론을 처리했으므로 여기서는 스킵
+            if isinstance(conclusion, str):
+                continue
             c_type = conclusion.get("type", "")
             if c_type == "pattern":
                 pattern = conclusion.get("pattern", "")
@@ -675,6 +797,9 @@ class ResponseGenerator:
             elif c_type == "specification":
                 # 사양 질문은 바로 반환
                 return conclusion.get("description", "사양 정보를 찾을 수 없습니다.")
+            elif c_type == "resolution":
+                # 대처/해결 질문은 바로 반환
+                return conclusion.get("description", "대처 방법을 찾을 수 없습니다.")
 
         # 정의 질문 응답 (definitions_found가 있으면 바로 반환)
         if definitions_found:
@@ -709,6 +834,8 @@ class ResponseGenerator:
         # 관계 기반 연관 에러(=예측 아님) 표기
         related_errors: List[Dict[str, Any]] = []
         for conclusion in reasoning.conclusions:
+            if isinstance(conclusion, str):
+                continue
             if conclusion.get("type") == "triggered_error":
                 related_errors.append({
                     "error": conclusion.get("error", ""),
@@ -777,8 +904,11 @@ class ResponseGenerator:
 
         except Exception as e:
             logger.warning(f"LLM 호출 실패, 템플릿 응답으로 대체: {e}")
+            # LLM 실패 시에도 analysis, recommendation을 제대로 전달
+            analysis = self._build_analysis(classification, reasoning)
+            recommendation = self._build_recommendation(reasoning)
             return self._generate_template_response(
-                classification, reasoning, {}, None, {}
+                classification, reasoning, analysis, None, recommendation
             )
 
 

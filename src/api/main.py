@@ -6,6 +6,8 @@ Phase12 추론 엔진과 연동하여 챗봇 API를 제공합니다.
 
 사용법:
     python scripts/run_api.py --reload
+
+Updated: 2026-01-26 - MaintenanceStatus 및 ErrorCategory 핸들러 추가
 """
 
 import logging
@@ -16,7 +18,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import get_settings
-from src.rag import QueryClassifier, ResponseGenerator
+from src.rag import QueryClassifier, ResponseGenerator, HybridRetriever
 from src.ontology import OntologyEngine
 
 from src.api.routes import (
@@ -70,6 +72,7 @@ app.add_middleware(
 _classifier: Optional[QueryClassifier] = None
 _engine: Optional[OntologyEngine] = None
 _generator: Optional[ResponseGenerator] = None
+_retriever: Optional[HybridRetriever] = None
 
 
 def get_classifier() -> QueryClassifier:
@@ -96,12 +99,20 @@ def get_generator() -> ResponseGenerator:
     return _generator
 
 
+def get_retriever() -> HybridRetriever:
+    """HybridRetriever 싱글톤 (VectorStore + Reranker)"""
+    global _retriever
+    if _retriever is None:
+        _retriever = HybridRetriever()
+    return _retriever
+
+
 # ============================================================
 # 라우터 설정 및 등록
 # ============================================================
 # 컴포넌트 getter 주입
 configure_system(get_classifier, get_engine, get_generator)
-configure_chat(get_classifier, get_engine, get_generator)
+configure_chat(get_classifier, get_engine, get_generator, get_retriever)
 
 # 라우터 등록
 app.include_router(system_router)
@@ -128,6 +139,15 @@ async def startup():
         get_classifier()
         get_engine()
         get_generator()
+
+        # HybridRetriever 초기화 + 모델 사전 로딩
+        # (Reranker 모델을 미리 로드하여 첫 요청 지연 방지)
+        retriever = get_retriever()
+        logger.info(f"HybridRetriever initialized (reranker={retriever.use_reranker})")
+
+        # 사전 로딩 (VectorStore + Reranker 모델)
+        retriever.preload()
+
         logger.info("All components initialized successfully")
     except Exception as e:
         logger.error(f"Component initialization failed: {e}")

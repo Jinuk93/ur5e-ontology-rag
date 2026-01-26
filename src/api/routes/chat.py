@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Header
 from openai import OpenAI
 
 from src.config import get_settings
-from src.rag import ResponseGenerator
+from src.rag import ResponseGenerator, HybridRetriever, QueryType
 
 from src.api.schemas import (
     ChatRequest,
@@ -40,14 +40,16 @@ _evidence_store: Dict[str, Dict[str, Any]] = {}
 _get_classifier = None
 _get_engine = None
 _get_generator = None
+_get_retriever = None
 
 
-def configure(get_classifier, get_engine, get_generator):
+def configure(get_classifier, get_engine, get_generator, get_retriever=None):
     """컴포넌트 getter 함수 주입"""
-    global _get_classifier, _get_engine, _get_generator
+    global _get_classifier, _get_engine, _get_generator, _get_retriever
     _get_classifier = get_classifier
     _get_engine = get_engine
     _get_generator = get_generator
+    _get_retriever = get_retriever
 
 
 def get_evidence_store() -> Dict[str, Dict[str, Any]]:
@@ -120,10 +122,12 @@ async def chat(
     # --- 이벤트 통계 fetch 유틸 ---
     async def fetch_7d_stats():
         """7일치 이벤트/센서/정량 데이터 API로 집계"""
+        settings = get_settings()
+        base_url = settings.api.internal_base_url
         try:
             async with httpx.AsyncClient() as client:
                 # 1. 이벤트(충돌 등) 7일치
-                events_resp = await client.get("http://localhost:8000/api/sensors/events?limit=1000")
+                events_resp = await client.get(f"{base_url}/api/sensors/events?limit=1000")
                 events_resp.raise_for_status()
                 events_data = events_resp.json()
                 now = datetime.now()
@@ -137,7 +141,7 @@ async def chat(
                 collision_events = [e for e in events_7d if e.get("event_type") == "collision"]
                 collision_count = len(collision_events)
                 # 2. 센서 데이터 7일치
-                sensor_resp = await client.get("http://localhost:8000/api/sensors/readings/range?hours=168&samples=500")
+                sensor_resp = await client.get(f"{base_url}/api/sensors/readings/range?hours=168&samples=500")
                 sensor_resp.raise_for_status()
                 sensor_data = sensor_resp.json()
                 readings = sensor_data.get("readings", [])
@@ -168,7 +172,11 @@ async def chat(
 
     try:
         # 1. 질문 분류
+        if not _get_classifier:
+            raise HTTPException(status_code=500, detail="QueryClassifier가 초기화되지 않았습니다. 서버 설정을 확인하세요.")
         classifier = _get_classifier()
+        if not classifier:
+            raise HTTPException(status_code=500, detail="QueryClassifier 인스턴스를 가져올 수 없습니다.")
         classification = classifier.classify(request.query)
 
         # --- 충돌 패턴 질문이면 이벤트 통계 fetch ---
@@ -179,28 +187,87 @@ async def chat(
         if is_collision_query:
             stats = await fetch_7d_stats()
 
-        # 2. 온톨로지 추론
-        engine = _get_engine()
-        entities = [e.to_dict() for e in classification.entities]
-        reasoning = engine.reason(
-            classification.query,
-            entities,
-            request.context
+        # 2. 문서 검색 + 온톨로지 추론 (병렬 실행)
+        import asyncio
+        import time
+
+        parallel_start = time.time()
+
+        # 병렬 실행할 태스크 정의
+        async def run_document_search():
+            """문서 검색 (비동기 래퍼)"""
+            if not _get_retriever:
+                return None
+            try:
+                retriever = _get_retriever()
+                # 동기 함수를 스레드에서 실행
+                result = await asyncio.to_thread(
+                    retriever.retrieve,
+                    classification.query,
+                    classification.query_type,
+                    None,  # filter_metadata
+                    request.context,
+                )
+                return result
+            except Exception as e:
+                logger.warning(f"문서 검색 실패 (계속 진행): {e}")
+                return None
+
+        async def run_ontology_reasoning():
+            """온톨로지 추론 (비동기 래퍼)"""
+            if not _get_engine:
+                raise ValueError("OntologyEngine getter가 초기화되지 않았습니다.")
+            engine = _get_engine()
+            if not engine:
+                raise ValueError("OntologyEngine 인스턴스를 가져올 수 없습니다.")
+            entities = [e.to_dict() for e in classification.entities]
+            # 동기 함수를 스레드에서 실행
+            result = await asyncio.to_thread(
+                engine.reason,
+                classification.query,
+                entities,
+                request.context,
+            )
+            return result
+
+        # 병렬 실행
+        retrieval_result, reasoning = await asyncio.gather(
+            run_document_search(),
+            run_ontology_reasoning(),
         )
 
-        # 3. 응답 생성 (LLM 클라이언트가 있으면 사용)
+        parallel_elapsed = (time.time() - parallel_start) * 1000
+
+        # 문서 검색 결과 처리
+        document_refs = None
+        if retrieval_result:
+            document_refs = retrieval_result.document_refs
+            logger.info(
+                f"병렬 처리 완료: 문서={len(document_refs)}건 "
+                f"(reranked={retrieval_result.reranked}), "
+                f"총 소요={parallel_elapsed:.1f}ms"
+            )
+        else:
+            logger.info(f"병렬 처리 완료: 문서=0건, 총 소요={parallel_elapsed:.1f}ms")
+
+        # 4. 응답 생성 (LLM 클라이언트가 있으면 사용)
         llm_client = _create_llm_client(x_openai_api_key)
 
         # LLM 클라이언트가 있으면 새 Generator 생성, 없으면 기본 사용
         if llm_client:
             generator = ResponseGenerator(llm_client=llm_client)
         else:
+            if not _get_generator:
+                raise HTTPException(status_code=500, detail="ResponseGenerator getter가 초기화되지 않았습니다.")
             generator = _get_generator()
+            if not generator:
+                raise HTTPException(status_code=500, detail="ResponseGenerator 인스턴스를 가져올 수 없습니다.")
 
         response = generator.generate(
             classification,
             reasoning,
-            request.context
+            request.context,
+            document_refs=document_refs,  # 문서 참조 전달
         )
 
         # 4. 응답 변환
@@ -249,9 +316,19 @@ async def chat(
         logger.info(f"Chat response generated: trace_id={response.trace_id}")
         return chat_response
 
+    except HTTPException:
+        # 이미 HTTPException인 경우 그대로 전달
+        raise
     except Exception as e:
         logger.error(f"Chat error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        # 구조화된 에러 응답 (ChatResponse와 호환)
+        error_detail = {
+            "error_type": type(e).__name__,
+            "message": str(e),
+            "abstain": True,
+            "abstain_reason": f"시스템 오류: {str(e)}",
+        }
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @router.get("/evidence/{trace_id}", response_model=EvidenceResponse)

@@ -38,6 +38,10 @@ router = APIRouter(prefix="/api/sensors", tags=["Sensors"])
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 SENSOR_DATA_DIR = _PROJECT_ROOT / "data" / "sensor"
 
+# 센서 임계값 상수 (상태 판정 기준)
+SENSOR_THRESHOLD_CRITICAL = 300  # N 이상: 위험 상태
+SENSOR_THRESHOLD_WARNING = 100   # N 이상: 경고 상태
+
 # 센서 데이터 캐시
 _sensor_df: Optional[pd.DataFrame] = None
 _patterns_data: Optional[List[Dict]] = None
@@ -337,9 +341,9 @@ async def get_realtime_predictions(
 
             # 상태 결정
             state = "normal"
-            if abs(sensor_value) > 300:
+            if abs(sensor_value) > SENSOR_THRESHOLD_CRITICAL:
                 state = "critical"
-            elif abs(sensor_value) > 100:
+            elif abs(sensor_value) > SENSOR_THRESHOLD_WARNING:
                 state = "warning"
 
             prediction_items = []
@@ -415,37 +419,59 @@ async def get_realtime_predictions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# 패턴별 메타데이터 통합 (에러코드, 원인, 권장조치)
+_PATTERN_METADATA = {
+    "collision": {
+        "errors": [("C153", 0.95), ("C119", 0.8)],
+        "cause": "CAUSE_COLLISION",
+        "recommendation": "작업 영역 장애물 확인 및 제거",
+    },
+    "overload": {
+        "errors": [("C189", 0.9)],
+        "cause": "CAUSE_OVERLOAD",
+        "recommendation": "페이로드 무게 확인 및 감량",
+    },
+    "drift": {
+        "errors": [],
+        "cause": "CAUSE_CALIBRATION",
+        "recommendation": "센서 캘리브레이션 수행",
+    },
+    "vibration": {
+        "errors": [("C204", 0.75)],
+        "cause": "CAUSE_JOINT_WEAR",
+        "recommendation": "조인트 볼트 토크 점검",
+    },
+}
+
+
+def _get_pattern_metadata(pattern_type: str, field: str, default=None):
+    """패턴 메타데이터 조회
+
+    Args:
+        pattern_type: 패턴 타입 (collision, overload, drift, vibration)
+        field: 조회할 필드 (errors, cause, recommendation)
+        default: 기본값
+
+    Returns:
+        해당 필드 값 또는 기본값
+    """
+    metadata = _PATTERN_METADATA.get(pattern_type.lower(), {})
+    return metadata.get(field, default)
+
+
 def _get_default_errors_for_pattern(pattern_type: str) -> List[tuple]:
     """패턴 타입별 기본 에러 코드 매핑"""
-    mapping = {
-        "collision": [("C153", 0.95), ("C119", 0.8)],
-        "overload": [("C189", 0.9)],
-        "drift": [],
-        "vibration": [("C204", 0.75)],
-    }
-    return mapping.get(pattern_type.lower(), [])
+    return _get_pattern_metadata(pattern_type, "errors", [])
 
 
 def _get_cause_for_pattern(pattern_type: str) -> str:
     """패턴 타입별 원인 매핑"""
-    mapping = {
-        "collision": "CAUSE_COLLISION",
-        "overload": "CAUSE_OVERLOAD",
-        "drift": "CAUSE_CALIBRATION",
-        "vibration": "CAUSE_JOINT_WEAR",
-    }
-    return mapping.get(pattern_type.lower(), "CAUSE_UNKNOWN")
+    return _get_pattern_metadata(pattern_type, "cause", "CAUSE_UNKNOWN")
 
 
 def _get_recommendation_for_pattern(pattern_type: str) -> str:
     """패턴 타입별 권장 조치"""
-    mapping = {
-        "collision": "작업 영역 장애물 확인 및 제거",
-        "overload": "페이로드 무게 확인 및 감량",
-        "drift": "센서 캘리브레이션 수행",
-        "vibration": "조인트 볼트 토크 점검",
-    }
-    return mapping.get(pattern_type.lower(), "상황 점검 필요")
+    return _get_pattern_metadata(pattern_type, "recommendation", "상황 점검 필요")
 
 
 async def sensor_stream_generator(request: Request, interval: float = 1.0):

@@ -41,20 +41,20 @@ class ConfidenceGate:
     # 임계값 설정
     MIN_CONFIDENCE = 0.4           # 최소 추론 신뢰도 (0.5 → 0.4)
     MIN_ENTITY_CONFIDENCE = 0.5    # 최소 엔티티 신뢰도 (0.6 → 0.5)
-    MIN_CLASSIFICATION_CONFIDENCE = 0.3  # 최소 분류 신뢰도 (0.4 → 0.3)
+    MIN_CLASSIFICATION_CONFIDENCE = 0.25  # 최소 분류 신뢰도 (0.4 → 0.3 → 0.25)
 
     def __init__(
         self,
-        min_confidence: float = 0.5,
-        min_entity_confidence: float = 0.6,
-        min_classification_confidence: float = 0.4
+        min_confidence: float = 0.4,
+        min_entity_confidence: float = 0.5,
+        min_classification_confidence: float = 0.25
     ):
         """초기화
 
         Args:
-            min_confidence: 최소 추론 신뢰도
-            min_entity_confidence: 최소 엔티티 신뢰도
-            min_classification_confidence: 최소 분류 신뢰도
+            min_confidence: 최소 추론 신뢰도 (기본값 0.4)
+            min_entity_confidence: 최소 엔티티 신뢰도 (기본값 0.5)
+            min_classification_confidence: 최소 분류 신뢰도 (기본값 0.25)
         """
         self.min_confidence = min_confidence
         self.min_entity_confidence = min_entity_confidence
@@ -157,8 +157,22 @@ class ConfidenceGate:
         Returns:
             (통과 여부, 실패 사유)
         """
-        if classification.confidence < self.min_classification_confidence:
-            return False, f"classification confidence too low ({classification.confidence:.2f} < {self.min_classification_confidence})"
+        # 엔티티가 있으면 분류 신뢰도 요구조건 완화
+        # (유용한 엔티티가 추출되면 분류 신뢰도가 낮아도 질문에 답할 수 있음)
+        effective_threshold = self.min_classification_confidence
+        if classification.entities:
+            # 고신뢰도 엔티티 (MeasurementAxis, ErrorCode, Pattern 등)가 있으면 임계값 낮춤
+            high_value_types = {"MeasurementAxis", "ErrorCode", "Pattern", "ErrorCategory", "TimeExpression"}
+            has_high_value_entity = any(
+                e.entity_type in high_value_types for e in classification.entities
+            )
+            if has_high_value_entity:
+                effective_threshold = 0.15  # 고가치 엔티티가 있으면 매우 낮은 임계값 적용
+            else:
+                effective_threshold = 0.20  # 일반 엔티티라도 있으면 임계값 낮춤
+
+        if classification.confidence < effective_threshold:
+            return False, f"classification confidence too low ({classification.confidence:.2f} < {effective_threshold})"
 
         return True, None
 

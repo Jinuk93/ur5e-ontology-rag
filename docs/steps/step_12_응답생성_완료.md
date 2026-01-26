@@ -18,9 +18,9 @@
 |------|---------|------|
 | `src/rag/confidence_gate.py` | 245 | 신뢰도 기반 응답 검증 |
 | `src/rag/prompt_builder.py` | 220 | LLM 프롬프트 구성 |
-| `src/rag/response_generator.py` | 445 | 응답 생성기 |
-| `src/rag/__init__.py` | 80 | 모듈 노출 (업데이트) |
-| **합계** | **990** | |
+| `src/rag/response_generator.py` | 820 | 응답 생성기 (v2.1 - 관계 질문 응답 추가) |
+| `src/rag/__init__.py` | 84 | 모듈 노출 (업데이트) |
+| **합계** | **1,369** | |
 
 ---
 
@@ -122,15 +122,44 @@ OntologyEngine이 생성하는 `conclusions` 리스트의 타입:
 | `state` | 센서 값의 상태 판정 | `entity`, `state`, `value`, `threshold` |
 | `cause` | 추론된 원인 | `cause`, `confidence` |
 | `triggered_error` | 예상 에러 코드 | `error`, `confidence`, `timeframe` |
+| `definition` | 엔티티 정의 | `entity_id`, `entity_name`, `description`, `properties` |
+| `comparison` | 엔티티 비교 | `description` |
+| `specification` | 사양 정보 | `description`, `specs` |
+| `pattern_history` | 패턴 이력 | `description`, `count`, `latest_timestamp` |
+| (문자열) | 관계 질문 응답 | 문자열 형태로 직접 응답 (v2.1 추가) |
 
 **예시**:
 ```python
+# 딕셔너리 결론
 conclusions = [
     {"type": "state", "entity": "Fz", "state": "State_Warning", "value": -350.0},
     {"type": "cause", "cause": "CAUSE_COLLISION", "confidence": 0.9},
     {"type": "triggered_error", "error": "C189", "confidence": 0.85, "timeframe": "24시간 내"}
 ]
+
+# 문자열 결론 (관계 질문)
+conclusions = [
+    "Axia80 센서가 Fz를 측정합니다.",  # "Fz는 어떤 센서가 측정해?"
+]
 ```
+
+### 3.5 문자열 결론 처리 (v2.1 추가)
+
+관계 질문("Fz는 어떤 센서가 측정해?", "Axia80은 뭘 측정해?" 등)에 대한 응답은 문자열 결론으로 반환됩니다:
+
+```python
+# response_generator.py - _generate_template_response()
+# 문자열 결론 처리 (관계 질문 응답)
+string_conclusions = [c for c in reasoning.conclusions if isinstance(c, str)]
+if string_conclusions:
+    # 문자열 결론이 있으면 바로 반환 (관계 질문에 대한 직접 응답)
+    return "\n".join(string_conclusions)
+```
+
+**지원 관계 질문 유형**:
+- "Fz는 어떤 센서가 측정해?" → "Axia80 센서가 Fz를 측정합니다."
+- "Axia80은 뭘 측정해?" → "Axia80는 Fx/Fy/Fz/Tx/Ty/Tz를 측정합니다."
+- "ToolFlange에 뭐가 연결되어 있어?" → "ToolFlange는 Axia80에 연결되어 있습니다."
 
 ### 3.5 그래프 노드 타입 매핑
 

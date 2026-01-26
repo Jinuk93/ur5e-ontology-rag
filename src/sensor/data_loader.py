@@ -5,6 +5,7 @@ Parquet 파일에서 센서 데이터를 로드하고 전처리합니다.
 """
 
 import logging
+from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple, List
@@ -29,8 +30,9 @@ class DataLoader:
         "tool_id", "status", "event_id", "error_code"
     ]
 
-    # path별 캐시 (다른 파일 로드 시 구분)
-    _cache: dict = {}
+    # LRU 캐시 설정
+    _MAX_CACHE_SIZE = 5  # 최대 캐시 항목 수 (메모리 관리)
+    _cache: OrderedDict = OrderedDict()  # LRU 캐시 (path별)
 
     @classmethod
     def load(
@@ -51,6 +53,8 @@ class DataLoader:
         cache_key = str(path.resolve()) if isinstance(path, Path) else str(Path(path).resolve())
 
         if use_cache and cache_key in cls._cache:
+            # LRU: 접근 시 순서를 맨 뒤로 이동
+            cls._cache.move_to_end(cache_key)
             return cls._cache[cache_key]
 
         logger.info(f"센서 데이터 로드: {path}")
@@ -59,6 +63,11 @@ class DataLoader:
         df = cls.preprocess(df)
 
         if use_cache:
+            # LRU 제거: 캐시 크기 초과 시 가장 오래된 항목 제거
+            while len(cls._cache) >= cls._MAX_CACHE_SIZE:
+                oldest_key = next(iter(cls._cache))
+                del cls._cache[oldest_key]
+                logger.debug(f"LRU 캐시 제거: {oldest_key}")
             cls._cache[cache_key] = df
 
         logger.info(f"센서 데이터 로드 완료: {len(df)} 레코드")

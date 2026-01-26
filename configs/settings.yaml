@@ -54,10 +54,31 @@ retrieval:
                                    # 많으면: 정보 많음, but LLM 처리 부담
                                    # 적으면: 빠름, but 정보 누락 가능
 
-  similarity_threshold: 0.7        # 유사도 임계값 (0.0 ~ 1.0)
+  similarity_threshold: 0.3        # 유사도 임계값 (0.0 ~ 1.0)
                                    # 이 값 미만인 문서는 제외
                                    # 높으면: 정확한 것만, but 검색 결과 적음
                                    # 낮으면: 검색 결과 많음, but 관련 없는 것 포함
+                                   # 참고: OpenAI embedding은 cosine 유사도가
+                                   # 보통 0.3~0.6 범위에서 분포함
+
+
+# ------------------------------------------------------------
+# [3.5] 리랭커 설정 (2단계 검색)
+# ------------------------------------------------------------
+rerank:
+  enabled: true                    # 리랭킹 활성화 여부
+                                   # true: 2단계 검색 (Bi-encoder + Cross-encoder)
+                                   # false: 1단계 검색 (Bi-encoder만)
+
+  model: "bge-reranker-base"       # Cross-Encoder 모델
+                                   # bge-reranker-base: 한국어 지원, 빠름
+                                   # bge-reranker-large: 더 정확, 느림
+
+  initial_top_k: 20                # 1단계 후보 수 (Bi-encoder)
+                                   # 많으면: 리랭킹 대상 많음, 느림
+                                   # 적으면: 좋은 문서 놓칠 수 있음
+
+  final_top_n: 5                   # 최종 반환 수 (Cross-encoder 후)
 
 
 # ------------------------------------------------------------

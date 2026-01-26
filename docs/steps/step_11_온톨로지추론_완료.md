@@ -17,9 +17,9 @@
 | 파일 | 라인 수 | 설명 |
 |------|---------|------|
 | `src/ontology/graph_traverser.py` | 599 | 그래프 탐색기 (BFS, 경로 찾기) |
-| `src/ontology/ontology_engine.py` | 646 | 온톨로지 추론 엔진 |
+| `src/ontology/ontology_engine.py` | 1,805 | 온톨로지 추론 엔진 (확장) |
 | `src/ontology/__init__.py` | 113 | 모듈 노출 (업데이트) |
-| **합계** | **1,358** | |
+| **합계** | **2,517** | |
 
 ---
 
@@ -140,13 +140,91 @@ class ReasoningResult:
     query: str
     entities: List[Dict[str, Any]]
     reasoning_chain: List[Dict[str, Any]]  # 추론 단계
-    conclusions: List[Dict[str, Any]]      # 결론
+    conclusions: List[Dict[str, Any]]      # 결론 (문자열 또는 딕셔너리)
     predictions: List[Dict[str, Any]]      # 예측
     recommendations: List[Dict[str, Any]]  # 권장사항
     ontology_paths: List[str]              # 온톨로지 경로 문자열
     confidence: float
     evidence: Dict[str, Any]
 ```
+
+### 3.5 관계 질문 처리 (신규)
+
+```python
+def _is_relationship_query(self, query: str) -> bool:
+    """관계 질문인지 판단 (측정 주체, 장착 위치 등)"""
+    rel_patterns = [
+        r"어디에.*(장착|연결|설치|부착)",
+        r"(뭐|무엇|뭘|어떤).*(측정|감지)",
+        r"(측정|감지).*(뭐|무엇|뭘)",
+        r"누가.*(측정|감지)",
+        r"어떤.*센서",
+    ]
+
+def _process_relationship_query(
+    self,
+    query: str,
+    axis_entity: Entity
+) -> Dict[str, Any]:
+    """관계 질문 처리 (MEASURES, MOUNTED_ON 등)"""
+    # 1. "Fz는 어떤 센서가 측정해?" → MEASURES 관계 역탐색
+    # 2. Sensor → MEASURES → axis 관계에서 Sensor 반환
+```
+
+**지원하는 관계 질문:**
+- "Fz는 어떤 센서가 측정해?" → Axia80 센서가 Fz를 측정합니다.
+- "Axia80은 어디에 장착되어 있어?" → MOUNTED_ON 관계 탐색
+- "ToolFlange에 뭐가 연결되어 있어?" → HAS_COMPONENT, CONNECTED_TO 탐색
+
+### 3.6 정의 엔티티 타입 확장 (신규)
+
+```python
+definition_entity_types = (
+    "MeasurementAxis",  # Fz, Tx 등
+    "Robot",            # UR5e
+    "Sensor",           # Axia80
+    "Equipment",        # 장비
+    "ControlBox",       # 컨트롤 박스
+    "ToolFlange",       # 신규: 툴 플랜지
+    "Joint",            # 신규: Joint_0 ~ Joint_5
+    "Component",        # 신규: 컴포넌트
+)
+```
+
+### 3.7 트렌드 질문 처리 (신규)
+
+```python
+def _process_measurement_info(
+    self,
+    entity: Entity,
+    value: Optional[float] = None,
+    query: str = ""
+) -> Dict[str, Any]:
+    """
+    측정축 정보 처리
+    - 값이 있는 경우: 상태/패턴 분석
+    - 값이 없는 경우: 트렌드 질문 처리
+    """
+    # "Fz 추세가 어때?" → 트렌드 분석 응답 생성
+```
+
+### 3.8 신뢰도 계산 개선 (신규)
+
+```python
+# conclusions에서 신뢰도 계산
+if conclusions:
+    confidences = []
+    for c in conclusions:
+        if isinstance(c, str):
+            confidences.append(0.8)  # 문자열 결론은 기본 신뢰도
+        elif isinstance(c, dict):
+            confidences.append(c.get("confidence", 0.5))
+    confidence = sum(confidences) / len(confidences)
+```
+
+**결론 타입:**
+- `str`: 관계 질문 응답 (예: "Axia80 센서가 Fz를 측정합니다.")
+- `dict`: 일반 추론 결과 (type, description, confidence 포함)
 
 ---
 
@@ -328,13 +406,19 @@ print(context.related_patterns)  # ["PAT_COLLISION", "PAT_OVERLOAD"]
   - [x] 관계 체인 따라가기 (follow_relation_chain)
   - [x] 엔티티 컨텍스트 수집 (get_entity_context)
   - [x] 패턴 추론 경로 생성 (get_reasoning_path)
-- [x] `src/ontology/ontology_engine.py` 구현
+- [x] `src/ontology/ontology_engine.py` 구현 (1,805줄로 확장)
   - [x] EntityContext 데이터클래스
   - [x] ReasoningResult 데이터클래스
   - [x] get_context() - 엔티티 컨텍스트 로딩
   - [x] reason() - 온톨로지 기반 추론
   - [x] predict() - 에러 예측
   - [x] hybrid_query() - 하이브리드 질문 처리
+  - [x] _is_relationship_query() - 관계 질문 판단 (신규)
+  - [x] _process_relationship_query() - 관계 질문 처리 (신규)
+  - [x] _process_measurement_info() - 트렌드 질문 처리 (신규)
+  - [x] definition_entity_types 확장 (ToolFlange, Joint, Component)
+  - [x] 신뢰도 계산 개선 (문자열/딕셔너리 결론 구분)
+  - [x] 미등록 에러 코드 처리 (C120 등)
 - [x] `src/ontology/__init__.py` 업데이트
 
 ### 7.2 검증 항목
@@ -358,7 +442,7 @@ ur5e-ontology-rag/
         ├── loader.py            [Phase 5]
         ├── rule_engine.py       [504줄, Phase 6]
         ├── graph_traverser.py   [599줄, 신규]
-        └── ontology_engine.py   [646줄, 신규]
+        └── ontology_engine.py   [1,805줄, 확장]
 ```
 
 ---
@@ -407,6 +491,17 @@ response = generator.generate(reasoning)
 
 | 항목 | 값 |
 |------|------|
-| 문서 버전 | v1.0 |
+| 문서 버전 | v2.0 |
 | ROADMAP 섹션 | Stage 4, Phase 11 |
 | Spec 섹션 | 7.2 온톨로지성 질문 처리 |
+| 최종 업데이트 | 2026-01-26 |
+
+### 11.1 v2.0 변경 사항
+
+- `ontology_engine.py` 라인 수: 646 → 1,805
+- 관계 질문 처리 기능 추가 (`_is_relationship_query`, `_process_relationship_query`)
+- 트렌드 질문 처리 기능 추가 (`_process_measurement_info`)
+- 정의 엔티티 타입 확장 (ToolFlange, Joint, Component)
+- ReasoningResult conclusions 타입 확장 (문자열 + 딕셔너리)
+- 신뢰도 계산 개선 (문자열 결론 기본 0.8)
+- 미등록 에러 코드 친절한 응답 추가
