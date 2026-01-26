@@ -334,8 +334,17 @@ class ResponseGenerator:
 
         if reasoning.recommendations:
             rec = reasoning.recommendations[0]
-            result["immediate"] = rec.get("action", rec.get("resolution", ""))
+            # action, resolution, name 중 하나 사용
+            immediate = rec.get("action") or rec.get("resolution") or rec.get("name", "")
+
+            # steps가 있으면 상세 조치 포함
+            steps = rec.get("steps", [])
+            if steps and not immediate:
+                immediate = steps[0] if len(steps) == 1 else f"{steps[0]}, {steps[1]}..." if len(steps) > 1 else ""
+
+            result["immediate"] = immediate
             result["reference"] = rec.get("reference", None)
+            result["steps"] = steps  # 상세 단계 추가
         else:
             # 결론에서 권장사항 추출
             for conclusion in reasoning.conclusions:
@@ -663,6 +672,9 @@ class ResponseGenerator:
             elif c_type == "pattern_history":
                 # 최근/이력 질문은 요약 결과를 바로 반환
                 return conclusion.get("description", "최근 패턴 이력 정보를 생성할 수 없습니다.")
+            elif c_type == "specification":
+                # 사양 질문은 바로 반환
+                return conclusion.get("description", "사양 정보를 찾을 수 없습니다.")
 
         # 정의 질문 응답 (definitions_found가 있으면 바로 반환)
         if definitions_found:
@@ -718,6 +730,12 @@ class ResponseGenerator:
 
         if recommendation.get("immediate"):
             evidence_parts.append(f"- 권장 조치: {recommendation['immediate']}")
+            # 상세 단계가 있으면 표시
+            steps = recommendation.get("steps", [])
+            if steps and len(steps) > 1:
+                evidence_parts.append("  단계별 조치:")
+                for i, step in enumerate(steps[:5], 1):  # 최대 5단계
+                    evidence_parts.append(f"    {i}. {step}")
         if recommendation.get("reference"):
             evidence_parts.append(f"- 참고: {recommendation['reference']}")
 

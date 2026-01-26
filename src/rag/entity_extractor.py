@@ -79,6 +79,23 @@ class EntityExtractor:
         re.IGNORECASE
     )
 
+    # 에러 카테고리 키워드 (joint position 에러, communication 에러 등)
+    ERROR_CATEGORY_KEYWORDS = {
+        "joint_position": ["joint position", "조인트 위치", "관절 위치", "position 에러"],
+        "joint_communication": ["joint communication", "조인트 통신", "관절 통신"],
+        "joint_current": ["joint current", "조인트 전류", "관절 전류"],
+        "joint_speed": ["joint speed", "조인트 속도", "관절 속도"],
+        "joint_temperature": ["joint temperature", "조인트 온도", "관절 온도", "과열"],
+        "communication": ["communication", "통신", "연결"],
+        "safety": ["safety", "안전", "보호정지"],
+        "power": ["power", "전원", "전력"],
+        "encoder": ["encoder", "엔코더"],
+        "calibration": ["calibration", "캘리브레이션", "보정"],
+        "overload": ["overload", "과부하", "과하중"],
+        "vibration": ["vibration", "진동"],
+        "sensor": ["sensor", "센서", "force sensor", "힘 센서"],
+    }
+
     def __init__(self, ontology: Optional[OntologySchema] = None):
         """초기화
 
@@ -142,7 +159,10 @@ class EntityExtractor:
         # 8. 장비 추출 (UR5e, Axia80)
         entities.extend(self._extract_equipment(query))
 
-        # 9. 온톨로지 엔티티 직접 매칭
+        # 9. 에러 카테고리 추출 (joint position 에러 등)
+        entities.extend(self._extract_error_categories(query))
+
+        # 10. 온톨로지 엔티티 직접 매칭
         entities.extend(self._extract_ontology_entities(query))
 
         # 중복 제거
@@ -306,6 +326,28 @@ class EntityExtractor:
                 entity_type=equipment_type,
                 confidence=1.0,
             ))
+        return entities
+
+    def _extract_error_categories(self, query: str) -> List[ExtractedEntity]:
+        """에러 카테고리 키워드 추출 (joint position 에러 등)
+
+        "joint position 에러가 자주 나" → joint_position 카테고리 추출
+        "통신 에러" → communication 카테고리 추출
+        """
+        entities = []
+        query_lower = query.lower()
+
+        for category_id, keywords in self.ERROR_CATEGORY_KEYWORDS.items():
+            for keyword in keywords:
+                if keyword.lower() in query_lower:
+                    entities.append(ExtractedEntity(
+                        text=keyword,
+                        entity_id=f"CAT_{category_id.upper()}",
+                        entity_type="ErrorCategory",
+                        confidence=0.9,
+                        properties={"category": category_id},
+                    ))
+                    break  # 카테고리당 하나만 추가
         return entities
 
     def _extract_ontology_entities(self, query: str) -> List[ExtractedEntity]:

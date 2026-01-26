@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, Bot, User, FileText, Network, ChevronDown, ChevronUp, ExternalLink, HelpCircle, AlertCircle, Lightbulb, Sparkles, Key, Lock } from 'lucide-react';
+import { Send, Loader2, Bot, User, FileText, Network, ChevronDown, ChevronUp, ExternalLink, HelpCircle, AlertCircle, Lightbulb, Sparkles, Key, Lock, ListChecks, X, Beaker, Database, Search, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +15,122 @@ import { useChatMutation, usePrefetchEvidence } from '@/hooks/useApi';
 import { chatMessage, fadeIn } from '@/lib/animations';
 import type { ChatResponse } from '@/types/api';
 
+// 테스트 유형 정의
+const TEST_TYPES = {
+  ONTOLOGY: {
+    label: 'ONTOLOGY',
+    color: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    description: '온톨로지 그래프 기반 관계 추론 테스트',
+    details: [
+      '엔티티 정의/속성 조회',
+      'UR5e ↔ Axia80 관계 탐색',
+      '엔티티 간 비교/차이 분석',
+    ],
+  },
+  HYBRID: {
+    label: 'HYBRID',
+    color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+    description: '온톨로지 + 실시간 센서값 혼합 분석',
+    details: [
+      '센서값 → 상태 추론',
+      '임계값 기반 경고 판단',
+      '패턴 매칭 → 원인 추론',
+    ],
+  },
+  RAG: {
+    label: 'RAG',
+    color: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    description: '문서/로그 검색 기반 RAG 응답',
+    details: [
+      '에러코드 → 원인/해결책 검색',
+      '패턴 이력 로그 조회',
+      '매뉴얼 문서 참조',
+    ],
+  },
+};
+
+// 예시 질문 데이터 - 테스트 유형별 분류
+const EXAMPLE_QUESTIONS = {
+  ontology: {
+    title: '온톨로지 추론',
+    icon: Database,
+    description: 'UR5e + Axia80 관계 추론',
+    testType: 'ONTOLOGY',
+    questions: [
+      // 엔티티 정의 (5개)
+      'Fz가 뭐야?',
+      'Tx는 무슨 축이야?',
+      'UR5e는 어떤 로봇이야?',
+      'Axia80 센서 설명해줘',
+      'ControlBox가 뭐야?',
+      // UR5e-Axia80 관계 (5개)
+      'Axia80은 UR5e의 어디에 장착돼?',
+      'ToolFlange에 뭐가 연결되어 있어?',
+      'Axia80이 측정하는 축들이 뭐야?',
+      'UR5e의 구성요소가 뭐야?',
+      'Fz는 어떤 센서가 측정해?',
+      // 비교/차이 (4개)
+      'Fx와 Fz의 차이가 뭐야?',
+      'Tx와 Tz의 차이가 뭐야?',
+      '힘 센서와 토크 센서 차이가 뭐야?',
+      'Fy와 Ty 중 뭐가 더 민감해?',
+      // 상태/속성 (3개)
+      'Fz 정상 범위가 어떻게 돼?',
+      'Tx 정상 범위가 뭐야?',
+      'Joint_0의 가동 범위가 어떻게 돼?',
+      // 사양 스펙 (3개)
+      'UR5e 페이로드가 몇 kg이야?',
+      'Axia80 샘플링 주파수가 얼마야?',
+      'UR5e 작업 반경이 얼마야?',
+    ],
+  },
+  sensorAnalysis: {
+    title: '센서값 분석',
+    icon: Zap,
+    description: 'Axia80 실시간 데이터 해석',
+    testType: 'HYBRID',
+    questions: [
+      'Fz가 -350N인데 뭐야?',
+      '현재 Fx가 -150N이야. 정상이야?',
+      'Tz가 5Nm 넘었는데 문제 있어?',
+      'Fy가 -80N인데 위험해?',
+      'Tx가 1Nm이면 어떤 상태야?',
+      '토크가 갑자기 높아졌어. 뭐가 문제야?',
+    ],
+  },
+  errorResolution: {
+    title: '에러 해결',
+    icon: HelpCircle,
+    description: 'UR5e 에러코드 분석',
+    testType: 'RAG',
+    questions: [
+      'C153 에러 해결법 알려줘',
+      'C119 에러가 뭐야?',
+      'C189 에러 원인이 뭐야?',
+      'C103 에러 어떻게 고쳐?',
+      'communication 에러 해결 방법은?',
+      'joint position 에러가 자주 나. 왜 그래?',
+    ],
+  },
+  patternHistory: {
+    title: '패턴/이력 조회',
+    icon: Search,
+    description: '센서 패턴 로그 검색',
+    testType: 'RAG',
+    questions: [
+      '최근 충돌 패턴이 있나요?',
+      '오늘 이상 패턴이 감지됐어?',
+      '과부하 패턴이 발생한 적 있어?',
+      '진동 패턴 이력 보여줘',
+      '드리프트가 최근에 있었어?',
+      '지난 주 에러 패턴 알려줘',
+    ],
+  },
+};
+
 export function ChatPanel() {
   const [input, setInput] = useState('');
+  const [showExamples, setShowExamples] = useState(false);
   const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState<{ traceId: string; response: ChatResponse } | null>(null);
   const { messages, addMessage, updateMessage, isLoading, setLoading } = useChatStore();
@@ -226,6 +340,27 @@ export function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Example Questions Panel */}
+      <AnimatePresence>
+        {showExamples && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="border-t border-slate-700/50 overflow-hidden"
+          >
+            <ExampleQuestionsPanel
+              onSelect={(q) => {
+                handleDirectSubmit(q);
+                setShowExamples(false);
+              }}
+              onClose={() => setShowExamples(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Input */}
       <form onSubmit={handleSubmit} className="border-t border-slate-700/50 p-4">
         {/* API 키 미등록 시 경고 메시지 */}
@@ -246,6 +381,20 @@ export function ChatPanel() {
           </div>
         )}
         <div className="flex gap-2">
+          {/* 예시 질문 토글 버튼 - 눈에 띄는 그라데이션 스타일 */}
+          <button
+            type="button"
+            onClick={() => setShowExamples(!showExamples)}
+            className={`flex h-10 items-center gap-1.5 px-3 rounded-lg border transition-all ${
+              showExamples
+                ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border-cyan-400/60 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.25)]'
+                : 'bg-gradient-to-r from-slate-700/80 to-slate-800/80 border-slate-600 text-slate-300 hover:from-cyan-600/20 hover:to-blue-600/20 hover:border-cyan-500/40 hover:text-cyan-400'
+            }`}
+            title="예시 질문 보기"
+          >
+            <ListChecks className="h-4 w-4" />
+            <span className="text-xs font-medium whitespace-nowrap">질문 예시</span>
+          </button>
           <input
             type="text"
             value={input}
@@ -572,6 +721,113 @@ function AbstainMessage({
           <p className="text-sm text-slate-300 whitespace-pre-wrap">{response.answer}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// 예시 질문 패널 컴포넌트 - 개발자 테스트용
+function ExampleQuestionsPanel({
+  onSelect,
+  onClose,
+}: {
+  onSelect: (question: string) => void;
+  onClose: () => void;
+}) {
+  const [selectedTestType, setSelectedTestType] = useState<keyof typeof TEST_TYPES | null>(null);
+  const categories = Object.entries(EXAMPLE_QUESTIONS);
+  const testTypes = Object.entries(TEST_TYPES) as [keyof typeof TEST_TYPES, typeof TEST_TYPES[keyof typeof TEST_TYPES]][];
+
+  // 선택된 테스트 유형에 맞는 카테고리만 필터링
+  const filteredCategories = selectedTestType
+    ? categories.filter(([, cat]) => cat.testType === selectedTestType)
+    : categories;
+
+  const totalQuestions = selectedTestType
+    ? filteredCategories.reduce((acc, [, cat]) => acc + cat.questions.length, 0)
+    : categories.reduce((acc, [, cat]) => acc + cat.questions.length, 0);
+
+  return (
+    <div className="p-4 bg-slate-900/80 max-h-[500px] overflow-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-cyan-400" />
+            <span className="text-sm font-medium text-white">질문지 예시</span>
+          </div>
+          <span className="text-[10px] text-slate-500 bg-slate-800 px-2 py-0.5 rounded">
+            개발자 테스트용 · {totalQuestions}개
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Test Type Selection - Compact 2-Column Grid */}
+      <div className="mb-3 space-y-1.5">
+        <span className="text-[10px] text-slate-500 font-medium">테스트 유형 필터</span>
+        <div className="grid grid-cols-3 gap-1.5">
+          {testTypes.map(([typeKey, typeInfo]) => {
+            const isSelected = selectedTestType === typeKey;
+            return (
+              <button
+                key={typeKey}
+                onClick={() => setSelectedTestType(isSelected ? null : typeKey)}
+                className={`flex flex-col items-start gap-1 p-2 rounded-lg border text-left transition-all ${
+                  isSelected
+                    ? `${typeInfo.color} border-current`
+                    : 'bg-slate-800/50 border-slate-700/50 hover:border-slate-600'
+                }`}
+              >
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${typeInfo.color}`}>
+                  {typeInfo.label}
+                </span>
+                <p className={`text-[10px] leading-tight ${isSelected ? 'opacity-90' : 'text-slate-400'}`}>
+                  {typeInfo.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-slate-700/50 my-3" />
+
+      {/* Questions List - Grouped by Category */}
+      <div className="space-y-4">
+        {filteredCategories.map(([key, category]) => {
+          const Icon = category.icon;
+          return (
+            <div key={key} className="space-y-2">
+              {/* Category Header - No Badge */}
+              <div className="flex items-center gap-2 text-xs py-1">
+                <Icon className="h-3.5 w-3.5 text-slate-400" />
+                <span className="text-slate-300 font-medium">{category.title}</span>
+                <span className="text-[10px] text-slate-500">· {category.description}</span>
+                <span className="text-[10px] text-slate-600 ml-auto">{category.questions.length}개</span>
+              </div>
+              {/* Questions Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+                {category.questions.map((question, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => onSelect(question)}
+                    className="text-left text-xs text-slate-300 hover:text-cyan-400 px-2 py-1.5 rounded bg-slate-800/30 hover:bg-slate-700/50 transition-colors truncate"
+                    title={question}
+                  >
+                    &ldquo;{question}&rdquo;
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

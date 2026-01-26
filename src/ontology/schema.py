@@ -22,6 +22,9 @@ class EntityType(str, Enum):
     JOINT = "Joint"
     CONTROL_BOX = "ControlBox"
     TOOL_FLANGE = "ToolFlange"
+    TEACH_PENDANT = "TeachPendant"  # v2.0 추가
+    SAFETY_BOARD = "SafetyBoard"  # v2.0 추가
+    MOTHERBOARD = "Motherboard"  # v2.0 추가
 
     # Measurement Domain
     SENSOR = "Sensor"
@@ -74,6 +77,9 @@ DOMAIN_ENTITY_TYPES = {
         EntityType.JOINT,
         EntityType.CONTROL_BOX,
         EntityType.TOOL_FLANGE,
+        EntityType.TEACH_PENDANT,
+        EntityType.SAFETY_BOARD,
+        EntityType.MOTHERBOARD,
     ],
     Domain.MEASUREMENT: [
         EntityType.SENSOR,
@@ -107,8 +113,9 @@ ENTITY_TYPE_TO_DOMAIN = {
 # 관계 타입별 유효한 소스/타겟 타입
 RELATIONSHIP_CONSTRAINTS = {
     RelationType.HAS_COMPONENT: {
-        "source_types": [EntityType.ROBOT],
-        "target_types": [EntityType.JOINT, EntityType.CONTROL_BOX, EntityType.TOOL_FLANGE],
+        "source_types": [EntityType.ROBOT, EntityType.CONTROL_BOX],
+        "target_types": [EntityType.JOINT, EntityType.CONTROL_BOX, EntityType.TOOL_FLANGE,
+                        EntityType.TEACH_PENDANT, EntityType.SAFETY_BOARD, EntityType.MOTHERBOARD],
     },
     RelationType.MOUNTED_ON: {
         "source_types": [EntityType.SENSOR],

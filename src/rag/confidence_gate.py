@@ -39,9 +39,9 @@ class ConfidenceGate:
     """
 
     # 임계값 설정
-    MIN_CONFIDENCE = 0.5           # 최소 추론 신뢰도
-    MIN_ENTITY_CONFIDENCE = 0.6    # 최소 엔티티 신뢰도
-    MIN_CLASSIFICATION_CONFIDENCE = 0.4  # 최소 분류 신뢰도
+    MIN_CONFIDENCE = 0.4           # 최소 추론 신뢰도 (0.5 → 0.4)
+    MIN_ENTITY_CONFIDENCE = 0.5    # 최소 엔티티 신뢰도 (0.6 → 0.5)
+    MIN_CLASSIFICATION_CONFIDENCE = 0.3  # 최소 분류 신뢰도 (0.4 → 0.3)
 
     def __init__(
         self,

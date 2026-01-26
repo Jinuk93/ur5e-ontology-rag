@@ -298,10 +298,11 @@ class OntologyEngine:
         total_confidence = 1.0
         evidence = {"entities_processed": [], "rules_applied": []}
 
-        # 0. 정의 질문인지 확인 (값 없이 엔티티만 있는 경우)
+        # 0. 질문 유형 확인
         has_value = any(e.get("entity_type") == "Value" for e in entities)
         is_definition_query = self._is_definition_query(query)
         is_comparison_query = self._is_comparison_query(query)
+        is_specification_query = self._is_specification_query(query)
 
         # 0-1. 비교 질문 처리 (여러 엔티티 비교)
         if is_comparison_query and not has_value:
@@ -336,6 +337,17 @@ class OntologyEngine:
             definition_entity_types = ("MeasurementAxis", "Robot", "Sensor", "Equipment")
             if entity_type in definition_entity_types and not has_value and is_definition_query:
                 result = self._process_entity_definition(entity_id, entity_type)
+                if result:
+                    reasoning_chain.extend(result.get("reasoning", []))
+                    conclusions.extend(result.get("conclusions", []))
+                    ontology_paths.extend(result.get("paths", []))
+                    evidence["entities_processed"].append(entity_id)
+                continue
+
+            # 사양 질문 처리 (값 없이 "UR5e 페이로드가 몇 kg?" 같은 질문)
+            spec_entity_types = ("Robot", "Sensor", "Equipment", "MeasurementAxis")
+            if entity_type in spec_entity_types and not has_value and is_specification_query:
+                result = self._process_specification(entity_id, entity_type, query)
                 if result:
                     reasoning_chain.extend(result.get("reasoning", []))
                     conclusions.extend(result.get("conclusions", []))
@@ -382,6 +394,16 @@ class OntologyEngine:
                     "result": "이력 분석 필요",
                 })
 
+            # ErrorCategory 처리 (joint position 에러, communication 에러 등)
+            elif entity_type == "ErrorCategory":
+                result = self._process_error_category(entity_id, entity_text, context)
+                if result:
+                    reasoning_chain.extend(result.get("reasoning", []))
+                    conclusions.extend(result.get("conclusions", []))
+                    recommendations.extend(result.get("recommendations", []))
+                    ontology_paths.extend(result.get("paths", []))
+                    evidence["entities_processed"].append(entity_id)
+
         # 2. 신뢰도 계산
         if conclusions:
             confidences = [c.get("confidence", 0.5) for c in conclusions]
@@ -417,6 +439,106 @@ class OntologyEngine:
             if re.search(pattern, query, re.IGNORECASE):
                 return True
         return False
+
+    def _is_specification_query(self, query: str) -> bool:
+        """사양 질문인지 확인 (페이로드, 범위, 무게 등)"""
+        import re
+        spec_patterns = [
+            r"(몇|얼마|어느 정도|최대|최소)",
+            r"(kg|mm|N|Nm|도|℃|Hz)",
+            r"(페이로드|payload|무게|중량|반경|범위|reach|속도|토크|힘)",
+        ]
+        for pattern in spec_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                return True
+        return False
+
+    def _process_specification(self, entity_id: str, entity_type: str, query: str) -> Optional[Dict]:
+        """사양 질문 처리 (페이로드가 몇 kg? 등)"""
+        entity = self.ontology.get_entity(entity_id)
+        if not entity:
+            return None
+
+        reasoning = []
+        conclusions = []
+        paths = []
+
+        props = entity.properties or {}
+        entity_name = entity.name or entity_id
+
+        # 쿼리에서 어떤 사양을 묻는지 파악
+        query_lower = query.lower()
+        found_specs = []
+
+        # 페이로드/무게 관련
+        if any(kw in query_lower for kw in ["페이로드", "payload", "무게", "중량", "kg"]):
+            if "payload_kg" in props:
+                found_specs.append(f"최대 페이로드: {props['payload_kg']}kg")
+            elif "max_payload" in props:
+                found_specs.append(f"최대 페이로드: {props['max_payload']}kg")
+
+        # 범위/반경 관련
+        if any(kw in query_lower for kw in ["범위", "반경", "reach", "mm"]):
+            if "reach_mm" in props:
+                found_specs.append(f"작업 반경: {props['reach_mm']}mm")
+            if "range" in props:
+                r = props["range"]
+                unit = props.get("unit", "")
+                found_specs.append(f"측정 범위: {r[0]}~{r[1]} {unit}")
+            if "normal_range" in props:
+                nr = props["normal_range"]
+                unit = props.get("unit", "")
+                found_specs.append(f"정상 범위: {nr[0]}~{nr[1]} {unit}")
+
+        # 조인트/축 관련
+        if any(kw in query_lower for kw in ["조인트", "joint", "축", "몇 축"]):
+            if "joints" in props:
+                found_specs.append(f"조인트 수: {props['joints']}축")
+            if "axes" in props:
+                found_specs.append(f"측정 축 수: {props['axes']}축")
+
+        # 샘플링/주파수 관련
+        if any(kw in query_lower for kw in ["샘플링", "sampling", "주파수", "hz"]):
+            if "sampling_hz" in props:
+                found_specs.append(f"샘플링 주파수: {props['sampling_hz']}Hz")
+
+        # 특정 사양을 못 찾으면 모든 사양 반환
+        if not found_specs:
+            for key, value in props.items():
+                if key in ["manufacturer", "model", "type", "description"]:
+                    continue
+                if isinstance(value, (int, float)):
+                    found_specs.append(f"{key}: {value}")
+                elif isinstance(value, list) and len(value) == 2:
+                    found_specs.append(f"{key}: {value[0]}~{value[1]}")
+
+        if not found_specs:
+            return None
+
+        reasoning.append({
+            "step": "specification_lookup",
+            "description": f"온톨로지에서 {entity_id} 사양 조회",
+            "result": {"entity_id": entity_id, "specs": found_specs}
+        })
+
+        description = f"{entity_name}의 사양 정보입니다:\n" + "\n".join([f"- {spec}" for spec in found_specs])
+
+        conclusions.append({
+            "type": "specification",
+            "entity_id": entity_id,
+            "entity_name": entity_name,
+            "description": description,
+            "specs": found_specs,
+            "confidence": 0.95,
+        })
+
+        paths.append(f"Ontology → {entity_id} → properties")
+
+        return {
+            "reasoning": reasoning,
+            "conclusions": conclusions,
+            "paths": paths,
+        }
 
     def _is_comparison_query(self, query: str) -> bool:
         """비교 질문인지 확인"""
@@ -931,15 +1053,23 @@ class OntologyEngine:
                 for res_path in resolution_paths:
                     resolution = self.ontology.get_entity(res_path.end_entity)
                     if resolution:
+                        # action 필드 생성 (ResponseGenerator 호환)
+                        steps = resolution.properties.get("steps", [])
+                        action = resolution.name
+                        if steps:
+                            action = f"{resolution.name}: {steps[0]}" if len(steps) == 1 else f"{resolution.name}: {', '.join(steps[:2])}..."
+
                         recommendations.append({
                             "type": "resolution",
                             "for_cause": cause_id,
                             "resolution_id": resolution.id,
                             "name": resolution.name,
-                            "steps": resolution.properties.get("steps", []),
+                            "action": action,  # ResponseGenerator 호환
+                            "resolution": action,  # 대체 필드
+                            "steps": steps,
                             "confidence": res_path.total_confidence,
                         })
-                        paths.append(f"{error_code} → {path.to_string()} → {res_path.to_string()}")
+                        paths.append(f"{error_code} →[CAUSED_BY]→ {cause_id} →[RESOLVED_BY]→ {resolution.id}")
 
         # TRIGGERS 역방향으로 원인 패턴 탐색
         rels = self.ontology.get_relationships_for_entity(error_code, direction="incoming")
@@ -955,6 +1085,159 @@ class OntologyEngine:
                         "confidence": rel.properties.get("confidence", 1.0),
                     })
                     paths.append(f"{rel.source} →[TRIGGERS]→ {error_code}")
+
+        return {
+            "reasoning": reasoning,
+            "conclusions": conclusions,
+            "recommendations": recommendations,
+            "paths": paths,
+        }
+
+    def _process_error_category(
+        self,
+        category_id: str,
+        category_text: str,
+        context: Dict
+    ) -> Optional[Dict]:
+        """에러 카테고리 처리 (joint position, communication 등)
+
+        카테고리에 해당하는 모든 에러 코드를 찾아 분석합니다.
+        """
+        # 카테고리 키워드 매핑
+        category_keywords = {
+            "CAT_JOINT_POSITION": ["position", "위치"],
+            "CAT_JOINT_COMMUNICATION": ["communication", "통신"],
+            "CAT_JOINT_CURRENT": ["current", "전류"],
+            "CAT_JOINT_SPEED": ["speed", "속도"],
+            "CAT_JOINT_TEMPERATURE": ["temperature", "온도", "과열"],
+            "CAT_COMMUNICATION": ["communication", "통신", "연결"],
+            "CAT_SAFETY": ["safety", "안전", "보호정지"],
+            "CAT_POWER": ["power", "전원", "전력"],
+            "CAT_ENCODER": ["encoder", "엔코더"],
+            "CAT_CALIBRATION": ["calibration", "캘리브레이션", "보정"],
+            "CAT_OVERLOAD": ["overload", "과부하"],
+            "CAT_VIBRATION": ["vibration", "진동"],
+            "CAT_SENSOR": ["sensor", "센서"],
+        }
+
+        keywords = category_keywords.get(category_id, [])
+        if not keywords:
+            return None
+
+        reasoning = []
+        conclusions = []
+        recommendations = []
+        paths = []
+
+        # 온톨로지에서 카테고리에 해당하는 에러 코드 찾기
+        matching_errors = []
+        for entity in self.ontology.entities:
+            if entity.type.value == "ErrorCode":
+                # 에러 이름이나 설명에서 키워드 검색
+                name_lower = (entity.name or "").lower()
+                desc_lower = (entity.properties.get("description", "") or "").lower()
+                category_str = (entity.properties.get("category", "") or "").lower()
+
+                for keyword in keywords:
+                    if keyword.lower() in name_lower or keyword.lower() in desc_lower or keyword.lower() in category_str:
+                        matching_errors.append(entity)
+                        break
+
+        if not matching_errors:
+            # 카테고리에 해당하는 에러가 없으면 일반적인 설명 제공
+            reasoning.append({
+                "step": "error_category_search",
+                "description": f"카테고리 검색: {category_text}",
+                "result": {"found": 0, "message": "해당 카테고리의 에러가 발견되지 않았습니다."}
+            })
+            conclusions.append({
+                "type": "error_category",
+                "category": category_id,
+                "description": f"{category_text} 관련 에러는 현재 온톨로지에 등록되어 있지 않습니다.",
+                "confidence": 0.5,
+            })
+            return {
+                "reasoning": reasoning,
+                "conclusions": conclusions,
+                "recommendations": recommendations,
+                "paths": paths,
+            }
+
+        # 발견된 에러 분석
+        reasoning.append({
+            "step": "error_category_search",
+            "description": f"카테고리 검색: {category_text}",
+            "result": {
+                "found": len(matching_errors),
+                "errors": [e.id for e in matching_errors[:5]],  # 상위 5개만 표시
+            }
+        })
+
+        # 에러별 원인과 해결책 분석
+        causes_summary = []
+        resolutions_summary = []
+
+        for error in matching_errors[:3]:  # 상위 3개만 상세 분석
+            error_result = self._process_error_code(error.id, context)
+            if error_result:
+                # 원인 수집
+                for conc in error_result.get("conclusions", []):
+                    if conc.get("type") == "cause":
+                        causes_summary.append({
+                            "error": error.id,
+                            "error_name": error.name,
+                            "cause": conc.get("cause"),
+                            "cause_name": conc.get("cause_name"),
+                        })
+
+                # 해결책 수집
+                for rec in error_result.get("recommendations", []):
+                    resolutions_summary.append({
+                        "error": error.id,
+                        "resolution": rec.get("name"),
+                        "steps": rec.get("steps", []),
+                    })
+
+                paths.extend(error_result.get("paths", []))
+
+        # 카테고리 종합 결론
+        error_names = [f"{e.id} ({e.name})" for e in matching_errors[:5]]
+        description_parts = [
+            f"{category_text} 관련 에러 {len(matching_errors)}개를 찾았습니다:",
+            "관련 에러 코드: " + ", ".join(error_names),
+        ]
+
+        if causes_summary:
+            unique_causes = list({c["cause_name"] for c in causes_summary if c.get("cause_name")})
+            if unique_causes:
+                description_parts.append("주요 원인: " + ", ".join(unique_causes[:3]))
+
+        if resolutions_summary:
+            unique_resolutions = list({r["resolution"] for r in resolutions_summary if r.get("resolution")})
+            if unique_resolutions:
+                description_parts.append("해결 방법: " + ", ".join(unique_resolutions[:3]))
+
+        conclusions.append({
+            "type": "error_category",
+            "category": category_id,
+            "matching_errors": [e.id for e in matching_errors],
+            "error_count": len(matching_errors),
+            "description": "\n".join(description_parts),
+            "causes": causes_summary,
+            "confidence": 0.85,
+        })
+
+        # 해결책 추천
+        for res in resolutions_summary[:2]:
+            recommendations.append({
+                "type": "resolution",
+                "for_category": category_id,
+                "resolution": res.get("resolution"),
+                "steps": res.get("steps", []),
+                "confidence": 0.8,
+            })
+
+        paths.append(f"ErrorCategory → {category_id} → matched {len(matching_errors)} errors")
 
         return {
             "reasoning": reasoning,
