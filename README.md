@@ -12,7 +12,10 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org)
 [![Tests](https://img.shields.io/badge/Tests-173%20passed-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
+<br>
+[![CLAUDE](https://img.shields.io/badge/CLAUDE-FF9800?logo=anthropic&logoColor=white)](https://www.anthropic.com/)
+[![GPT](https://img.shields.io/badge/GPT-009688?logo=openai&logoColor=white)](https://openai.com/)
+[![GEMINI](https://img.shields.io/badge/GEMINI-4285F4?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
 </div>
 
 ---
@@ -21,11 +24,7 @@
 
 ### 왜 이 프로젝트인가?
 
-<<<<<<< HEAD
 대한민국 제조업의 미래는 **AX(AI Transformation)** 에 있습니다.<br> 기존 룰베이스(IF-THEN) 시스템은 단순 임계값 판단만 가능하지만, 실제 현장에서 필요한 것은 아래와 같습니다.
-=======
-대한민국 제조업의 미래는 **AX(AI Transformation)** 에 있습니다.<br> 기존 룰베이스(IF-THEN) 시스템은 단순 임계값 판단만 가능하지만, 실제 현장에서 필요한 것은
->>>>>>> ec082382173c766ce7503ee29f866ceaa9445634
 
 | 기존 시스템 | 이 프로젝트 |
 |------------|-----------|
