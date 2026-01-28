@@ -16,6 +16,35 @@
 [![CLAUDE](https://img.shields.io/badge/CLAUDE-FF9800?logo=anthropic&logoColor=white)](https://www.anthropic.com/)
 [![GPT](https://img.shields.io/badge/GPT-009688?logo=openai&logoColor=white)](https://openai.com/)
 [![GEMINI](https://img.shields.io/badge/GEMINI-4285F4?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+
+</div>
+
+---
+
+<div align="center">
+
+## 🖥️ 시스템 화면
+
+<br/>
+
+<!-- 메인 화면 스크린샷 -->
+<img src="assets/screenshot_main.png" alt="메인 대시보드" width="90%"/>
+
+<sub>▲ 온톨로지 기반 챗봇 + 실시간 센서 모니터링 대시보드</sub>
+
+<br/><br/>
+
+## 🎬 데모 영상
+
+<br/>
+
+<!-- GIF 데모 -->
+<img src="assets/demo.gif" alt="시스템 데모" width="90%"/>
+
+<sub>▲ 질의응답 → 온톨로지 추론 → 근거 기반 응답 생성 과정</sub>
+
+<br/>
+
 </div>
 
 ---
