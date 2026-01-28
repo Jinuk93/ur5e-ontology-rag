@@ -28,10 +28,6 @@
 <!-- GIF 데모 -->
 <img src="assets/demo.gif" alt="시스템 데모" width="90%"/>
 
-<sub>▲ 질의응답 → 온톨로지 추론 → 근거 기반 응답 생성 과정</sub>
-
-<br/>
-
 </div>
 
 ---
