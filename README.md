@@ -10,7 +10,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org)
-[![Tests](https://img.shields.io/badge/Tests-173%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-164%20passed-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 <br>
 [![CLAUDE](https://img.shields.io/badge/CLAUDE-FF9800?logo=anthropic&logoColor=white)](https://www.anthropic.com/)
@@ -121,7 +121,7 @@ flowchart TB
 | **해결책(Resolution)** | 5개 | **15개** | 단계별 가이드 |
 | **패턴(Pattern)** | 4개 | **8개** | 충돌/과부하/진동 등 |
 | **문서 청크** | 722개 | 722개 | 임베딩 완료 |
-| **테스트 케이스** | - | **173개** | 100% 통과 |
+| **테스트 케이스** | - | **164개** | 100% 통과 |
 
 ---
 
@@ -481,10 +481,10 @@ frontend/src/
 
 | 테스트 유형 | 개수 | 통과율 | 커버리지 |
 |------------|------|--------|---------|
-| **Unit Tests** | 150개 | 100% | 백엔드 핵심 모듈 |
-| **Chatbot Tests** | 23개 | 100% | 질의응답 파이프라인 |
+| **Unit Tests** | 136개 | 100% | 백엔드 핵심 모듈 |
+| **Integration Tests** | 14개 | 100% | API 통합 테스트 |
 | **예시 질문** | 38개 | 100% | 전체 질문 유형 |
-| **합계** | **173개** | **100%** | - |
+| **합계** | **164개** | **100%** | - |
 
 ### 예시 질문 카테고리
 
@@ -585,6 +585,8 @@ cd frontend && npm run dev
 | [Unified_Spec.md](docs/core/Unified_Spec.md) | 전체 기술 설계서 |
 | [Unified_ROADMAP.md](docs/core/Unified_ROADMAP.md) | 개발 로드맵 |
 | [온톨로지_스키마_설계.md](docs/core/온톨로지_스키마_설계.md) | 4-Domain 온톨로지 스키마 |
+| [시스템_파이프라인_아키텍처.md](docs/core/시스템_파이프라인_아키텍처.md) | 백엔드/프론트엔드 파이프라인 상세 |
+| [이기종_데이터_및_이벤트_명세.md](docs/core/이기종_데이터_및_이벤트_명세.md) | Axia80+UR5e 데이터/이벤트 상세 |
 
 ### 개발 단계 (docs/steps/)
 
