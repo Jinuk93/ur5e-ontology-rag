@@ -19,16 +19,10 @@
 
 </div>
 
----
-
 <div align="center">
 
 <!-- 메인 화면 스크린샷 -->
 <img width="1504" height="704" alt="Image_lsu" src="https://github.com/user-attachments/assets/c0b0f413-6b68-4edc-9f7e-faaf0770bb02" />
-<br/>
-
-### 데모 영상
-
 <br/>
 
 <!-- GIF 데모 -->
