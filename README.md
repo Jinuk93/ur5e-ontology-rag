@@ -23,18 +23,11 @@
 
 <div align="center">
 
-## 🖥️ 시스템 화면
-
+<!-- 메인 화면 스크린샷 -->
+<img width="1504" height="704" alt="Image_lsu" src="https://github.com/user-attachments/assets/c0b0f413-6b68-4edc-9f7e-faaf0770bb02" />
 <br/>
 
-<!-- 메인 화면 스크린샷 -->
-<img src="assets/screenshot_main.png" alt="메인 대시보드" width="90%"/>
-
-<sub>▲ 온톨로지 기반 챗봇 + 실시간 센서 모니터링 대시보드</sub>
-
-<br/><br/>
-
-## 🎬 데모 영상
+### 데모 영상
 
 <br/>
 
